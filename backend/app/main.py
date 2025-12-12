@@ -12,6 +12,7 @@ from app.core.exception_handler import (
     unhandled_exception_handler,
 )
 from app.core.exceptions import BukochessException
+from app.api.v1.position import router as position_router
 
 logger = get_logger(__name__)
 
@@ -23,7 +24,7 @@ def create_application() -> FastAPI:
 
     # Routers
     app.include_router(health_router, prefix=settings.api_v1_prefix)
-
+    app.include_router(position_router, prefix=settings.api_v1_prefix)
 
     # exception handlers
     app.add_exception_handler(BukochessException, bukochess_exception_handler)
