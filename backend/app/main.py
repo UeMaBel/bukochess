@@ -21,15 +21,17 @@ def create_application() -> FastAPI:
     app = FastAPI(title=settings.app_name, debug=settings.debug)
     logger.info("Starting Bukochess backend...")
 
-
     # Routers
     app.include_router(health_router, prefix=settings.api_v1_prefix)
-    app.include_router(position_router, prefix=settings.api_v1_prefix)
+    app.include_router(position_router, prefix=settings.api_v1_prefix + "/position")
 
     # exception handlers
     app.add_exception_handler(BukochessException, bukochess_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
+
+    for route in app.routes:
+        print(route.path, route.name)
 
     return app
 
