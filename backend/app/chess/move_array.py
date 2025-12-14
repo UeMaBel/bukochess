@@ -1,7 +1,5 @@
 from typing import Optional, List, Tuple
 
-from pydantic.v1.mypy import from_orm_callback
-
 from app.chess.board_array import BoardArray
 
 
@@ -78,10 +76,11 @@ def is_pseudo_legal(board: BoardArray, move: MoveArray) -> tuple[bool, str | Non
     d_x = to_x - from_x
     d_y = to_y - from_y
     piece = from_square_piece.lower()
-    direction = 1 if from_square_piece.isupper() else -1
 
     if from_x > 7 or from_y > 7 or to_x > 7 or to_y > 7 or from_x < 0 or from_y < 0 or to_y < 0 or to_x < 0:
         return False, "end of board"
+    if abs_x == 0 and abs_y == 0:
+        return False, "piece didnt move"
     if from_square_piece == "":
         return False, "no piece selected"
     if active_color == "b" and from_square_piece.isupper():
@@ -98,32 +97,76 @@ def is_pseudo_legal(board: BoardArray, move: MoveArray) -> tuple[bool, str | Non
             return False, "wrong king movement"
 
     elif piece == "q":  # QUEEN
-        # TODO: sliding movement along ranks, files, diagonals
-        pass
+        # first check if diagonal or rank/file movement:
+        if abs_x == abs_y:  # diagonal movement
+            step_x = 1 if d_x > 0 else -1
+            step_y = 1 if d_y > 0 else -1
+            x, y = from_x + step_x, from_y + step_y
+            while x != to_x and y != to_y:
+                if board.board[x][y] != "":
+                    return False, "piece in the way"
+                x += step_x
+                y += step_y
+            return True, None
+        if (abs_x == 0 and abs_y > 0) or (abs_x > 0 and abs_y == 0):  # rook movement
+            if abs_x == 0:
+                step = 1 if d_y > 0 else -1
+                for y in range(from_y + step, to_y, step):
+                    if board.board[from_x][y] != "":
+                        return False, "piece in the way"
+            elif abs_y == 0:
+                step = 1 if d_x > 0 else -1
+                for x in range(from_x + step, to_x, step):
+                    if board.board[x][from_y] != "":
+                        return False, "piece in the way"
+            return True, None
+        else:
+            return False, "queen can only move ranks, files or diagonally"
 
     elif piece == "r":  # ROOK
-        # TODO: sliding movement
-        pass
+        if abs_x > 0 and abs_y > 0:
+            return False, "rook can only move ranks, or files"
+        if abs_x == 0:
+            step = 1 if d_y > 0 else -1
+            for y in range(from_y + step, to_y, step):
+                if board.board[from_x][y] != "":
+                    return False, "piece in the way"
+
+        elif abs_y == 0:
+            step = 1 if d_x > 0 else -1
+            for x in range(from_x + step, to_x, step):
+                if board.board[x][from_y] != "":
+                    return False, "piece in the way"
 
     elif piece == "b":  # BISHOP
-        # TODO: sliding movement
-        pass
+        if abs_y != abs_x:
+            return False, "bishop can only move diagonal"
+        step_x = 1 if d_x > 0 else -1
+        step_y = 1 if d_y > 0 else -1
+        x, y = from_x + step_x, from_y + step_y
+        while x != to_x and y != to_y:
+            if board.board[x][y] != "":
+                return False, "piece in the way"
+            x += step_x
+            y += step_y
+        return True, None
 
     elif piece == "n":  # KNIGHT
         if (abs_x, abs_y) not in [(1, 2), (2, 1)]:
             return False, "illegal knight move"
 
-    if from_square_piece.lower() == "p":  # PAWN
+    if piece == "p":  # PAWN
+        direction = -1 if from_square_piece.isupper() else 1
         if to_square_piece != "":  # capture
             if abs_x != 0 and abs_y == direction:
                 return True, None
             else:
                 return False, "illegal pawn capture"
         else:  # move forward
-            if d_x == 0 and d_y == direction:
+            if d_x == direction and abs_y == 0:
                 return True, None
             start_row = 6 if from_square_piece.isupper() else 1
-            if from_x == start_row and d_x == 0 and d_y == 2 * direction:
+            if from_x == start_row and d_x == 2 * direction and d_y == 0:
                 return True, None
             return False, "illegal pawn move"
 

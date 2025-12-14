@@ -83,3 +83,20 @@ class BoardArray(BoardBase):
         fen += str(self.fullmove_number)
 
         return fen
+
+    def print_board(self):
+        print()
+        print("    A   B   C   D   E   F   G   H")
+        print("  +---+---+---+---+---+---+---+---+")
+
+        for row_idx, row in enumerate(self.board):
+            rank = 8 - row_idx
+            row_str = f"{rank} |"
+            for square in row:
+                piece = square if square != "" else "."
+                row_str += f" {piece} |"
+            print(row_str)
+            print("  +---+---+---+---+---+---+---+---+")
+
+        print("    A   B   C   D   E   F   G   H")
+        print()
