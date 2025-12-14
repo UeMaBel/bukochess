@@ -19,7 +19,7 @@ class BoardBase(ABC):
         parts = fen.strip().split(" ")
 
         if len(parts) != 6:
-            return False, "FEN must contain exactly 6 fields"
+            return False, f"FEN must contain exactly 6 fields, not {len(parts)}"
 
         board, active, castling, ep, halfmove, fullmove = parts
 

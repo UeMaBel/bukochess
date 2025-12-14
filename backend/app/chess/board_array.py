@@ -1,6 +1,5 @@
 from typing import List
 
-from app.api.v1.position import validate_fen_endpoint
 from app.chess.board_base import BoardBase
 
 
@@ -27,6 +26,7 @@ class BoardArray(BoardBase):
         board, active, castling, ep, halfmove, fullmove = parts
 
         # fill board
+        cur_row = []
         for c in board:
             if c == "/":
                 self.board.append(cur_row)
@@ -37,6 +37,7 @@ class BoardArray(BoardBase):
                     cur_row.append("")
             else:
                 cur_row.append(c)
+        self.board.append(cur_row)
 
         # metadata
         self.active_color = active
@@ -51,7 +52,10 @@ class BoardArray(BoardBase):
         fen = ""
 
         # board
+        empty_count = 0
         for cur_row in self.board:
+            if empty_count != 0:
+                fen += str(empty_count)
             if fen != "":
                 fen += "/"
             empty_count = 0
@@ -63,6 +67,8 @@ class BoardArray(BoardBase):
                         fen += str(empty_count)
                         empty_count = 0
                     fen += c
+        if empty_count != 0:
+            fen += str(empty_count)
 
         # metadata
         fen += " "
@@ -72,9 +78,9 @@ class BoardArray(BoardBase):
         fen += " "
         fen += self.en_passant
         fen += " "
-        fen += self.halfmove_clock
+        fen += str(self.halfmove_clock)
         fen += " "
-        fen += self.fullmove_number
+        fen += str(self.fullmove_number)
 
         return fen
 
