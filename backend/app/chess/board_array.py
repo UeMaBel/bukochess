@@ -83,15 +83,3 @@ class BoardArray(BoardBase):
         fen += str(self.fullmove_number)
 
         return fen
-
-    def generate_moves(self) -> list[str]:
-        # TODO: return list of pseudo-legal moves
-        return []
-
-    def make_move(self, move: str):
-        # TODO: update board with the move
-        pass
-
-    def is_in_check(self, color: str) -> bool:
-        # TODO: implement check detection
-        return False
