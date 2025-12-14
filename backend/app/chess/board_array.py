@@ -1,4 +1,6 @@
 from typing import List
+
+from app.api.v1.position import validate_fen_endpoint
 from app.chess.board_base import BoardBase
 
 
@@ -15,20 +17,17 @@ class BoardArray(BoardBase):
         self.halfmove_clock = 0
         self.fullmove_number = 1
 
-    def validate_fen(self, fen: str) -> bool:
-        fen_split = fen.split(" ")
-        if not len(fen_split) == 6:
-            return False
-
-        return True
-
     def from_fen(self, fen: str):
+        valid, message = self.validate_fen(fen)
+        if not valid:
+            raise ValueError(message)
         self.board = []
         cur_row = []
-        fen_split = fen.split(" ")
+        parts = fen.strip().split(" ")
+        board, active, castling, ep, halfmove, fullmove = parts
 
         # fill board
-        for c in fen_split[0]:
+        for c in board:
             if c == "/":
                 self.board.append(cur_row)
                 cur_row = []
@@ -40,11 +39,13 @@ class BoardArray(BoardBase):
                 cur_row.append(c)
 
         # metadata
-        self.active_color = fen_split[1]
-        self.castling_rights = fen_split[2]
-        self.en_passant = fen_split[3]
-        self.halfmove_clock = int(fen_split[4])
-        self.fullmove_number = int(fen_split[5])
+        self.active_color = active
+        self.castling_rights = castling
+        self.en_passant = ep
+        self.halfmove_clock = int(halfmove)
+        self.fullmove_number = int(fullmove)
+
+        return True, "FEN Imported"
 
     def to_fen(self) -> str:
         fen = ""

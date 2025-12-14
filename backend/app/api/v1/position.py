@@ -8,6 +8,7 @@ from app.chess.board_array import BoardArray
 logger = get_logger(__name__)
 router = APIRouter(tags=["position"])
 
+
 # ------------------------------
 # Request / Response Schemas
 # ------------------------------
@@ -46,17 +47,13 @@ def import_fen(req: FENRequest):
 
 
 @router.post("/validate", response_model=ValidationResponse)
-def validate_fen(req: FENRequest):
+def validate_fen_endpoint(req: FENRequest):
     fen = req.fen.strip()
     logger.info(f"Validating FEN: {fen}")
 
-    # TODO: implement actual FEN validation
-    valid = True
-    message = None
-
-    # placeholder: simple check
-    if not fen:
-        valid = False
-        message = "Empty FEN string"
+    try:
+        valid, message = BoardArray.validate_fen(fen)
+    except Exception as e:
+        raise BukochessException(str(e))
 
     return ValidationResponse(fen=fen, valid=valid, message=message)
