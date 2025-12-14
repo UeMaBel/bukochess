@@ -1,6 +1,6 @@
 import pytest
 from app.chess.board_array import BoardArray
-from tests.chess.fen_cases import VALID_FENS, INVALID_FENS
+from tests.chess.fen_cases import VALID_FENS, INVALID_FENS, ADVANCED_VALID_FENS, ADVANCED_INVALID_FENS
 
 
 @pytest.mark.parametrize("name,fen", VALID_FENS.items())
@@ -12,6 +12,20 @@ def test_validate_fen_valid(name, fen):
 
 @pytest.mark.parametrize("name,fen", INVALID_FENS.items())
 def test_validate_fen_invalid(name, fen):
+    valid, msg = BoardArray.validate_fen(fen)
+    assert valid is False, f"{name} should be invalid"
+    assert msg is not None
+
+
+@pytest.mark.parametrize("name,fen", ADVANCED_VALID_FENS.items())
+def test_validate_fen_advanced_valid(name, fen):
+    valid, msg = BoardArray.validate_fen(fen)
+    assert valid is True, f"{name} should be valid"
+    assert msg is None
+
+
+@pytest.mark.parametrize("name,fen", ADVANCED_INVALID_FENS.items())
+def test_validate_fen_advanced_invalid(name, fen):
     valid, msg = BoardArray.validate_fen(fen)
     assert valid is False, f"{name} should be invalid"
     assert msg is not None

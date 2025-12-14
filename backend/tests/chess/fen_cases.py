@@ -16,3 +16,15 @@ INVALID_FENS = {
     "negative_halfmove": "8/8/8/8/8/8/8/8 w - - -1 1",
     "zero_fullmove": "8/8/8/8/8/8/8/8 w - - 0 0",
 }
+
+ADVANCED_VALID_FENS = {
+    "kings_only": "8/8/8/8/8/8/8/K6k w - - 0 1",
+    "promotion_ready": "8/8/8/8/8/8/PPPPPPP1/7P w - - 0 1",
+    "max_castling_enpassant": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq e6 0 1",
+}
+
+ADVANCED_INVALID_FENS = {
+    "pawn_on_1st": "P7/8/8/8/8/8/8/8 w - - 0 1",
+    "invalid_piece": "8/8/8/8/8/8/8/8 w - - 0 1X",
+    "invalid_board_sum": "4P4/8/8/8/8/8/8/8 w - - 0 1",
+}

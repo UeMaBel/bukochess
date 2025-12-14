@@ -7,6 +7,7 @@ CASTLING_RE = re.compile(r'^(-|[KQkq]{1,4})$')
 ENPASSANT_RE = re.compile(r'^(-|[a-h][36])$')
 HALFMOVE_RE = re.compile(r'^\d+$')
 FULLMOVE_RE = re.compile(r'^[1-9]\d*$')
+PAWN_RE = re.compile(r"[pP]")
 
 
 class BoardBase(ABC):
@@ -25,6 +26,19 @@ class BoardBase(ABC):
 
         if not BOARD_RE.match(board):
             return False, "Invalid board layout"
+
+        board_rows = board.split("/")
+        if PAWN_RE.match(board_rows[0]) or PAWN_RE.match(board_rows[7]):
+            return False, "Invalid Pawn: Pawn on first or last row"
+        for row in board_rows:
+            count = 0
+            for c in row:
+                if c.isdigit():
+                    count += int(c)
+                else:
+                    count += 1
+            if count != 8:
+                return False, "Invalid board sum"
 
         if not ACTIVE_RE.match(active):
             return False, "Active color must be 'w' or 'b'"
