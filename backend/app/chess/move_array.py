@@ -1,7 +1,14 @@
-from typing import Optional, List, Tuple
+from typing import Optional, Tuple, List
+from app.core.utils import measure_time
 
 from app.chess.board_array import BoardArray
-from app.core.utils import measure_time
+from dataclasses import dataclass
+
+
+@dataclass
+class MoveUndo:
+    captured_piece: str
+    active_color: str
 
 
 class MoveArray:
@@ -32,53 +39,37 @@ class MoveArray:
         # TODO: implement piece movement rules, check legality
         return True, None
 
-    def apply(self, board: BoardArray):
+    def is_pseudo_legal(self, board: BoardArray) -> tuple[bool, str | None]:
+        mi = MoveInformation(board, self)
+        return is_pseudo_legal(mi)
+
+    def apply(self, board: BoardArray) -> MoveUndo:
         """
         Apply the move to the board (updates BoardArray in-place).
+        No validation check here
         """
-        # TODO: update board array, active color, castling rights, en passant, halfmove/fullmove counters
-        pass
+
+        piece = board.board[self.from_square[0]][self.from_square[1]]
+        self.captured_piece = board.board[self.to_square[0]][self.to_square[1]]
+        active_color = board.active_color
+        board.board[self.from_square[0]][self.from_square[1]] = ""
+        board.board[self.to_square[0]][self.to_square[1]] = piece
+        board.switch_active_color()
+
+        return MoveUndo(
+            captured_piece=self.captured_piece,
+            active_color=active_color
+        )
+
+    def undo(self, board: BoardArray, undo: MoveUndo):
+        piece = board.board[self.to_square[0]][self.to_square[1]]
+
+        board.board[self.to_square[0]][self.to_square[1]] = undo.captured_piece
+        board.board[self.from_square[0]][self.from_square[1]] = piece
+        board.active_color = undo.active_color
 
 
-class MoveGenerator:
-    """
-    Generates all legal moves for a given BoardArray.
-    """
-
-    def __init__(self, board: BoardArray):
-        self.board = board
-
-    @measure_time
-    def legal_moves(self) -> List[MoveArray]:
-        """
-        Return a list of all legal moves for the current active color.
-        """
-        moves: List[MoveArray] = []
-        active_color = self.board.active_color
-        for from_x in range(0, 8):
-            for from_y in range(0, 8):
-                square = self.board.board[from_x][from_y]
-                if square == "":
-                    continue
-                if active_color == "w" and square.islower():
-                    continue
-                if active_color == "b" and square.isupper():
-                    continue
-                for to_x in range(0, 8):
-                    for to_y in range(0, 8):
-                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y))
-                        valid, _ = is_pseudo_legal(self.board, move)
-                        if valid:
-                            moves.append(move)
-
-        # TODO: filter out moves that leave own king in check
-
-        print(len(moves))
-
-        return moves
-
-
-class MoveInformation():
+class MoveInformation:
     def __init__(self, board: BoardArray, move: MoveArray):
         self.board = board
         self.move = move
@@ -99,12 +90,54 @@ class MoveInformation():
         self.d_y = self.to_y - self.from_y
 
 
-def is_pseudo_legal(board: BoardArray, move: MoveArray) -> tuple[bool, str | None]:
+class MoveGenerator:
+    """
+    Generates all legal moves for a given BoardArray.
+    """
+
+    def __init__(self, board: BoardArray):
+        self.board = board
+
+    @measure_time
+    def legal_moves(self) -> List[MoveArray]:
+        """
+        Return a list of all legal moves for the current active color.
+        """
+        pseudo_legal_moves: List[MoveArray] = []
+        active_color = self.board.active_color
+        for from_x in range(0, 8):
+            for from_y in range(0, 8):
+                square = self.board.board[from_x][from_y]
+                if square == "":
+                    continue
+                if active_color == "w" and square.islower():
+                    continue
+                if active_color == "b" and square.isupper():
+                    continue
+                for to_x in range(0, 8):
+                    for to_y in range(0, 8):
+                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y))
+                        mi = MoveInformation(self.board, move)
+                        valid, _ = is_pseudo_legal(mi)
+                        if valid:
+                            pseudo_legal_moves.append(move)
+
+        # filter out moves that leave own king in check
+        color = self.board.active_color
+        legal_moves = []
+        for move in pseudo_legal_moves:
+            undo = move.apply(self.board)
+            if not self.board.is_king_in_check(color):
+                legal_moves.append(move)
+            move.undo(self.board, undo)
+
+        return legal_moves
+
+
+def is_pseudo_legal(mi: "MoveInformation") -> tuple[bool, str | None]:
     """
     Checks if a move is pseudo-legal
     """
-    mi = MoveInformation(board, move)
-
     if mi.from_x > 7 or mi.from_y > 7 or mi.to_x > 7 or mi.to_y > 7 or mi.from_x < 0 or mi.from_y < 0 or mi.to_y < 0 or mi.to_x < 0:
         return False, "end of board"
     if mi.abs_dx == 0 and mi.abs_dy == 0:
@@ -122,26 +155,21 @@ def is_pseudo_legal(board: BoardArray, move: MoveArray) -> tuple[bool, str | Non
     # piece logics
     if mi.piece == "k":  # KING
         return pseudo_king(mi)
-
     elif mi.piece == "q":  # QUEEN
         return pseudo_queen(mi)
-
     elif mi.piece == "r":  # ROOK
         return pseudo_rook(mi)
-
     elif mi.piece == "b":  # BISHOP
         return pseudo_bishop(mi)
-
     elif mi.piece == "n":  # KNIGHT
         return pseudo_knight(mi)
-
     if mi.piece == "p":  # PAWN
         return pseudo_pawn(mi)
+    else:
+        return False, "error"
 
-    return True, None
 
-
-def pseudo_king(mi: MoveInformation):
+def pseudo_king(mi: "MoveInformation"):
     # check if opponent king is next to to_field
     x_to_check = []
     y_to_check = []
@@ -202,7 +230,7 @@ def pseudo_king(mi: MoveInformation):
     return False, "illegal king movement"
 
 
-def pseudo_queen(mi: MoveInformation):
+def pseudo_queen(mi: "MoveInformation"):
     # first check if diagonal or rank/file movement:
     if mi.abs_dx == mi.abs_dy:  # diagonal movement
         step_x = 1 if mi.d_x > 0 else -1
@@ -230,7 +258,7 @@ def pseudo_queen(mi: MoveInformation):
         return False, "queen can only move ranks, files or diagonally"
 
 
-def pseudo_rook(mi: MoveInformation):
+def pseudo_rook(mi: "MoveInformation"):
     if mi.abs_dx > 0 and mi.abs_dy > 0:
         return False, "rook can only move ranks, or files"
     if mi.abs_dx == 0:
@@ -247,7 +275,7 @@ def pseudo_rook(mi: MoveInformation):
     return True, None
 
 
-def pseudo_bishop(mi: MoveInformation):
+def pseudo_bishop(mi: "MoveInformation"):
     if mi.abs_dy != mi.abs_dx:
         return False, "bishop can only move diagonal"
     step_x = 1 if mi.d_x > 0 else -1
@@ -261,13 +289,13 @@ def pseudo_bishop(mi: MoveInformation):
     return True, None
 
 
-def pseudo_knight(mi: MoveInformation):
+def pseudo_knight(mi: "MoveInformation"):
     if (mi.abs_dx, mi.abs_dy) not in [(1, 2), (2, 1)]:
         return False, "illegal knight move"
     return True, None
 
 
-def pseudo_pawn(mi: MoveInformation):
+def pseudo_pawn(mi: "MoveInformation"):
     direction = -1 if mi.from_square_piece.isupper() else 1
     if mi.to_square_piece != "":  # capture
         if mi.abs_dx == 1 and mi.d_y == direction:

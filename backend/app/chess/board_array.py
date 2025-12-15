@@ -16,6 +16,45 @@ class BoardArray(BoardBase):
         self.halfmove_clock = 0
         self.fullmove_number = 1
 
+    def switch_active_color(self):
+        self.active_color = "b" if self.active_color == "w" else "w"
+
+    def find_king(self, color: str) -> tuple[int, int]:
+        king = "K" if color == "w" else "k"
+        for x in range(8):
+            for y in range(8):
+                if self.board[x][y] == king:
+                    return x, y
+        raise ValueError("King not found")
+
+    def is_king_in_check(self, color: str) -> bool:
+        king_position = self.find_king(color)
+        return self.is_square_attacked(color, king_position)
+
+    def is_square_attacked(self, color: str, position: tuple[int, int]) -> bool:
+        opponent_piece_locations = self.get_pieces_location("w" if color == "b" else "b")
+
+        from app.chess.move_array import MoveArray
+        
+        for piece_location in opponent_piece_locations:
+            move = MoveArray(piece_location, position)
+            valid = move.is_pseudo_legal(self)
+            if valid[0]:
+                return True
+        return False
+
+    def get_pieces_location(self, color: str) -> List[tuple[int, int]]:
+        pieces = []
+        for x in range(8):
+            for y in range(8):
+                if self.board[x][y] == "":
+                    continue
+                if self.board[x][y].isupper() and color == "w":
+                    pieces.append((x, y))
+                elif self.board[x][y].islower() and color == "b":
+                    pieces.append((x, y))
+        return pieces
+
     def from_fen(self, fen: str):
         valid, message = self.validate_fen(fen)
         if not valid:
