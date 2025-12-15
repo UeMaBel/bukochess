@@ -11,6 +11,7 @@ class MoveUndo:
     captured_piece: str
     active_color: str
     en_passant: str
+    promotion: bool
 
 
 class MoveArray:
@@ -70,18 +71,31 @@ class MoveArray:
             board.en_passant = int_tuple_to_notation((passed_over_row, passed_over_col))
         else:
             board.en_passant = "-"  # no en passant possible
+        promotion_flag = False
+        # Promotion logic
+        if piece.lower() == "p" and (self.to_square[0] == 0 or self.to_square[0] == 7):
+            if self.promotion is None:
+                promotion_piece = "q" if piece.islower() else "Q"  # default queen
+            else:
+                promotion_piece = self.promotion.upper() if piece.isupper() else self.promotion.lower()
+            board.board[self.to_square[0]][self.to_square[1]] = promotion_piece
+            promotion_flag = True
+        else:
+            board.board[self.to_square[0]][self.to_square[1]] = piece
 
-        board.board[self.to_square[0]][self.to_square[1]] = piece
         board.switch_active_color()
 
         return MoveUndo(
             captured_piece=self.captured_piece,
             active_color=active_color,
-            en_passant=old_en_passant
+            en_passant=old_en_passant,
+            promotion=promotion_flag
         )
 
     def undo(self, board: BoardArray, undo: MoveUndo):
         piece = board.board[self.to_square[0]][self.to_square[1]]
+        if undo.promotion:
+            piece = "P" if piece.isupper() else "p"
 
         board.board[self.to_square[0]][self.to_square[1]] = undo.captured_piece
         board.board[self.from_square[0]][self.from_square[1]] = piece
