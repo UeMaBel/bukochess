@@ -91,4 +91,46 @@ def test_king_moves(start_board):
     start_board.board[6][4] = ""
     move = MoveArray((7, 4), (6, 4))
     valid, msg = is_pseudo_legal(start_board, move)
+
     assert valid
+
+
+@pytest.fixture
+def empty_castling_board():
+    board = BoardArray()
+    board.from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
+    return board
+
+
+def test_white_kingside_castling_pseudo_legal(empty_castling_board):
+    # King e1 -> g1
+    move = MoveArray((7, 4), (7, 6))
+    valid, msg = is_pseudo_legal(empty_castling_board, move)
+    assert valid, msg
+
+
+def test_white_queenside_castling_pseudo_legal(empty_castling_board):
+    # King e1 -> c1
+    move = MoveArray((7, 4), (7, 2))
+    valid, msg = is_pseudo_legal(empty_castling_board, move)
+    assert valid, msg
+
+
+def test_black_kingside_castling_pseudo_legal():
+    board = BoardArray()
+    board.from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1")
+
+    # King e8 -> g8
+    move = MoveArray((0, 4), (0, 6))
+    valid, msg = is_pseudo_legal(board, move)
+    assert valid, msg
+
+
+def test_black_queenside_castling_pseudo_legal():
+    board = BoardArray()
+    board.from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1")
+
+    # King e8 -> c8
+    move = MoveArray((0, 4), (0, 2))
+    valid, msg = is_pseudo_legal(board, move)
+    assert valid, msg
