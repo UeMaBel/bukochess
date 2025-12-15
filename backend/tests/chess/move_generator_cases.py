@@ -32,4 +32,12 @@ TEST_POSITIONS = {
         "fen": "8/3k4/8/b7/8/2P5/3K4/8 b - - 0 1",
         "expected_moves": 13
     },
+    "black_after_en_passant": {
+        "fen": "rnbqkb1r/pppp1ppp/4Pn2/8/8/8/PPP1PPPP/RNBQKBNR b KQkq - 0 3",
+        "expected_moves": 29
+    },
+    "white_en_passant": {
+        "fen": "rnbqkb1r/pppp1ppp/5n2/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3",
+        "expected_moves": 30
+    }
 }

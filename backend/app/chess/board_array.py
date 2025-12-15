@@ -35,7 +35,7 @@ class BoardArray(BoardBase):
         opponent_piece_locations = self.get_pieces_location("w" if color == "b" else "b")
 
         from app.chess.move_array import MoveArray
-        
+
         for piece_location in opponent_piece_locations:
             move = MoveArray(piece_location, position)
             valid = move.is_pseudo_legal(self)

@@ -1,0 +1,15 @@
+def notation_to_int_tuple(notation: str) -> tuple[int, int]:
+    file = notation[0].lower()  # 'a'..'h'
+    rank = notation[1]  # '1'..'8'
+
+    y = ord(file) - ord("a")
+    x = 8 - int(rank)
+
+    return x, y
+
+
+def int_tuple_to_notation(square: tuple[int, int]) -> str:
+    x, y = square
+    file = chr(ord("a") + y)
+    rank = str(8 - x)
+    return file + rank

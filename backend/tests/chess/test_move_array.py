@@ -31,6 +31,14 @@ def test_pawn_moves(start_board):
     valid, msg = is_pseudo_legal(mi)
     assert not valid
 
+    # en passant white
+    en_passant_board = BoardArray()
+    en_passant_board.from_fen("rnbqkb1r/pppp1ppp/5n2/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3")
+    move = MoveArray((3, 3), (2, 4))
+    mi = MoveInformation(en_passant_board, move)
+    valid, msg = is_pseudo_legal(mi)
+    assert valid
+
 
 def test_knight_moves(start_board):
     # White knight g1 -> f3

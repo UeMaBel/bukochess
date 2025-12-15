@@ -3,12 +3,14 @@ from app.core.utils import measure_time
 
 from app.chess.board_array import BoardArray
 from dataclasses import dataclass
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation
 
 
 @dataclass
 class MoveUndo:
     captured_piece: str
     active_color: str
+    en_passant: str
 
 
 class MoveArray:
@@ -50,15 +52,32 @@ class MoveArray:
         """
 
         piece = board.board[self.from_square[0]][self.from_square[1]]
-        self.captured_piece = board.board[self.to_square[0]][self.to_square[1]]
+        old_en_passant = board.en_passant
+        if not self.en_passant:
+            self.captured_piece = board.board[self.to_square[0]][self.to_square[1]]
+        else:
+            self.captured_piece = board.board[self.from_square[0]][self.to_square[1]]
         active_color = board.active_color
         board.board[self.from_square[0]][self.from_square[1]] = ""
+        if self.en_passant:
+            board.board[self.from_square[0]][self.to_square[1]] = ""
+
+        # Update en passant target
+        if piece.lower() == "p" and abs(self.from_square[0] - self.to_square[0]) == 2:
+            # Square pawn passed over
+            passed_over_row = (self.from_square[0] + self.to_square[0]) // 2
+            passed_over_col = self.from_square[1]
+            board.en_passant = int_tuple_to_notation((passed_over_row, passed_over_col))
+        else:
+            board.en_passant = "-"  # no en passant possible
+
         board.board[self.to_square[0]][self.to_square[1]] = piece
         board.switch_active_color()
 
         return MoveUndo(
             captured_piece=self.captured_piece,
-            active_color=active_color
+            active_color=active_color,
+            en_passant=old_en_passant
         )
 
     def undo(self, board: BoardArray, undo: MoveUndo):
@@ -67,6 +86,7 @@ class MoveArray:
         board.board[self.to_square[0]][self.to_square[1]] = undo.captured_piece
         board.board[self.from_square[0]][self.from_square[1]] = piece
         board.active_color = undo.active_color
+        board.en_passant = undo.en_passant
 
 
 class MoveInformation:
@@ -308,4 +328,12 @@ def pseudo_pawn(mi: "MoveInformation"):
         start_row = 6 if mi.from_square_piece.isupper() else 1
         if mi.from_x == start_row and mi.d_x == 2 * direction and mi.d_y == 0:
             return True, None
+        # en passant logic
+        en_passant_row = 3 if mi.from_square_piece.isupper() else 4
+        if mi.from_x == en_passant_row:
+            if mi.board.en_passant != "-":
+                en_passant_pos = notation_to_int_tuple(mi.board.en_passant)
+                if mi.to_x == en_passant_pos[0] and mi.to_y == en_passant_pos[1]:
+                    mi.move.en_passant = True
+                    return True, None
         return False, "illegal pawn move"
