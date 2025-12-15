@@ -14,6 +14,7 @@ Create a new branch for every feature or fix:
 - fix/<name>       – Bug fixes
 - refactor/<name>  – Structural improvements, no behavior changes
 - docs/<name>      – Documentation updates
+- tests/<name>		- Tests and bugfixes that come up while testing
 
 
 **Examples:**
