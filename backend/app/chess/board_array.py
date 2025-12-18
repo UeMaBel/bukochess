@@ -28,9 +28,39 @@ class BoardArray(BoardBase):
         repetition_key += self.en_passant
         return repetition_key
 
-    def is_threefold_repetition(self):
+    def is_threefold_repetition(self) -> bool:
         key = self.create_repetition_key()
         return self.position_counts.get(key, 0) >= 3
+
+    def is_insufficient_material(self) -> bool:
+        pieces = []
+
+        for x in range(8):
+            for y in range(8):
+                p = self.board[x][y]
+                if p != "":
+                    pieces.append((p, (x, y)))
+
+        # Any pawn, rook or queen → mating material exists
+        for p, _ in pieces:
+            if p.lower() in ("p", "r", "q"):
+                return False
+
+        bishops = []
+        knights = []
+
+        for p, (x, y) in pieces:
+            if p.lower() == "b":
+                bishops.append((p, x, y))
+            elif p.lower() == "n":
+                knights.append(p)
+        if len(pieces) == 2 or len(pieces) == 3:
+            return True  # K vs K # or minor vs king
+        if len(pieces) == 4 and len(bishops) == 2:
+            # Square color = (x + y) % 2
+            colors = [(x + y) % 2 for _, x, y in bishops]
+            return colors[0] == colors[1]
+        return False
 
     def find_king(self, color: str) -> tuple[int, int]:
         king = "K" if color == "w" else "k"
