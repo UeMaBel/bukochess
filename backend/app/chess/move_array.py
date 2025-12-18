@@ -178,10 +178,10 @@ def is_pseudo_legal(mi: "MoveInformation") -> tuple[bool, str | None]:
         return False, "piece didnt move"
     if mi.from_square_piece == "":
         return False, "no piece selected"
-    if mi.active_color == "b" and mi.from_square_piece.isupper():
-        return False, "blacks turn"
-    if mi.active_color == "w" and not mi.from_square_piece.isupper():
-        return False, "whites turn"
+    # if mi.active_color == "b" and mi.from_square_piece.isupper():
+    #    return False, "blacks turn"
+    # if mi.active_color == "w" and not mi.from_square_piece.isupper():
+    #    return False, "whites turn"
     if mi.to_square_piece != "":
         if mi.to_square_piece.isupper() == mi.from_square_piece.isupper():
             return False, "cant capture same color"

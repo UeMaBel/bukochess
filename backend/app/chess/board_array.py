@@ -31,11 +31,32 @@ class BoardArray(BoardBase):
         king_position = self.find_king(color)
         return self.is_square_attacked(color, king_position)
 
+    def has_legal_moves(self, color: str) -> bool:
+        from app.chess.move_array import MoveGenerator
+        current_color = self.active_color
+        self.active_color = color
+
+        moves = MoveGenerator(self).legal_moves()
+
+        self.active_color = current_color
+        return len(moves) > 0
+
+    def is_checkmate(self, color: str) -> bool:
+        return (
+                self.is_king_in_check(color)
+                and not self.has_legal_moves(color)
+        )
+
+    def is_stalemate(self, color: str) -> bool:
+        return (
+                not self.is_king_in_check(color)
+                and not self.has_legal_moves(color)
+        )
+
     def is_square_attacked(self, color: str, position: tuple[int, int]) -> bool:
         opponent_piece_locations = self.get_pieces_location("w" if color == "b" else "b")
 
         from app.chess.move_array import MoveArray
-
         for piece_location in opponent_piece_locations:
             move = MoveArray(piece_location, position)
             valid = move.is_pseudo_legal(self)

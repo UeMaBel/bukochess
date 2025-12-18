@@ -21,10 +21,19 @@ def test_legal_moves_basic(name):
 
     assert moves is not None
     assert isinstance(moves, list)
-
     if pos["expected_moves"] is not None:
         assert len(moves) == pos["expected_moves"], (
             f"{name}: expected {pos['expected_moves']} moves, got {len(moves)}"
+        )
+    if name == "checkmate_white":
+        a = 33
+    if pos["is_checkmate"] is not None:
+        assert board.is_checkmate(board.active_color) == pos["is_checkmate"], (
+            f"{name}: expected checkmate = {pos["is_checkmate"]}"
+        )
+    if pos["is_stalemate"] is not None:
+        assert board.is_stalemate(board.active_color) == pos["is_stalemate"], (
+            f"{name}: expected stalemate = {pos["is_stalemate"]}"
         )
 
 
