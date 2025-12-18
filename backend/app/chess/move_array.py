@@ -12,6 +12,7 @@ class MoveUndo:
     active_color: str
     en_passant: str
     promotion: bool
+    repetition_key: str
 
 
 class MoveArray:
@@ -85,11 +86,15 @@ class MoveArray:
 
         board.switch_active_color()
 
+        repetition_key = board.create_repetition_key()
+        board.position_counts[repetition_key] = board.position_counts.get(repetition_key, 0) + 1
+
         return MoveUndo(
             captured_piece=self.captured_piece,
             active_color=active_color,
             en_passant=old_en_passant,
-            promotion=promotion_flag
+            promotion=promotion_flag,
+            repetition_key=repetition_key
         )
 
     def undo(self, board: BoardArray, undo: MoveUndo):
@@ -101,6 +106,9 @@ class MoveArray:
         board.board[self.from_square[0]][self.from_square[1]] = piece
         board.active_color = undo.active_color
         board.en_passant = undo.en_passant
+        board.position_counts[undo.repetition_key] -= 1
+        if board.position_counts[undo.repetition_key] == 0:
+            del board.position_counts[undo.repetition_key]
 
 
 class MoveInformation:

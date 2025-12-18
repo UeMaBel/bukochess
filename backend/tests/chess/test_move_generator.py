@@ -35,6 +35,10 @@ def test_legal_moves_basic(name):
         assert board.is_stalemate(board.active_color) == pos["is_stalemate"], (
             f"{name}: expected stalemate = {pos["is_stalemate"]}"
         )
+    if pos["is_threefold_rep"] is not None:
+        assert board.is_threefold_repetition() == pos["is_threefold_rep"], (
+            f"{name}: expected is_threefold_rep = {pos["is_threefold_rep"]}"
+        )
 
 
 # -----------------------------

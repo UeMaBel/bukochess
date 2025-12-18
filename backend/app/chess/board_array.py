@@ -15,9 +15,22 @@ class BoardArray(BoardBase):
         self.en_passant = "-"
         self.halfmove_clock = 0
         self.fullmove_number = 1
+        self.position_counts: dict[str, int]
+        self.position_counts = {}
 
     def switch_active_color(self):
         self.active_color = "b" if self.active_color == "w" else "w"
+
+    def create_repetition_key(self):
+        repetition_key = self.to_fen().split()[0]
+        repetition_key += self.active_color
+        repetition_key += self.castling_rights
+        repetition_key += self.en_passant
+        return repetition_key
+
+    def is_threefold_repetition(self):
+        key = self.create_repetition_key()
+        return self.position_counts.get(key, 0) >= 3
 
     def find_king(self, color: str) -> tuple[int, int]:
         king = "K" if color == "w" else "k"
@@ -105,6 +118,8 @@ class BoardArray(BoardBase):
         self.en_passant = ep
         self.halfmove_clock = int(halfmove)
         self.fullmove_number = int(fullmove)
+
+        self.position_counts[self.create_repetition_key()] = 1
 
         return True, "FEN Imported"
 
