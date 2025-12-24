@@ -5,9 +5,10 @@ from app.chess.move_array import MoveGenerator
 def perft(board: BoardArray, depth: int) -> int:
     if depth == 0:
         return 1
-
     nodes = 0
     generator = MoveGenerator(board)
+    if depth == 1:
+        a = 33
     moves = generator.legal_moves()
 
     for move in moves:

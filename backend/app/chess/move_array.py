@@ -3,7 +3,7 @@ from app.core.utils import measure_time
 
 from app.chess.board_array import BoardArray
 from dataclasses import dataclass
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation
 
 
 @dataclass
@@ -32,8 +32,23 @@ class MoveArray:
 
         # Optional metadata
         self.captured_piece: Optional[str] = None
-        self.castling: Optional[str] = None
+        self.castling: Optional[str] = ""
         self.en_passant: bool = False
+
+    def to_uci(self) -> str:
+        """
+        UCI-style move notation: e2e4, e7e8q
+        """
+        from_sq = square_to_notation(self.from_square)
+        to_sq = square_to_notation(self.to_square)
+
+        if self.promotion:
+            return f"{from_sq}{to_sq}{self.promotion.lower()}"
+
+        return f"{from_sq}{to_sq}"
+
+    def __str__(self) -> str:
+        return self.to_uci()
 
     def is_legal(self, board: BoardArray) -> Tuple[bool, Optional[str]]:
         """
@@ -54,6 +69,14 @@ class MoveArray:
         """
 
         piece = board.board[self.from_square[0]][self.from_square[1]]
+        if piece.lower() == "k":
+            # check if castling:
+            if self.castling.lower() == "q":
+                board.board[self.from_square[0]][0] = ""
+                board.board[self.from_square[0]][3] = "r" if piece.islower() else "R"
+            elif self.castling.lower() == "k":
+                board.board[self.from_square[0]][7] = ""
+                board.board[self.from_square[0]][5] = "r" if piece.islower() else "R"
         old_en_passant = board.en_passant
         if not self.en_passant:
             self.captured_piece = board.board[self.to_square[0]][self.to_square[1]]
@@ -75,8 +98,9 @@ class MoveArray:
         promotion_flag = False
         # Promotion logic
         if piece.lower() == "p" and (self.to_square[0] == 0 or self.to_square[0] == 7):
-            if self.promotion is None:
+            if self.promotion is None or self.promotion == "":
                 promotion_piece = "q" if piece.islower() else "Q"  # default queen
+                self.promotion = promotion_piece
             else:
                 promotion_piece = self.promotion.upper() if piece.isupper() else self.promotion.lower()
             board.board[self.to_square[0]][self.to_square[1]] = promotion_piece
@@ -109,6 +133,12 @@ class MoveArray:
         board.position_counts[undo.repetition_key] -= 1
         if board.position_counts[undo.repetition_key] == 0:
             del board.position_counts[undo.repetition_key]
+        if self.castling.lower() == "q":
+            board.board[self.from_square[0]][0] = "r" if piece.islower() else "R"
+            board.board[self.from_square[0]][3] = ""
+        if self.castling.lower() == "k":
+            board.board[self.from_square[0]][5] = ""
+            board.board[self.from_square[0]][7] = "r" if piece.islower() else "R"
 
 
 class MoveInformation:
@@ -140,7 +170,6 @@ class MoveGenerator:
     def __init__(self, board: BoardArray):
         self.board = board
 
-    @measure_time
     def legal_moves(self) -> List[MoveArray]:
         """
         Return a list of all legal moves for the current active color.
@@ -158,7 +187,7 @@ class MoveGenerator:
                     continue
                 for to_x in range(0, 8):
                     for to_y in range(0, 8):
-                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y))
+                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y), promotion="")
                         mi = MoveInformation(self.board, move)
                         valid, _ = is_pseudo_legal(mi)
                         if valid:
@@ -167,10 +196,36 @@ class MoveGenerator:
         # filter out moves that leave own king in check
         color = self.board.active_color
         legal_moves = []
+        new_legal_moves = []
         for move in pseudo_legal_moves:
+            if str(move) == "f6g4":
+                a = 33
+            undo = move.apply(self.board)
+            if not self.board.is_king_in_check(color):
+                if move.castling != "":  # check if castling was legal
+                    if move.castling.lower() == "k":  # kingside castle:
+                        if self.board.is_square_attacked(color, (move.from_square[0], move.from_square[1] + 1)):
+                            move.undo(self.board, undo)
+                            continue
+                    if move.castling.lower() == "q":
+                        if self.board.is_square_attacked(color, (move.to_square[0], move.to_square[1] + 1)):
+                            move.undo(self.board, undo)
+                            continue
+                legal_moves.append(move)
+            move.undo(self.board, undo)
+            if undo.promotion:  # create other possibilities then queen promotion
+
+                new_legal_moves.append(
+                    MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="b"))
+                new_legal_moves.append(
+                    MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="n"))
+                new_legal_moves.append(
+                    MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="r"))
+        for move in new_legal_moves:
             undo = move.apply(self.board)
             if not self.board.is_king_in_check(color):
                 legal_moves.append(move)
+
             move.undo(self.board, undo)
 
         return legal_moves
@@ -215,6 +270,10 @@ def pseudo_king(mi: "MoveInformation"):
     # check if opponent king is next to to_field
     x_to_check = []
     y_to_check = []
+    if mi.abs_dx != 0 and mi.abs_dx != 1 and mi.abs_dx != 2:
+        return False, "illegal king move"
+    if mi.abs_dy != 0 and mi.abs_dy != 1 and mi.abs_dy != 2:
+        return False, "illegal king move"
     if mi.to_x != 0:
         x_to_check.append(mi.to_x - 1)
     if mi.to_x != 7:
@@ -246,6 +305,7 @@ def pseudo_king(mi: "MoveInformation"):
 
             rook_y = 7
             path = [(mi.from_x, 5), (mi.from_x, 6)]
+            mi.move.castling = "k"
 
         # queenside castle
         else:
@@ -254,6 +314,7 @@ def pseudo_king(mi: "MoveInformation"):
 
             rook_y = 0
             path = [(mi.from_x, 3), (mi.from_x, 2), (mi.from_x, 1)]
+            mi.move.castling = "q"
 
         rook_char = "R" if is_white else "r"
         if mi.board.board[mi.from_x][rook_y] != rook_char:
@@ -338,9 +399,13 @@ def pseudo_knight(mi: "MoveInformation"):
 
 
 def pseudo_pawn(mi: "MoveInformation"):
+    if mi.abs_dy != 0 and mi.abs_dy != 1:
+        return False, "illegal pawn move"
+    if mi.abs_dx != 1 and mi.abs_dx != 2:
+        return False, "illegal pawn move"
     direction = -1 if mi.from_square_piece.isupper() else 1
     if mi.to_square_piece != "":  # capture
-        if mi.abs_dx == 1 and mi.d_y == direction:
+        if mi.d_x == direction and mi.abs_dy == 1:
             return True, None
         else:
             return False, "illegal pawn capture"
@@ -349,7 +414,10 @@ def pseudo_pawn(mi: "MoveInformation"):
             return True, None
         start_row = 6 if mi.from_square_piece.isupper() else 1
         if mi.from_x == start_row and mi.d_x == 2 * direction and mi.d_y == 0:
-            return True, None
+            if mi.board.board[mi.to_x - direction][mi.to_y] == "":
+                return True, None
+            else:
+                return False, "two-move pawn not possible"
         # en passant logic
         en_passant_row = 3 if mi.from_square_piece.isupper() else 4
         if mi.from_x == en_passant_row:

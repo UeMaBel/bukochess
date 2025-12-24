@@ -1,6 +1,6 @@
 import pytest
 from app.chess.board_array import BoardArray
-from app.chess.move_array import MoveArray
+from app.chess.move_array import MoveArray, MoveGenerator
 
 
 def test_apply_undo_normal_move():
@@ -40,6 +40,26 @@ def test_apply_undo_capture():
     assert board.board[4][4] == "P"
     assert board.board[3][3] == "p"
     assert board.active_color == "w"
+
+
+def test_casling():
+    fen = "r3k1r1/8/8/8/8/8/8/R3K2R b KQq - 0 1"
+    possible_moves = 25
+    board = BoardArray()
+    board.from_fen(fen)
+
+    move1 = MoveArray(from_square=(0, 0), to_square=(0, 1))
+    undo1 = move1.apply(board)
+    move1.undo(board, undo1)
+    move1.apply(board)
+
+    generator = MoveGenerator(board)
+    moves = generator.legal_moves()
+
+    for m in moves:
+        print(str(m))
+
+    assert len(moves) == possible_moves
 
 
 def test_apply_undo_en_passant():
