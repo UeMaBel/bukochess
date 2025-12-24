@@ -1,5 +1,4 @@
-from app.chess.board_array import BoardArray
-from app.chess.engines.random_engine import RandomEngine
+from app.chess.engines.random_engine import RandomEngine, BoardArray
 
 board = BoardArray()
 board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")

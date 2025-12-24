@@ -70,12 +70,14 @@ class BoardArray(BoardBase):
                     return x, y
         raise ValueError("King not found")
 
-    def is_king_in_check(self, color: str) -> bool:
+    def is_king_in_check(self, color="") -> bool:
+        if color == "": color = self.active_color
         king_position = self.find_king(color)
         return self.is_square_attacked(color, king_position)
 
     def has_legal_moves(self, color: str) -> bool:
         from app.chess.move_array import MoveGenerator
+        if color == "": color = self.active_color
         current_color = self.active_color
         self.active_color = color
 
@@ -84,13 +86,20 @@ class BoardArray(BoardBase):
         self.active_color = current_color
         return len(moves) > 0
 
-    def is_checkmate(self, color: str) -> bool:
+    def is_checkmate(self, color="") -> bool:
+        if color == "": color = self.active_color
         return (
                 self.is_king_in_check(color)
                 and not self.has_legal_moves(color)
         )
 
-    def is_stalemate(self, color: str) -> bool:
+    def is_draw(self, color="") -> bool:
+        if color == "": color = self.active_color
+        # TODO: implement draw
+        return self.is_threefold_repetition()
+
+    def is_stalemate(self, color="") -> bool:
+        if color == "": color = self.active_color
         return (
                 not self.is_king_in_check(color)
                 and not self.has_legal_moves(color)
@@ -106,6 +115,18 @@ class BoardArray(BoardBase):
             if valid[0]:
                 return True
         return False
+
+    def get_game_state(self):
+        color = self.active_color
+        if self.is_checkmate(color):
+            return "checkmate"
+        if self.is_insufficient_material():
+            return "insufficient_material"
+        if self.is_stalemate(color):
+            return "stalemate"
+        if self.is_king_in_check(color):
+            return "check"
+        return "ok"
 
     def get_pieces_location(self, color: str) -> List[tuple[int, int]]:
         pieces = []

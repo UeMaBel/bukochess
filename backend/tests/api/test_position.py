@@ -6,6 +6,8 @@ from tests.chess.fen_cases import VALID_FENS, INVALID_FENS
 
 client = TestClient(app)
 
+START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 
 # ---------------------------
 # /fen endpoint
@@ -50,3 +52,44 @@ def test_validate_fen_invalid(name, fen):
     data = response.json()
     assert data["valid"] is False
     assert data["message"] is not None
+
+
+def test_legal_moves_from_e2():
+    resp = client.post(
+        "/api/v1/position/legal-moves",
+        json={
+            "fen": START_FEN,
+            "square": "e2",
+        },
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert "moves" in data
+    assert "e2e4" in data["moves"]
+    assert "e2e3" in data["moves"]
+    assert len(data["moves"]) == 2
+
+
+def test_legal_moves_start_position():
+    resp = client.post("/api/v1/position/legal-moves", json={
+        "fen": START_FEN,
+        "square": ""
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    moves = data["moves"]
+    assert len(moves) == 20
+
+
+def test_legal_moves_invalid_fen():
+    resp = client.post(
+        "/api/v1/position/legal-moves",
+        json={
+            "fen": "invalid fen",
+            "square": "e2",
+        },
+    )
+
+    assert resp.status_code == 400

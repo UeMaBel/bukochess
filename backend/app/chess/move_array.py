@@ -35,6 +35,17 @@ class MoveArray:
         self.castling: Optional[str] = ""
         self.en_passant: bool = False
 
+    @staticmethod
+    def from_uci(uci: str) -> "MoveArray":
+        if len(uci) not in (4, 5):
+            raise ValueError
+
+        from_sq = notation_to_int_tuple(uci[:2])
+        to_sq = notation_to_int_tuple(uci[2:4])
+        promotion = uci[4] if len(uci) == 5 else None
+
+        return MoveArray(from_sq, to_sq, promotion)
+
     def to_uci(self) -> str:
         """
         UCI-style move notation: e2e4, e7e8q
