@@ -117,16 +117,14 @@ class BoardArray(BoardBase):
         return False
 
     def get_game_state(self):
-        color = self.active_color
-        if self.is_checkmate(color):
-            return "checkmate"
-        if self.is_insufficient_material():
-            return "insufficient_material"
-        if self.is_stalemate(color):
-            return "stalemate"
-        if self.is_king_in_check(color):
-            return "check"
-        return "ok"
+        status = "ok"
+        if self.is_stalemate():
+            status = "stalemate"
+        if self.is_draw():
+            status = "draw"
+        if self.is_checkmate():
+            status = "checkmate"
+        return status
 
     def get_pieces_location(self, color: str) -> List[tuple[int, int]]:
         pieces = []

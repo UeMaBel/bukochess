@@ -16,6 +16,7 @@ class EngineMoveRequest(BaseModel):
 class EngineMoveResponse(BaseModel):
     fen: str
     move: str
+    status: str
 
 
 @router.post("/move", response_model=EngineMoveResponse)
@@ -36,8 +37,10 @@ def engine_move(req: EngineMoveRequest):
         raise BukochessException("No legal moves")
 
     undo = move.apply(board)
+    status = board.get_game_state()
 
     return EngineMoveResponse(
         fen=board.to_fen(),
         move=str(move),
+        status=status,
     )

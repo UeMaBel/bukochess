@@ -78,14 +78,8 @@ def game_status(req: GameStatusRequest):
     active = board.active_color
 
     in_check = board.is_king_in_check(active)
-    
-    status = "ok"
-    if board.is_stalemate():
-        status = "stalemate"
-    if board.is_draw():
-        status = "draw"
-    if board.is_checkmate():
-        status = "checkmate"
+
+    status = board.get_game_state()
 
     return GameStatusResponse(
         fen=req.fen,
