@@ -122,6 +122,8 @@ class BoardArray(BoardBase):
             status = "stalemate"
         if self.is_draw():
             status = "draw"
+        if self.is_king_in_check():
+            status = "check"
         if self.is_checkmate():
             status = "checkmate"
         return status
