@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 
 import { importFEN } from "../api/position";
 import { makeMove } from "../api/game";
+import { gameStatus } from "../api/game";
+
 import { getEngineMove } from "../api/engine";
 import { useGameStore } from "../store/gameStore";
 import { EngineSelector } from "./EngineSelector";
@@ -24,6 +26,23 @@ export const BoardWrapper: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 const [shake, setShake] = useState(false);
 const [dragFrom, setDragFrom] = useState<string | null>(null);
+const [inCheck, setInCheck] = useState(false);
+const [activeColor, setActiveColor] = useState<"w" | "b">("w");
+const isKing = (sq: string) =>
+  sq === (activeColor === "w" ? "K" : "k");
+
+useEffect(() => {
+  if (!fen) return;
+
+  gameStatus({ fen })
+    .then((res) => {
+      setInCheck(res.in_check);
+      setActiveColor(res.active_color);
+    })
+    .catch(() => {
+      setInCheck(false);
+    });
+}, [fen]);
 
 const squareName = (r: number, f: number) =>
   files[f] + (8 - r);
@@ -59,7 +78,8 @@ const onUserMove = async (uci: string) => {
         {rank.map((sq, f) => (
           <div
             key={f}
-          className={`chess-square ${(r + f) % 2 === 0 ? "light" : "dark"}`}
+          className={`chess-square ${(r + f) % 2 === 0 ? "light" : "dark"}
+          ${inCheck && isKing(sq) ? "check" : ""}`}
           draggable={sq !== "."}
           onDragStart={() => setDragFrom(squareName(r, f))}
           onDragOver={(e) => e.preventDefault()}
