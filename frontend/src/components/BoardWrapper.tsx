@@ -20,8 +20,9 @@ export const BoardWrapper: React.FC = () => {
   const [status, setStatus] = useState<string>("");
   const [moveInput, setMoveInput] = useState("");
   const files = ["a","b","c","d","e","f","g","h"];
-const ranks = ["8","7","6","5","4","3","2","1"];
-
+    const ranks = ["8","7","6","5","4","3","2","1"];
+    const [error, setError] = useState<string | null>(null);
+const [shake, setShake] = useState(false);
 
   // load board from FEN
   useEffect(() => {
@@ -29,17 +30,21 @@ const ranks = ["8","7","6","5","4","3","2","1"];
   }, [fen]);
 
   // user makes a move (uci: e2e4)
-  const onUserMove = async (uci: string) => {
+const onUserMove = async (uci: string) => {
+  try {
+    setError(null);
     const res = await makeMove(fen, uci);
     setFen(res.fen);
     setStatus(res.status);
+  } catch (e: any) {
+    setError(e.message);
+    setShake(true);
 
-    if (vsEngine && res.status === "ongoing") {
-      const eng = await getEngineMove(res.fen, engine);
-      setFen(eng.fen);
-      setStatus(eng.status);
-    }
-  };
+    setTimeout(() => setShake(false), 300);
+    setTimeout(() => setError(null), 2000);
+  }
+};
+
 
   const renderBoard = () => (
 
@@ -86,6 +91,7 @@ const ranks = ["8","7","6","5","4","3","2","1"];
       </div>
       <div />
     </div>
+
     );
 
 
@@ -106,6 +112,7 @@ const ranks = ["8","7","6","5","4","3","2","1"];
         />
         <div>
           <input
+                className={shake ? "shake" : ""}
               type="text"
               placeholder="e2e4"
               onKeyDown={(e) => {
@@ -119,6 +126,11 @@ const ranks = ["8","7","6","5","4","3","2","1"];
 
         </div>
       </div>
+      {error && (
+      <div className="error-message fade" style={{ color: "red", marginTop: 8 }}>
+        {error}
+      </div>
+    )}
     </div>
   );
 };

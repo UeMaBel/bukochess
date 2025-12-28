@@ -53,3 +53,29 @@
   text-align: center;
   font-size: 12px;
 }
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.shake {
+  animation: shake 0.3s;
+}
+
+.error-message {
+  color: red;
+  margin-top: 8px;
+}
+
+.error-message.fade {
+  animation: fadeOut 2s forwards;
+}
