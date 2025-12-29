@@ -12,6 +12,22 @@ import { EngineSelector } from "./EngineSelector";
 import "../styles/board.css";
 
 
+const PIECE_UNICODE: Record<string, string> = {
+  p: "♟",
+  r: "♜",
+  n: "♞",
+  b: "♝",
+  q: "♛",
+  k: "♚",
+  P: "♙",
+  R: "♖",
+  N: "♘",
+  B: "♗",
+  Q: "♕",
+  K: "♔",
+};
+
+
 const START_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -35,8 +51,6 @@ const [legalMoves, setLegalMoves] = useState<string[]>([]);
 
 const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
 const [premove, setPremove] = useState<string | null>(null);
-
-
 
 useEffect(() => {
   if (!fen) return;
@@ -109,18 +123,21 @@ const renderBoard = () => (
           const isTarget =
             selectedSquare &&
             legalMoves.includes(selectedSquare + square);
-
+          const isWhitePiece = sq !== "." && sq === sq.toUpperCase();
+          const isBlackPiece = sq !== "." && sq === sq.toLowerCase();
           return (
             <div
               key={f}
               className={`chess-square
                 ${(r + f) % 2 === 0 ? "light" : "dark"}
                 ${isTarget ? "legal-target" : ""}
+                ${isWhitePiece ? "piece-white" : ""}
+                ${isBlackPiece ? "piece-black" : ""}
               `}
               onClick={() => onSquareClick(square)}
               draggable={sq !== "."}
             >
-              {sq}
+              {sq !== "." ? PIECE_UNICODE[sq] : ""}
             </div>
           );
         })}
