@@ -1,12 +1,20 @@
 import React from "react";
-import { useGameStore } from "../store/gameStore";
 
-export const EngineSelector: React.FC = () => {
-  const { engine, setEngine } = useGameStore();
+interface EngineSelectorProps {
+  playerColor: "w" | "b";
+  value: string;
+  onChange: (val: string) => void;
+}
+
+export const EngineSelector: React.FC<EngineSelectorProps> = ({ playerColor, value, onChange }) => {
   return (
-    <select value={engine} onChange={(e) => setEngine(e.target.value as string)}>
-      <option value="random">Random</option>
-      {/* add more engines later */}
-    </select>
+    <div>
+      <label>{playerColor === "w" ? "White" : "Black"}: </label>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="human">Human</option>
+        <option value="random">Random Engine</option>
+        {/* add more engines later */}
+      </select>
+    </div>
   );
 };

@@ -49,6 +49,8 @@ export const BoardWrapper: React.FC = () => {
 
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
     const [premove, setPremove] = useState<string | null>(null);
+    const [whitePlayer, setWhitePlayer] = useState<"human" | string>("human");
+    const [blackPlayer, setBlackPlayer] = useState<"human" | string>("random"); // example engine
 
 
   // update status and legal moves on FEN change
@@ -69,6 +71,29 @@ export const BoardWrapper: React.FC = () => {
   useEffect(() => {
     importFEN(fen).then((res) => setBoard(res.board));
   }, [fen]);
+
+useEffect(() => {
+  if (!fen) return;
+
+  const runEngineTurn = async () => {
+    // get up-to-date status
+    const statusRes = await gameStatus({ fen });
+    setActiveColor(statusRes.active_color);
+    setInCheck(statusRes.in_check);
+
+    const currentPlayer = statusRes.active_color === "w" ? whitePlayer : blackPlayer;
+
+    if (currentPlayer !== "human") {
+      await onEngineMove(fen, currentPlayer);
+    }
+  };
+
+  runEngineTurn();
+}, [fen, whitePlayer, blackPlayer]);
+
+
+
+
 
 
     const movesFrom = (sq: string) =>
@@ -105,11 +130,6 @@ const onSquareClick = (sq: string) => {
       setFen(res.fen);
       setStatus(res.status);
       setLegalMoves(res.legal_moves);
-
-      // after user move, if engine plays next
-      if (activeColor !== "b") { // assuming user is white
-        await onEngineMove(res.fen);
-      }
 
     } catch (e: any) {
       console.error(e.message);
@@ -210,6 +230,11 @@ const renderBoard = () => (
 
 
   return (
+    <div>
+    <div className="player-selectors" style={{ display: "flex", gap: 16 }}>
+      <EngineSelector playerColor="w" value={whitePlayer} onChange={setWhitePlayer} />
+      <EngineSelector playerColor="b" value={blackPlayer} onChange={setBlackPlayer} />
+    </div>
     <div style={{ display: "flex", gap: 16 }}>
       <div>
         {renderWrappedBoard()}
@@ -244,6 +269,7 @@ const renderBoard = () => (
         {error}
       </div>
     )}
+    </div>
     </div>
   );
 };

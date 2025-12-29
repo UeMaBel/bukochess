@@ -9,16 +9,6 @@ const App: React.FC = () => {
   return (
     <div style={{ padding: 20 }}>
       <h1>BukoChess</h1>
-      <div style={{ marginBottom: 10 }}>
-        <label>
-          Mode:{" "}
-          <select value={mode} onChange={(e) => setMode(e.target.value as any)}>
-            <option value="human">Human vs Human</option>
-            <option value="engine">Human vs Engine</option>
-          </select>
-        </label>
-        {mode === "engine" && <EngineSelector />}
-      </div>
       <BoardWrapper />
     </div>
   );
