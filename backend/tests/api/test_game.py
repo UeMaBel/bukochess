@@ -23,6 +23,23 @@ def test_make_legal_move():
     assert len(data["legal_moves"]) > 0
 
 
+def test_make_castle_move():
+    resp = client.post(
+        "/api/v1/game/move",
+        json={
+            "fen": "4k3/3r4/8/8/8/8/8/4K2R w K - 0 1",
+            "move": "e1g1",
+        },
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert data["fen"] == "4k3/3r4/8/8/8/8/8/5RK1 b - - 1 1"
+    assert data["status"] in ("ok", "check")
+    assert len(data["legal_moves"]) == 16
+
+
 def test_status_ongoing():
     res = client.post("/api/v1/game/status", json={
         "fen": START_FEN

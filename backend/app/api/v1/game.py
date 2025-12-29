@@ -41,6 +41,7 @@ def make_move(req: MoveRequest):
     for m in legal_moves:
         if str(m) == req.move:
             move_found = True
+            move = m
             break
     if not move_found:
         raise HTTPException(status_code=400, detail="illegal move")

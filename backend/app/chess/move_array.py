@@ -13,6 +13,8 @@ class MoveUndo:
     en_passant: str
     promotion: bool
     repetition_key: str
+    castling: str
+    halfmove_clock: int = 0
 
 
 class MoveArray:
@@ -78,8 +80,15 @@ class MoveArray:
         Apply the move to the board (updates BoardArray in-place).
         No validation check here
         """
-
+        old_castling = board.castling_rights
+        old_halfmove_clock = board.halfmove_clock
         piece = board.board[self.from_square[0]][self.from_square[1]]
+        board.halfmove_clock += 1
+        if piece.lower() == "p" or self.captured_piece != "":
+            board.halfmove_clock = 0
+        if piece.lower() == "k" or piece.lower() == "r":
+            self.remove_castling_character(board, piece)
+
         if piece.lower() == "k":
             # check if castling:
             if self.castling.lower() == "q":
@@ -129,10 +138,38 @@ class MoveArray:
             active_color=active_color,
             en_passant=old_en_passant,
             promotion=promotion_flag,
-            repetition_key=repetition_key
+            repetition_key=repetition_key,
+            castling=old_castling,
+            halfmove_clock=old_halfmove_clock
         )
 
+    def remove_castling_character(self, board: BoardArray, piece: str):
+        """
+        Remove castling rights for a given piece that moved.
+        Returns:
+            Updated castling string
+        """
+        if piece == "K":  # White king moved
+            board.castling_rights = board.castling_rights.replace("K", "").replace("Q", "")
+        elif piece == "k":  # Black king moved
+            board.castling_rights = board.castling_rights.replace("k", "").replace("q", "")
+        elif piece == "R":  # White rook moved
+            if self.from_square[1] == 7:
+                board.castling_rights = board.castling_rights.replace("K", "")
+            if self.from_square[1] == 0:
+                board.castling_rights = board.castling_rights.replace("Q", "")
+        elif piece == "r":  # Black rook moved
+            if self.from_square[1] == 7:
+                board.castling_rights = board.castling_rights.replace("k", "")
+            if self.from_square[1] == 0:
+                board.castling_rights = board.castling_rights.replace("q", "")
+
+        if board.castling_rights == "" or board.castling_rights == " ":
+            board.castling_rights = board.castling_rights = "-"  # no castling rights left
+
     def undo(self, board: BoardArray, undo: MoveUndo):
+        board.castling_rights = undo.castling
+        board.halfmove_clock = undo.halfmove_clock
         piece = board.board[self.to_square[0]][self.to_square[1]]
         if undo.promotion:
             piece = "P" if piece.isupper() else "p"
@@ -200,17 +237,17 @@ class MoveGenerator:
                     for to_y in range(0, 8):
                         move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y), promotion="")
                         mi = MoveInformation(self.board, move)
+                        if str(move) == "e1g1":
+                            a = 33
                         valid, _ = is_pseudo_legal(mi)
                         if valid:
-                            pseudo_legal_moves.append(move)
+                            pseudo_legal_moves.append(mi.move)
 
         # filter out moves that leave own king in check
         color = self.board.active_color
         legal_moves = []
         new_legal_moves = []
         for move in pseudo_legal_moves:
-            if str(move) == "f6g4":
-                a = 33
             undo = move.apply(self.board)
             if not self.board.is_king_in_check(color):
                 if move.castling != "":  # check if castling was legal
