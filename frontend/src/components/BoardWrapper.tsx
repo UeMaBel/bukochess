@@ -32,43 +32,49 @@ const START_FEN =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 export const BoardWrapper: React.FC = () => {
-  const { engine, vsEngine } = useGameStore();
+    const { engine, vsEngine } = useGameStore();
 
-  const [fen, setFen] = useState(START_FEN);
-  const [board, setBoard] = useState<string[][]>([]);
-  const [status, setStatus] = useState<string>("");
-  const [moveInput, setMoveInput] = useState("");
-  const files = ["a","b","c","d","e","f","g","h"];
+    const [fen, setFen] = useState(START_FEN);
+    const [board, setBoard] = useState<string[][]>([]);
+    const [status, setStatus] = useState<string>("");
+    const [moveInput, setMoveInput] = useState("");
+    const files = ["a","b","c","d","e","f","g","h"];
     const ranks = ["8","7","6","5","4","3","2","1"];
     const [error, setError] = useState<string | null>(null);
-const [shake, setShake] = useState(false);
-const [dragFrom, setDragFrom] = useState<string | null>(null);
-const [inCheck, setInCheck] = useState(false);
-const [activeColor, setActiveColor] = useState<"w" | "b">("w");
-const isKing = (sq: string) =>
-  sq === (activeColor === "w" ? "K" : "k");
-const [legalMoves, setLegalMoves] = useState<string[]>([]);
+    const [shake, setShake] = useState(false);
+    const [dragFrom, setDragFrom] = useState<string | null>(null);
+    const [inCheck, setInCheck] = useState(false);
+    const [activeColor, setActiveColor] = useState<"w" | "b">("w");
+    const [legalMoves, setLegalMoves] = useState<string[]>([]);
 
-const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-const [premove, setPremove] = useState<string | null>(null);
+    const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+    const [premove, setPremove] = useState<string | null>(null);
 
-useEffect(() => {
-  if (!fen) return;
 
-  gameStatus({ fen }).then((res) => {
-    setInCheck(res.in_check);
-    setActiveColor(res.active_color);
-  });
-  // fetch legal moves for current position
-  getLegalMoves({ fen }).then((res) => {
-    setLegalMoves(res.moves);
-  });
-}, [fen]);
+  // update status and legal moves on FEN change
+    useEffect(() => {
+        if (!fen) return;
 
-const movesFrom = (sq: string) =>
-  legalMoves.filter(m => m.startsWith(sq));
-const squareName = (r: number, f: number) =>
-  files[f] + (8 - r);
+        gameStatus({ fen }).then((res) => {
+            setInCheck(res.in_check);
+            setActiveColor(res.active_color);
+        });
+        // fetch legal moves for current position
+        getLegalMoves({ fen }).then((res) => {
+            setLegalMoves(res.moves);
+        });
+    }, [fen]);
+
+  // load board from FEN
+  useEffect(() => {
+    importFEN(fen).then((res) => setBoard(res.board));
+  }, [fen]);
+
+
+    const movesFrom = (sq: string) =>
+      legalMoves.filter(m => m.startsWith(sq));
+    const squareName = (r: number, f: number) =>
+      files[f] + (8 - r);
 
 
 const onSquareClick = (sq: string) => {
@@ -93,26 +99,47 @@ const onSquareClick = (sq: string) => {
   setSelectedSquare(null);
 };
 
-  // load board from FEN
-  useEffect(() => {
-    importFEN(fen).then((res) => setBoard(res.board));
-  }, [fen]);
+  const onUserMove = async (uci: string) => {
+    try {
+      const res = await makeMove(fen, uci);
+      setFen(res.fen);
+      setStatus(res.status);
+      setLegalMoves(res.legal_moves);
 
-  // user makes a move (uci: e2e4)
-const onUserMove = async (uci: string) => {
-  try {
-    setError(null);
-    const res = await makeMove(fen, uci);
-    setFen(res.fen);
-    setStatus(res.status);
-  } catch (e: any) {
-    setError(e.message);
-    setShake(true);
+      // after user move, if engine plays next
+      if (activeColor !== "b") { // assuming user is white
+        await onEngineMove(res.fen);
+      }
 
-    setTimeout(() => setShake(false), 300);
-    setTimeout(() => setError(null), 2000);
-  }
-};
+    } catch (e: any) {
+      console.error(e.message);
+      // premove attempt if needed
+      if (legalMoves.includes(uci)) setPremove(uci);
+    }
+    setSelectedSquare(null);
+  };
+
+
+  const onEngineMove = async (currentFen: string) => {
+    try {
+      const res = await getEngineMove({ fen: currentFen, engine });
+      setFen(res.fen);
+      setStatus(res.status);
+      // update legal moves for next human turn
+      const movesRes = await getLegalMoves({ fen: res.fen });
+      setLegalMoves(movesRes.moves);
+      setInCheck(res.in_check);
+
+      // apply premove if exists
+      if (premove && movesRes.moves.includes(premove)) {
+        const move = premove;
+        setPremove(null);
+        await onUserMove(move);
+      }
+    } catch (e: any) {
+      console.error("Engine move failed:", e.message);
+    }
+  };
 
 const renderBoard = () => (
   <div className="chess-board">
@@ -125,6 +152,10 @@ const renderBoard = () => (
             legalMoves.includes(selectedSquare + square);
           const isWhitePiece = sq !== "." && sq === sq.toUpperCase();
           const isBlackPiece = sq !== "." && sq === sq.toLowerCase();
+          const pieceLetter = board[r][f]; // "K", "k", "Q", etc.
+          const pieceUnicode = pieceLetter !== "." ? PIECE_UNICODE[pieceLetter] : "";
+
+          const isKing = pieceLetter === (activeColor === "w" ? "K" : "k");
           return (
             <div
               key={f}
@@ -133,6 +164,7 @@ const renderBoard = () => (
                 ${isTarget ? "legal-target" : ""}
                 ${isWhitePiece ? "piece-white" : ""}
                 ${isBlackPiece ? "piece-black" : ""}
+                ${inCheck && isKing ? "check" : ""}
               `}
               onClick={() => onSquareClick(square)}
               draggable={sq !== "."}
@@ -146,36 +178,7 @@ const renderBoard = () => (
   </div>
 );
 
-  const renderBoardoo = () => (
 
-  <div className="chess-board">
-    {board.map((rank, r) => (
-      <div key={r} className="chess-rank">
-        {rank.map((sq, f) => (
-          <div
-            key={f}
-          className={`chess-square ${(r + f) % 2 === 0 ? "light" : "dark"}
-          ${isTarget ? "legal-target" : ""}
-          ${inCheck && isKing(sq) ? "check" : ""}
-          `}
-          draggable={sq !== "."}
-          onClick={() => onSquareClick(squareName(r, f))}
-          onDragStart={() => setDragFrom(squareName(r, f))}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={() => {
-            if (!dragFrom) return;
-            const to = squareName(r, f);
-            onUserMove(dragFrom + to);
-            setDragFrom(null);
-          }}
-          >
-            {sq}
-          </div>
-        ))}
-      </div>
-    ))}
-  </div>
-);
 
     const renderWrappedBoard=()=> (
 
@@ -209,7 +212,6 @@ const renderBoard = () => (
   return (
     <div style={{ display: "flex", gap: 16 }}>
       <div>
-        <EngineSelector />
         {renderWrappedBoard()}
       </div>
 
