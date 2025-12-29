@@ -19,7 +19,7 @@ class MoveRequest(BaseModel):
 class MoveResponse(BaseModel):
     fen: str
     status: str
-    legal_moves: int
+    legal_moves: list[str]
 
 
 @router.post("/move", response_model=MoveResponse)
@@ -52,7 +52,7 @@ def make_move(req: MoveRequest):
     return {
         "fen": board.to_fen(),
         "status": status,
-        "legal_moves": len(MoveGenerator(board).legal_moves()),
+        "legal_moves": [str(m) for m in MoveGenerator(board).legal_moves()],
     }
 
 

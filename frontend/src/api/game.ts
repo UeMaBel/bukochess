@@ -1,7 +1,7 @@
 export interface MoveResponse {
   fen: string;
   status: string;
-  legal_moves: number;
+  legal_moves: string[];
 }
 
 export async function makeMove(fen: string, move: string): Promise<MoveResponse> {

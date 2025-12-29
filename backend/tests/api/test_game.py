@@ -20,7 +20,7 @@ def test_make_legal_move():
 
     assert "fen" in data
     assert data["status"] in ("ok", "check")
-    assert data["legal_moves"] > 0
+    assert len(data["legal_moves"]) > 0
 
 
 def test_status_ongoing():

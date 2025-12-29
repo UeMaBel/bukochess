@@ -75,7 +75,6 @@ class LegalMovesResponse(BaseModel):
 @router.post("/legal-moves")
 def legal_moves(req: LegalMovesRequest):
     board = BoardArray()
-
     try:
         board.from_fen(req.fen)
     except ValueError as e:
@@ -93,7 +92,7 @@ def legal_moves(req: LegalMovesRequest):
                 final_moves.append(m)
     else:
         final_moves = moves
-
+    print([str(m) for m in final_moves])
     return {
         "moves": [str(m) for m in final_moves],
     }

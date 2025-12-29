@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { importFEN } from "../api/position";
 import { makeMove } from "../api/game";
 import { gameStatus } from "../api/game";
+import { getLegalMoves } from "../api/position";
 
 import { getEngineMove } from "../api/engine";
 import { useGameStore } from "../store/gameStore";
@@ -30,23 +31,53 @@ const [inCheck, setInCheck] = useState(false);
 const [activeColor, setActiveColor] = useState<"w" | "b">("w");
 const isKing = (sq: string) =>
   sq === (activeColor === "w" ? "K" : "k");
+const [legalMoves, setLegalMoves] = useState<string[]>([]);
+
+const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+const [premove, setPremove] = useState<string | null>(null);
+
+
 
 useEffect(() => {
   if (!fen) return;
 
-  gameStatus({ fen })
-    .then((res) => {
-      setInCheck(res.in_check);
-      setActiveColor(res.active_color);
-    })
-    .catch(() => {
-      setInCheck(false);
-    });
+  gameStatus({ fen }).then((res) => {
+    setInCheck(res.in_check);
+    setActiveColor(res.active_color);
+  });
+  // fetch legal moves for current position
+  getLegalMoves({ fen }).then((res) => {
+    setLegalMoves(res.moves);
+  });
 }, [fen]);
 
+const movesFrom = (sq: string) =>
+  legalMoves.filter(m => m.startsWith(sq));
 const squareName = (r: number, f: number) =>
   files[f] + (8 - r);
 
+
+const onSquareClick = (sq: string) => {
+  // selecting source
+  if (!selectedSquare) {
+    if (movesFrom(sq).length > 0) {
+      setSelectedSquare(sq);
+    }
+    return;
+  }
+
+  const move = selectedSquare + sq;
+
+  // legal → play immediately
+  if (legalMoves.includes(move)) {
+    onUserMove(move);
+    setSelectedSquare(null);
+    return;
+  }
+
+  // illegal → clear selection
+  setSelectedSquare(null);
+};
 
   // load board from FEN
   useEffect(() => {
@@ -69,8 +100,36 @@ const onUserMove = async (uci: string) => {
   }
 };
 
+const renderBoard = () => (
+  <div className="chess-board">
+    {board.map((rank, r) => (
+      <div key={r} className="chess-rank">
+        {rank.map((sq, f) => {
+          const square = squareName(r, f);
+          const isTarget =
+            selectedSquare &&
+            legalMoves.includes(selectedSquare + square);
 
-  const renderBoard = () => (
+          return (
+            <div
+              key={f}
+              className={`chess-square
+                ${(r + f) % 2 === 0 ? "light" : "dark"}
+                ${isTarget ? "legal-target" : ""}
+              `}
+              onClick={() => onSquareClick(square)}
+              draggable={sq !== "."}
+            >
+              {sq}
+            </div>
+          );
+        })}
+      </div>
+    ))}
+  </div>
+);
+
+  const renderBoardoo = () => (
 
   <div className="chess-board">
     {board.map((rank, r) => (
@@ -79,8 +138,11 @@ const onUserMove = async (uci: string) => {
           <div
             key={f}
           className={`chess-square ${(r + f) % 2 === 0 ? "light" : "dark"}
-          ${inCheck && isKing(sq) ? "check" : ""}`}
+          ${isTarget ? "legal-target" : ""}
+          ${inCheck && isKing(sq) ? "check" : ""}
+          `}
           draggable={sq !== "."}
+          onClick={() => onSquareClick(squareName(r, f))}
           onDragStart={() => setDragFrom(squareName(r, f))}
           onDragOver={(e) => e.preventDefault()}
           onDrop={() => {
