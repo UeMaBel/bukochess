@@ -63,3 +63,4 @@ Start the CLI:
 - tested a lot of positions with perft
 - added first "engine" "random" (just returns random moves, no valuation)
 - added CLI GUI
+- added POC UI
