@@ -27,7 +27,6 @@ def engine_move(req: EngineMoveRequest):
         board.from_fen(req.fen)
     except ValueError as e:
         raise BukochessException(str(e))
-
     if req.engine == "random":
         engine = RandomEngine(seed=req.seed)
     elif req.engine == "dumb":

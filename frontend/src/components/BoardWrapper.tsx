@@ -50,7 +50,7 @@ export const BoardWrapper: React.FC = () => {
     const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
     const [premove, setPremove] = useState<string | null>(null);
     const [whitePlayer, setWhitePlayer] = useState<"human" | string>("human");
-    const [blackPlayer, setBlackPlayer] = useState<"human" | string>("random"); // example engine
+    const [blackPlayer, setBlackPlayer] = useState<"human" | string>("random");
 
 
   // update status and legal moves on FEN change
@@ -90,10 +90,6 @@ useEffect(() => {
 
   runEngineTurn();
 }, [fen, whitePlayer, blackPlayer]);
-
-
-
-
 
 
     const movesFrom = (sq: string) =>
@@ -140,9 +136,9 @@ const onSquareClick = (sq: string) => {
   };
 
 
-  const onEngineMove = async (currentFen: string) => {
+  const onEngineMove = async (currentFen: string, currentPlayer: string) => {
     try {
-      const res = await getEngineMove({ fen: currentFen, engine });
+      const res = await getEngineMove({ fen: currentFen, engine: currentPlayer });
       setFen(res.fen);
       setStatus(res.status);
       // update legal moves for next human turn

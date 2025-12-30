@@ -33,7 +33,7 @@ class DumbEngine(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 1
+        self.deepness = 3
 
     def choose_move(self, board: BoardArray) -> MoveArray | None:
         generator = MoveGenerator(board)
@@ -41,23 +41,57 @@ class DumbEngine(Engine):
 
         if not moves:
             return None
-        tree = {}
-        for m in moves:
-            cur_board = board.copy()
-            undo = m.apply(cur_board)
-            tree[m] = self.compute_moves(board)
 
-        score, moves = self.evaluate_tree(tree, board.active_color.lower() == "w")
-        tree = {}
-        # if theres a lot of possibilities try again with deepness = 0
-        moves_second = {}
-        for m in moves:
-            cur_board = board.copy()
-            undo = m.apply(cur_board)
-            moves_second[m] = self.evaluate_position(cur_board)
-        score, moves = self.evaluate_tree(moves_second, board.active_color.lower() == "w")
+        maximizing = board.active_color == "w"
+        best_score = -float("inf") if maximizing else float("inf")
+        best_moves = []
 
-        return self._rng.choice(moves)
+        for m in moves:
+            undo = m.apply(board)
+            score = self.minimax(board, self.deepness - 1, not maximizing)
+            m.undo(board, undo)
+
+            if maximizing:
+                if score > best_score:
+                    best_score = score
+                    best_moves = [m]
+                elif score == best_score:
+                    best_moves.append(m)
+            else:
+                if score < best_score:
+                    best_score = score
+                    best_moves = [m]
+                elif score == best_score:
+                    best_moves.append(m)
+
+        return self._rng.choice(best_moves)
+
+    def minimax(self, board: BoardArray, depth: int, maximizing: bool) -> int:
+        if depth == 0:
+            return self.evaluate_position(board)
+
+        generator = MoveGenerator(board)
+        moves = generator.legal_moves()
+
+        if not moves:
+            return self.evaluate_position(board)
+
+        if maximizing:
+            best = -float("inf")
+            for m in moves:
+                undo = m.apply(board)
+                score = self.minimax(board, depth - 1, False)
+                m.undo(board, undo)
+                best = max(best, score)
+            return best
+        else:
+            best = float("inf")
+            for m in moves:
+                undo = m.apply(board)
+                score = self.minimax(board, depth - 1, True)
+                m.undo(board, undo)
+                best = min(best, score)
+            return best
 
     def evaluate_tree(self, tree: dict, white_to_move: bool):
         """
@@ -94,26 +128,6 @@ class DumbEngine(Engine):
                         best_moves.append(move)
 
         return best_score, best_moves
-
-    def compute_moves(self, board: BoardArray, deepness: int = -1):
-        if deepness == -1:
-            deepness = self.deepness
-        generator = MoveGenerator(board)
-        moves = generator.legal_moves()
-
-        move_values = {}
-        if not moves:
-            self.evaluate_position(board)
-
-        for m in moves:
-            cur_board = board.copy()
-            undo = m.apply(cur_board)
-            if deepness == 0:
-                move_values[m] = self.evaluate_position(cur_board)
-            else:
-                move_values[m] = self.compute_moves(cur_board, deepness - 1)
-
-        return move_values
 
     def evaluate_position(self, board: BoardArray) -> int:
         score = 0
