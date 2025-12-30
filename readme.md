@@ -64,3 +64,4 @@ Start the CLI:
 - added first "engine" "random" (just returns random moves, no valuation)
 - added CLI GUI
 - added POC UI
+- added second engine "dumb": Algorithm: MINIMAX in Python. Can checkmate intermediate beginners
