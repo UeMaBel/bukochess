@@ -2,6 +2,7 @@ from typing import Optional, Tuple, List, Dict
 
 from app.chess.board_array import BoardArray
 from dataclasses import dataclass
+
 from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation
 
 
@@ -21,7 +22,8 @@ class MoveArray:
     Represents a single chess move on a BoardArray.
     """
 
-    def __init__(self, from_square: Tuple[int, int], to_square: Tuple[int, int], promotion: Optional[str] = None):
+    def __init__(self, from_square: Tuple[int, int], to_square: Tuple[int, int], promotion: Optional[str] = None,
+                 captured_piece: Optional[str] = None):
         """
         :param from_square: tuple (row, col) of starting square, 0-indexed
         :param to_square: tuple (row, col) of target square, 0-indexed
@@ -32,9 +34,15 @@ class MoveArray:
         self.promotion = promotion
 
         # Optional metadata
-        self.captured_piece: Optional[str] = None
+        self.captured_piece: Optional[str] = captured_piece
         self.castling: Optional[str] = ""
         self.en_passant: bool = False
+
+    def is_capture(self):
+        return self.captured_piece != ""
+
+    def is_promotion(self):
+        return self.promotion != ""
 
     @staticmethod
     def from_uci(uci: str) -> "MoveArray":
@@ -83,12 +91,13 @@ class MoveArray:
         old_halfmove_clock = board.halfmove_clock
         piece = board.board[self.from_square[0]][self.from_square[1]]
         board.halfmove_clock += 1
-        if piece.lower() == "p" or self.captured_piece != "":
+        piece_lower = piece.lower()
+        if piece_lower == "p" or self.captured_piece != "":
             board.halfmove_clock = 0
-        if piece.lower() == "k" or piece.lower() == "r":
+        if piece_lower == "k" or piece_lower == "r":
             self.remove_castling_character(board, piece)
 
-        if piece.lower() == "k":
+        if piece_lower == "k":
             # check if castling:
             if self.castling.lower() == "q":
                 board.board[self.from_square[0]][0] = ""
@@ -107,7 +116,7 @@ class MoveArray:
             board.board[self.from_square[0]][self.to_square[1]] = ""
 
         # Update en passant target
-        if piece.lower() == "p" and abs(self.from_square[0] - self.to_square[0]) == 2:
+        if piece_lower == "p" and abs(self.from_square[0] - self.to_square[0]) == 2:
             # Square pawn passed over
             passed_over_row = (self.from_square[0] + self.to_square[0]) // 2
             passed_over_col = self.from_square[1]
@@ -116,7 +125,7 @@ class MoveArray:
             board.en_passant = "-"  # no en passant possible
         promotion_flag = False
         # Promotion logic
-        if piece.lower() == "p" and (self.to_square[0] == 0 or self.to_square[0] == 7):
+        if piece_lower == "p" and (self.to_square[0] == 0 or self.to_square[0] == 7):
             if self.promotion is None or self.promotion == "":
                 promotion_piece = "q" if piece.islower() else "Q"  # default queen
                 self.promotion = promotion_piece
@@ -215,9 +224,10 @@ class MoveGenerator:
     """
     _moves_cache: dict[str, list[MoveArray]] = {}
 
-    def __init__(self, board: BoardArray):
+    def __init__(self, board: BoardArray, order: bool = False):
         self._board = board
         self._current_fen: str = board.to_fen()
+        self.order = order
 
     @property
     def board(self) -> BoardArray:
@@ -236,19 +246,24 @@ class MoveGenerator:
             return MoveGenerator._moves_cache[self._current_fen]
 
         pseudo_legal_moves: List[MoveArray] = []
-        active_color = self.board.active_color
+        is_white = self.board.active_color == "w"
+
         for from_x in range(0, 8):
             for from_y in range(0, 8):
                 square = self.board.board[from_x][from_y]
                 if square == "":
                     continue
-                if active_color == "w" and square.islower():
-                    continue
-                if active_color == "b" and square.isupper():
+                square_is_upper = square.isupper()
+                if is_white != square_is_upper:
                     continue
                 for to_x in range(0, 8):
                     for to_y in range(0, 8):
-                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y), promotion="")
+                        cap = self.board.board[to_x][to_y]
+                        if cap != "":
+                            if cap.isupper() == is_white:
+                                continue
+                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y), captured_piece=cap,
+                                         promotion="")
                         mi = MoveInformation(self.board, move)
                         valid, _ = is_pseudo_legal(mi)
                         if valid:
@@ -259,6 +274,9 @@ class MoveGenerator:
         legal_moves = []
         new_legal_moves = []
         for move in pseudo_legal_moves:
+            king_was_checked = self.board.is_king_in_check(color)
+            if king_was_checked and move.castling != "":
+                continue
             undo = move.apply(self.board)
             if not self.board.is_king_in_check(color):
                 if move.castling != "":  # check if castling was legal
@@ -272,8 +290,7 @@ class MoveGenerator:
                             continue
                 legal_moves.append(move)
             move.undo(self.board, undo)
-            if undo.promotion:  # create other possibilities then queen promotion
-
+            if undo.promotion:
                 new_legal_moves.append(
                     MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="b"))
                 new_legal_moves.append(
@@ -286,8 +303,34 @@ class MoveGenerator:
                 legal_moves.append(move)
 
             move.undo(self.board, undo)
+        if self.order:
+            legal_moves = self.order_moves(legal_moves)
         MoveGenerator._moves_cache[self._current_fen] = legal_moves
         return legal_moves
+
+    def order_moves(self, moves: list[MoveArray]) -> list[MoveArray]:
+        promotions = []
+        captures = []
+        checks = []
+        quiet = []
+
+        for move in moves:
+            if move.promotion:
+                promotions.append(move)
+            elif move.is_capture:
+                captures.append(move)
+            elif self.gives_check(move):
+                checks.append(move)
+            else:
+                quiet.append(move)
+
+        return promotions + captures + checks + quiet
+
+    def gives_check(self, move: MoveArray):
+        undo = move.apply(self.board)
+        ret = self.board.is_king_in_check()
+        move.undo(self.board, undo)
+        return ret
 
 
 def is_pseudo_legal(mi: "MoveInformation") -> tuple[bool, str | None]:
@@ -326,7 +369,6 @@ def is_pseudo_legal(mi: "MoveInformation") -> tuple[bool, str | None]:
 
 
 def pseudo_king(mi: "MoveInformation"):
-    # check if opponent king is next to to_field
     x_to_check = []
     y_to_check = []
     if mi.abs_dx != 0 and mi.abs_dx != 1 and mi.abs_dx != 2:

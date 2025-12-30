@@ -4,7 +4,7 @@ from app.chess.move_array import MoveArray, MoveGenerator
 from app.chess.engines.base import Engine
 
 
-class DumbEngine(Engine):
+class AlphaBeta(Engine):
     PIECE_VALUE = {
         "p": -100,
         "b": -300,
@@ -33,65 +33,77 @@ class DumbEngine(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 2
+        self.deepness = 4
 
-    def choose_move(self, board: BoardArray) -> MoveArray | None:
-        generator = MoveGenerator(board)
+    def choose_move(self, board):
+        generator = MoveGenerator(board, True)
         moves = generator.legal_moves()
 
         if not moves:
             return None
 
         maximizing = board.active_color == "w"
-        best_score = -float("inf") if maximizing else float("inf")
+        best_value = -float("inf") if maximizing else float("inf")
         best_moves = []
 
         for m in moves:
             undo = m.apply(board)
-            score = self.minimax(board, self.deepness - 1, not maximizing)
+            value = self.alphabeta(
+                board,
+                self.deepness - 1,
+                -float("inf"),
+                float("inf"),
+                not maximizing
+            )
             m.undo(board, undo)
 
             if maximizing:
-                if score > best_score:
-                    best_score = score
+                if value > best_value:
+                    best_value = value
                     best_moves = [m]
-                elif score == best_score:
+                elif value == best_value:
                     best_moves.append(m)
             else:
-                if score < best_score:
-                    best_score = score
+                if value < best_value:
+                    best_value = value
                     best_moves = [m]
-                elif score == best_score:
+                elif value == best_value:
                     best_moves.append(m)
 
         return self._rng.choice(best_moves)
 
-    def minimax(self, board: BoardArray, depth: int, maximizing: bool) -> int:
+    def alphabeta(self, board: BoardArray, depth: int, alpha: float, beta: float, maximizing: bool) -> int:
         if depth == 0:
             return self.evaluate_position(board)
 
-        generator = MoveGenerator(board)
+        generator = MoveGenerator(board, True)
         moves = generator.legal_moves()
 
         if not moves:
             return self.evaluate_position(board)
 
         if maximizing:
-            best = -float("inf")
+            value = -float("inf")
             for m in moves:
                 undo = m.apply(board)
-                score = self.minimax(board, depth - 1, False)
+                value = max(value, self.alphabeta(board, depth - 1, alpha, beta, False))
                 m.undo(board, undo)
-                best = max(best, score)
-            return best
+
+                alpha = max(alpha, value)
+                if alpha >= beta:
+                    break  # β cutoff
+            return value
         else:
-            best = float("inf")
+            value = float("inf")
             for m in moves:
                 undo = m.apply(board)
-                score = self.minimax(board, depth - 1, True)
+                value = min(value, self.alphabeta(board, depth - 1, alpha, beta, True))
                 m.undo(board, undo)
-                best = min(best, score)
-            return best
+
+                beta = min(beta, value)
+                if beta <= alpha:
+                    break  # α cutoff
+            return value
 
     def evaluate_tree(self, tree: dict, white_to_move: bool):
         """

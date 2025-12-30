@@ -144,13 +144,12 @@ class BoardArray(BoardBase):
 
     def get_pieces_location(self, color: str) -> List[tuple[int, int]]:
         pieces = []
+        is_white = color == "w"
         for x in range(8):
             for y in range(8):
                 if self.board[x][y] == "":
                     continue
-                if self.board[x][y].isupper() and color == "w":
-                    pieces.append((x, y))
-                elif self.board[x][y].islower() and color == "b":
+                if self.board[x][y].isupper() == is_white:
                     pieces.append((x, y))
         return pieces
 

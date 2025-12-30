@@ -4,7 +4,7 @@ from app.chess.board_array import BoardArray
 from app.chess.perft import perft, perft_divide
 
 PERFT_FILE = "tests/chess/perft_cases_web.epd"
-MAX_TEST_DEPTH = 1
+MAX_TEST_DEPTH = 2
 
 
 def parse_perft_line(line: str):
