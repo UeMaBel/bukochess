@@ -106,6 +106,17 @@ def test_black_pawn_moves_3():
     assert len(moves) == possible_moves
 
 
+def test_cm_white():
+    fen = "rnbqkbnr/ppppp2p/8/1B3ppQ/4P3/8/PPPP1PPP/RNB1K1NR b KQkq - 1 3"
+    board = BoardArray()
+    board.from_fen(fen)
+
+    generator = MoveGenerator(board)
+    moves = generator.legal_moves()
+    assert board.is_checkmate()
+    assert board.is_checkmate()
+
+
 @pytest.mark.parametrize("name", TEST_POSITIONS.keys())
 def test_legal_moves_basic(name):
     pos = TEST_POSITIONS[name]
@@ -121,14 +132,12 @@ def test_legal_moves_basic(name):
         assert len(moves) == pos["expected_moves"], (
             f"{name}: expected {pos['expected_moves']} moves, got {len(moves)}"
         )
-    if name == "checkmate_white":
-        a = 33
     if pos["is_checkmate"] is not None:
-        assert board.is_checkmate(board.active_color) == pos["is_checkmate"], (
+        assert board.is_checkmate() == pos["is_checkmate"], (
             f"{name}: expected checkmate = {pos["is_checkmate"]}"
         )
     if pos["is_stalemate"] is not None:
-        assert board.is_stalemate(board.active_color) == pos["is_stalemate"], (
+        assert board.is_stalemate() == pos["is_stalemate"], (
             f"{name}: expected stalemate = {pos["is_stalemate"]}"
         )
     if pos["is_threefold_rep"] is not None:

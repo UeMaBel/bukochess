@@ -18,6 +18,20 @@ class BoardArray(BoardBase):
         self.position_counts: dict[str, int]
         self.position_counts = {}
 
+    def copy(self) -> "BoardArray":
+        new_board = BoardArray()
+        new_board.board = [row[:] for row in self.board]
+
+        new_board.active_color = self.active_color
+        new_board.castling_rights = self.castling_rights
+        new_board.en_passant = self.en_passant
+        new_board.halfmove_clock = self.halfmove_clock
+        new_board.fullmove_number = self.fullmove_number
+
+        new_board.position_counts = self.position_counts.copy()
+
+        return new_board
+
     def switch_active_color(self):
         self.active_color = "b" if self.active_color == "w" else "w"
 
@@ -140,8 +154,19 @@ class BoardArray(BoardBase):
                     pieces.append((x, y))
         return pieces
 
+    def get_pieces(self):
+        pieces = []
+        for x in range(8):
+            for y in range(8):
+                if self.board[x][y] == "":
+                    continue
+                else:
+                    pieces.append((self.board[x][y], x, y))
+        return pieces
+
     def from_fen(self, fen: str):
         valid, message = self.validate_fen(fen)
+
         if not valid:
             raise ValueError(message)
         self.board = []

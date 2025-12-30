@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from app.chess.board_array import BoardArray
 from app.chess.engines.random_engine import RandomEngine
+from app.chess.engines.dumb_engine import DumbEngine
 from app.core.exceptions import BukochessException
 
 router = APIRouter(tags=["engine"])
@@ -29,6 +30,8 @@ def engine_move(req: EngineMoveRequest):
 
     if req.engine == "random":
         engine = RandomEngine(seed=req.seed)
+    elif req.engine == "dumb":
+        engine = DumbEngine(seed=req.seed)
     else:
         raise BukochessException("Unknown engine")
 

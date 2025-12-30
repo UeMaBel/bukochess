@@ -1,8 +1,10 @@
+from app.chess.engines.dumb_engine import DumbEngine
 from app.chess.engines.random_engine import RandomEngine, BoardArray
 
 board = BoardArray()
 board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 engine = RandomEngine()
+engine_dumb = DumbEngine()
 
 while True:
     if board.is_checkmate(board.active_color):
@@ -11,7 +13,7 @@ while True:
         print("Game over - stalemate")
     if board.is_insufficient_material():
         print("Game over - insufficient material")
-    move = engine.choose_move(board)
+    move = engine_dumb.choose_move(board)
     if move is None:
         print("Game over")
         break

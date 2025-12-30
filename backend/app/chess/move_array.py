@@ -1,5 +1,4 @@
-from typing import Optional, Tuple, List
-from app.core.utils import measure_time
+from typing import Optional, Tuple, List, Dict
 
 from app.chess.board_array import BoardArray
 from dataclasses import dataclass
@@ -214,14 +213,28 @@ class MoveGenerator:
     """
     Generates all legal moves for a given BoardArray.
     """
+    _moves_cache: dict[str, list[MoveArray]] = {}
 
     def __init__(self, board: BoardArray):
-        self.board = board
+        self._board = board
+        self._current_fen: str = board.to_fen()
+
+    @property
+    def board(self) -> BoardArray:
+        return self._board
+
+    @board.setter
+    def board(self, new_board: BoardArray):
+        self._board = new_board
+        self._current_fen = new_board.to_fen()
 
     def legal_moves(self) -> List[MoveArray]:
         """
         Return a list of all legal moves for the current active color.
         """
+        if self._current_fen in MoveGenerator._moves_cache:
+            return MoveGenerator._moves_cache[self._current_fen]
+
         pseudo_legal_moves: List[MoveArray] = []
         active_color = self.board.active_color
         for from_x in range(0, 8):
@@ -237,8 +250,6 @@ class MoveGenerator:
                     for to_y in range(0, 8):
                         move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y), promotion="")
                         mi = MoveInformation(self.board, move)
-                        if str(move) == "e1g1":
-                            a = 33
                         valid, _ = is_pseudo_legal(mi)
                         if valid:
                             pseudo_legal_moves.append(mi.move)
@@ -275,7 +286,7 @@ class MoveGenerator:
                 legal_moves.append(move)
 
             move.undo(self.board, undo)
-
+        MoveGenerator._moves_cache[self._current_fen] = legal_moves
         return legal_moves
 
 
