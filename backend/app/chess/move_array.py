@@ -369,11 +369,11 @@ class MoveGenerator:
             move.undo(self.board, undo)
 
         if self.order:
-            legal_moves = self.order_moves(legal_moves)
+            legal_moves = self.order_moves(legal_moves, self.board)
         MoveGenerator._moves_cache[self._current_hash] = legal_moves
         return legal_moves
 
-    def order_moves(self, moves: list[MoveArray]) -> list[MoveArray]:
+    def order_moves(self, moves: list[MoveArray], board: BoardArray) -> list[MoveArray]:
         promotions = []
         captures = []
         checks = []
@@ -382,7 +382,7 @@ class MoveGenerator:
         for move in moves:
             if move.promotion:
                 promotions.append(move)
-            elif move.is_capture:
+            elif board.board[move.to_square[0]][move.to_square[1]] != "":
                 captures.append(move)
             elif self.gives_check(move):
                 checks.append(move)

@@ -24,7 +24,7 @@ def in_loop(idx):
         print("Game over")
         return
 
-    print(f"{str(idx)}: {board.active_color} is moving {str(move)}")
+    print(f"{str(idx)}: {board.active_color} is moving {str(move)} calc nodes: {engine_alphabeta.nodes}")
     undo = move.apply(board)
     print(f"fen: {board.to_fen()}")
     print(board.print_board())

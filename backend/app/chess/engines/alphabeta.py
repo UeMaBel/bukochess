@@ -33,7 +33,9 @@ class AlphaBeta(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 3
+        self.deepness = 4
+        self.tt: dict[int, tuple[int, int]] = {}
+        self.nodes = 0
 
     def choose_move(self, board):
         generator = MoveGenerator(board, True)
@@ -73,13 +75,19 @@ class AlphaBeta(Engine):
         return self._rng.choice(best_moves)
 
     def alphabeta(self, board: BoardArray, depth: int, alpha: float, beta: float, maximizing: bool) -> int:
+        self.nodes += 1
+        entry = self.tt.get(board.hash)
+        if entry and entry[0] >= depth:
+            return entry[1]
         if depth == 0:
             return self.evaluate_position(board)
         generator = MoveGenerator(board, True)
         moves = generator.legal_moves()
 
         if not moves:
-            return self.evaluate_position(board)
+            value = self.evaluate_position(board)
+            self.tt[board.hash] = (depth, value)
+            return value
 
         if maximizing:
             value = -float("inf")
@@ -91,6 +99,7 @@ class AlphaBeta(Engine):
                 alpha = max(alpha, value)
                 if alpha >= beta:
                     break  # β cutoff
+            self.tt[board.hash] = (depth, value)
             return value
         else:
             value = float("inf")
@@ -102,6 +111,7 @@ class AlphaBeta(Engine):
                 beta = min(beta, value)
                 if beta <= alpha:
                     break  # α cutoff
+            self.tt[board.hash] = (depth, value)
             return value
 
     def evaluate_tree(self, tree: dict, white_to_move: bool):
