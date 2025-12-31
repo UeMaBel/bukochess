@@ -1,6 +1,7 @@
 from typing import List
 
 from app.chess.board_base import BoardBase
+from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
 
 
 class BoardArray(BoardBase):
@@ -17,9 +18,40 @@ class BoardArray(BoardBase):
         self.fullmove_number = 1
         self.position_counts: dict[str, int]
         self.position_counts = {}
+        self.hash = 0
+
+    def compute_hash(self):
+        h = 0
+
+        for x in range(8):
+            for y in range(8):
+                piece = self.board[x][y]
+                if piece:
+                    sq = x * 8 + y
+                    h ^= Z_PIECE[PIECE_INDEX[piece]][sq]
+
+        if self.active_color == "b":
+            h ^= Z_SIDE
+
+        h ^= Z_CASTLING[self.castling_rights_mask()]
+
+        if self.en_passant != "-":
+            file = ord(self.en_passant[0]) - ord("a")
+            h ^= Z_EP_FILE[file]
+
+        self.hash = h
+
+    def castling_rights_mask(self) -> int:
+        mask = 0
+        if "K" in self.castling_rights: mask |= 1
+        if "Q" in self.castling_rights: mask |= 2
+        if "k" in self.castling_rights: mask |= 4
+        if "q" in self.castling_rights: mask |= 8
+        return mask
 
     def copy(self) -> "BoardArray":
         new_board = BoardArray()
+        self.compute_hash()
         new_board.board = [row[:] for row in self.board]
 
         new_board.active_color = self.active_color
@@ -165,7 +197,6 @@ class BoardArray(BoardBase):
 
     def from_fen(self, fen: str):
         valid, message = self.validate_fen(fen)
-
         if not valid:
             raise ValueError(message)
         self.board = []
@@ -195,7 +226,7 @@ class BoardArray(BoardBase):
         self.fullmove_number = int(fullmove)
 
         self.position_counts[self.create_repetition_key()] = 1
-
+        self.compute_hash()
         return True, "FEN Imported"
 
     def to_fen(self) -> str:

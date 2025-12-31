@@ -19,7 +19,7 @@ def in_loop(idx):
         print("Game over - stalemate")
     if board.is_insufficient_material():
         print("Game over - insufficient material")
-    move = engine_alphabeta.choose_move(board.copy())
+    move = engine_alphabeta.choose_move(board)
     if move is None:
         print("Game over")
         return
@@ -38,4 +38,5 @@ def loop():
         idx += 1
 
 
+board.print_board()
 loop()

@@ -62,6 +62,27 @@ def test_casling():
     assert len(moves) == possible_moves
 
 
+def test_apply_undo_nested():
+    # Use FEN to set up en passant scenario
+    start_fen = "r1bqkbnr/pppp1ppp/2n5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3"
+    board = BoardArray()
+    board.from_fen(start_fen)  # White to move
+
+    generator = MoveGenerator(board)
+    moves = generator.legal_moves()
+
+    for m in moves:
+        undo = m.apply(board)
+        for n in generator.legal_moves():
+            undo_n = n.apply(board)
+            n.undo(board, undo_n)
+        m.undo(board, undo)
+
+    end_fen = board.to_fen()
+    print(end_fen)
+    assert start_fen == end_fen
+
+
 def test_apply_undo_en_passant():
     # Use FEN to set up en passant scenario
     board = BoardArray()

@@ -33,7 +33,7 @@ class AlphaBeta(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 4
+        self.deepness = 3
 
     def choose_move(self, board):
         generator = MoveGenerator(board, True)
@@ -75,7 +75,6 @@ class AlphaBeta(Engine):
     def alphabeta(self, board: BoardArray, depth: int, alpha: float, beta: float, maximizing: bool) -> int:
         if depth == 0:
             return self.evaluate_position(board)
-
         generator = MoveGenerator(board, True)
         moves = generator.legal_moves()
 

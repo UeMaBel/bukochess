@@ -38,7 +38,7 @@ def test_pawn_default_promotion():
     board = BoardArray()
     board.from_fen("8/P7/8/8/8/8/8/8 w - - 0 1")
 
-    move = MoveArray(from_square=(1, 0), to_square=(0, 0))  # a7 -> a8, no promotion specified
+    move = MoveArray(from_square=(1, 0), to_square=(0, 0), promotion="q")
     undo = move.apply(board)
 
     assert board.board[0][0] == "Q"  # default queen

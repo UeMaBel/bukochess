@@ -9,12 +9,15 @@ from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square
 @dataclass
 class MoveUndo:
     captured_piece: str
-    active_color: str
-    en_passant: str
-    promotion: bool
-    repetition_key: str
-    castling: str
-    halfmove_clock: int = 0
+    captured_square: Tuple[int, int]
+    moved_piece: str
+    castling_rook_from: Optional[Tuple[int, int]] = None
+    castling_rook_to: Optional[Tuple[int, int]] = None
+    old_castling: str = "-"
+    old_en_passant: str = "-"
+    old_halfmove_clock: int = 0
+    old_active_color: str = "w"
+    repetition_key: Optional[str] = None
 
 
 class MoveArray:
@@ -70,85 +73,89 @@ class MoveArray:
     def __str__(self) -> str:
         return self.to_uci()
 
-    def is_legal(self, board: BoardArray) -> Tuple[bool, Optional[str]]:
-        """
-        Validate if the move is legal on the given board.
-        Returns (True, None) if legal, (False, reason) if not.
-        """
-        # TODO: implement piece movement rules, check legality
-        return True, None
-
     def is_pseudo_legal(self, board: BoardArray) -> tuple[bool, str | None]:
         mi = MoveInformation(board, self)
         return is_pseudo_legal(mi)
 
     def apply(self, board: BoardArray) -> MoveUndo:
-        """
-        Apply the move to the board (updates BoardArray in-place).
-        No validation check here
-        """
+        from_x, from_y = self.from_square
+        to_x, to_y = self.to_square
+        piece = board.board[from_x][from_y]
+
         old_castling = board.castling_rights
-        old_halfmove_clock = board.halfmove_clock
-        piece = board.board[self.from_square[0]][self.from_square[1]]
-        board.halfmove_clock += 1
-        piece_lower = piece.lower()
-        if piece_lower == "p" or self.captured_piece != "":
-            board.halfmove_clock = 0
-        if piece_lower == "k" or piece_lower == "r":
-            self.remove_castling_character(board, piece)
-
-        if piece_lower == "k":
-            # check if castling:
-            if self.castling.lower() == "q":
-                board.board[self.from_square[0]][0] = ""
-                board.board[self.from_square[0]][3] = "r" if piece.islower() else "R"
-            elif self.castling.lower() == "k":
-                board.board[self.from_square[0]][7] = ""
-                board.board[self.from_square[0]][5] = "r" if piece.islower() else "R"
         old_en_passant = board.en_passant
-        if not self.en_passant:
-            self.captured_piece = board.board[self.to_square[0]][self.to_square[1]]
-        else:
-            self.captured_piece = board.board[self.from_square[0]][self.to_square[1]]
-        active_color = board.active_color
-        board.board[self.from_square[0]][self.from_square[1]] = ""
+        old_halfmove_clock = board.halfmove_clock
+        old_active_color = board.active_color
+
+        # Reset halfmove clock for pawn moves or captures
+        board.halfmove_clock += 1
+        if piece.lower() == "p" or board.board[to_x][to_y] != "":
+            board.halfmove_clock = 0
+
+        # Capture (including en-passant)
         if self.en_passant:
-            board.board[self.from_square[0]][self.to_square[1]] = ""
-
-        # Update en passant target
-        if piece_lower == "p" and abs(self.from_square[0] - self.to_square[0]) == 2:
-            # Square pawn passed over
-            passed_over_row = (self.from_square[0] + self.to_square[0]) // 2
-            passed_over_col = self.from_square[1]
-            board.en_passant = int_tuple_to_notation((passed_over_row, passed_over_col))
+            captured_square = (from_x, to_y)
         else:
-            board.en_passant = "-"  # no en passant possible
-        promotion_flag = False
-        # Promotion logic
-        if piece_lower == "p" and (self.to_square[0] == 0 or self.to_square[0] == 7):
-            if self.promotion is None or self.promotion == "":
-                promotion_piece = "q" if piece.islower() else "Q"  # default queen
-                self.promotion = promotion_piece
-            else:
-                promotion_piece = self.promotion.upper() if piece.isupper() else self.promotion.lower()
-            board.board[self.to_square[0]][self.to_square[1]] = promotion_piece
-            promotion_flag = True
+            captured_square = (to_x, to_y)
+        captured_piece = board.board[captured_square[0]][captured_square[1]]
+        if self.en_passant:
+            board.board[captured_square[0]][captured_square[1]] = ""
+
+        # Move the piece
+        board.board[from_x][from_y] = ""
+        board.board[to_x][to_y] = piece
+
+        # Promotion
+        moved_piece = piece
+        if self.promotion:
+            piece_color = "w" if piece.isupper() else "b"
+            promotion_piece = self.promotion.upper() if piece_color == "w" else self.promotion.lower()
+            board.board[to_x][to_y] = promotion_piece
+            moved_piece = promotion_piece
+
+        # Castling
+        if piece.lower() == "k" or piece.lower() == "r":
+            self.remove_castling_character(board, piece)
+        castling_rook_from = castling_rook_to = None
+        if self.castling.lower() == "k":  # kingside
+            rook_from = (from_x, 7)
+            rook_to = (from_x, 5)
+            board.board[rook_to[0]][rook_to[1]] = board.board[rook_from[0]][rook_from[1]]
+            board.board[rook_from[0]][rook_from[1]] = ""
+            castling_rook_from = rook_from
+            castling_rook_to = rook_to
+        elif self.castling.lower() == "q":  # queenside
+            rook_from = (from_x, 0)
+            rook_to = (from_x, 3)
+            board.board[rook_to[0]][rook_to[1]] = board.board[rook_from[0]][rook_from[1]]
+            board.board[rook_from[0]][rook_from[1]] = ""
+            castling_rook_from = rook_from
+            castling_rook_to = rook_to
+
+        # Update en-passant target
+        if piece.lower() == "p" and abs(to_x - from_x) == 2:
+            board.en_passant = f"{chr(from_y + ord('a'))}{(from_x + to_x) // 2 + 1}"
         else:
-            board.board[self.to_square[0]][self.to_square[1]] = piece
+            board.en_passant = "-"
 
-        board.switch_active_color()
+        # Switch active color
+        board.active_color = "b" if board.active_color == "w" else "w"
 
+        # Repetition key
         repetition_key = board.create_repetition_key()
         board.position_counts[repetition_key] = board.position_counts.get(repetition_key, 0) + 1
 
         return MoveUndo(
-            captured_piece=self.captured_piece,
-            active_color=active_color,
-            en_passant=old_en_passant,
-            promotion=promotion_flag,
-            repetition_key=repetition_key,
-            castling=old_castling,
-            halfmove_clock=old_halfmove_clock
+            captured_piece=captured_piece,
+            captured_square=captured_square,
+            moved_piece=moved_piece,
+            castling_rook_from=castling_rook_from,
+            castling_rook_to=castling_rook_to,
+            old_castling=old_castling,
+            old_en_passant=old_en_passant,
+            old_halfmove_clock=old_halfmove_clock,
+            old_active_color=old_active_color,
+            repetition_key=repetition_key
         )
 
     def remove_castling_character(self, board: BoardArray, piece: str):
@@ -176,25 +183,35 @@ class MoveArray:
             board.castling_rights = board.castling_rights = "-"  # no castling rights left
 
     def undo(self, board: BoardArray, undo: MoveUndo):
-        board.castling_rights = undo.castling
-        board.halfmove_clock = undo.halfmove_clock
-        piece = board.board[self.to_square[0]][self.to_square[1]]
-        if undo.promotion:
-            piece = "P" if piece.isupper() else "p"
+        from_x, from_y = self.from_square
+        to_x, to_y = self.to_square
 
-        board.board[self.to_square[0]][self.to_square[1]] = undo.captured_piece
-        board.board[self.from_square[0]][self.from_square[1]] = piece
-        board.active_color = undo.active_color
-        board.en_passant = undo.en_passant
+        board.board[to_x][to_y] = ""
+        # Restore moved piece
+        if not self.promotion:
+            board.board[from_x][from_y] = undo.moved_piece
+        else:
+            board.board[from_x][from_y] = "p" if undo.old_active_color == "b" else "P"
+        # Restore captured piece
+        cap_x, cap_y = undo.captured_square
+        board.board[cap_x][cap_y] = undo.captured_piece
+
+        # Undo castling rook move
+        if undo.castling_rook_from and undo.castling_rook_to:
+            rook_piece = board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]]
+            board.board[undo.castling_rook_from[0]][undo.castling_rook_from[1]] = rook_piece
+            board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]] = ""
+
+        # Restore all other board state
+        board.castling_rights = undo.old_castling
+        board.en_passant = undo.old_en_passant
+        board.halfmove_clock = undo.old_halfmove_clock
+        board.active_color = undo.old_active_color
+
+        # Revert repetition counter
         board.position_counts[undo.repetition_key] -= 1
         if board.position_counts[undo.repetition_key] == 0:
             del board.position_counts[undo.repetition_key]
-        if self.castling.lower() == "q":
-            board.board[self.from_square[0]][0] = "r" if piece.islower() else "R"
-            board.board[self.from_square[0]][3] = ""
-        if self.castling.lower() == "k":
-            board.board[self.from_square[0]][5] = ""
-            board.board[self.from_square[0]][7] = "r" if piece.islower() else "R"
 
 
 class MoveInformation:
@@ -244,7 +261,6 @@ class MoveGenerator:
         """
         if self._current_fen in MoveGenerator._moves_cache:
             return MoveGenerator._moves_cache[self._current_fen]
-
         pseudo_legal_moves: List[MoveArray] = []
         is_white = self.board.active_color == "w"
 
@@ -267,12 +283,19 @@ class MoveGenerator:
                         mi = MoveInformation(self.board, move)
                         valid, _ = is_pseudo_legal(mi)
                         if valid:
-                            pseudo_legal_moves.append(mi.move)
+                            # if pawn reaching last rank, generate promotions
+                            if square.lower() == "p" and (to_x == 0 or to_x == 7):
+                                for promo in ["q", "r", "b", "n"]:
+                                    promo_move = MoveArray(from_square=(from_x, from_y),
+                                                           to_square=(to_x, to_y),
+                                                           promotion=promo)
+                                    pseudo_legal_moves.append(promo_move)
+                            else:
+                                pseudo_legal_moves.append(move)
 
         # filter out moves that leave own king in check
         color = self.board.active_color
         legal_moves = []
-        new_legal_moves = []
         for move in pseudo_legal_moves:
             king_was_checked = self.board.is_king_in_check(color)
             if king_was_checked and move.castling != "":
@@ -290,19 +313,7 @@ class MoveGenerator:
                             continue
                 legal_moves.append(move)
             move.undo(self.board, undo)
-            if undo.promotion:
-                new_legal_moves.append(
-                    MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="b"))
-                new_legal_moves.append(
-                    MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="n"))
-                new_legal_moves.append(
-                    MoveArray(from_square=move.from_square, to_square=move.to_square, promotion="r"))
-        for move in new_legal_moves:
-            undo = move.apply(self.board)
-            if not self.board.is_king_in_check(color):
-                legal_moves.append(move)
 
-            move.undo(self.board, undo)
         if self.order:
             legal_moves = self.order_moves(legal_moves)
         MoveGenerator._moves_cache[self._current_fen] = legal_moves
