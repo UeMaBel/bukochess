@@ -1,7 +1,6 @@
 import pytest
 from app.chess.board_array import BoardArray
 from app.chess.move_array import MoveArray
-from app.chess.move_array import is_pseudo_legal
 from app.chess.move_array import MoveInformation
 
 
@@ -12,151 +11,8 @@ def start_board():
     return board
 
 
-def test_pawn_moves(start_board):
-    # White pawn e2 -> e4 (double step)
-    move = MoveArray((6, 4), (4, 4))  # row 6 = rank 2, column 4 = e
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, f"Expected e2-e4 to be legal, got: {msg}"
-
-    # White pawn e2 -> e3 (single step)
-    move = MoveArray((6, 4), (5, 4))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, f"Expected e2-e3 to be legal, got: {msg}"
-
-    # Illegal backward move
-    move = MoveArray((6, 4), (7, 4))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert not valid
-
-    # en passant white
-    en_passant_board = BoardArray()
-    en_passant_board.from_fen("rnbqkb1r/pppp1ppp/5n2/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3")
-    move = MoveArray((3, 3), (2, 4))
-    mi = MoveInformation(en_passant_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid
-
-
-def test_knight_moves(start_board):
-    # White knight g1 -> f3
-    move = MoveArray((7, 6), (5, 5))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, f"Expected g1-f3 to be legal, got: {msg}"
-
-    # Illegal move
-    move = MoveArray((7, 6), (5, 6))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert not valid
-
-
-def test_rook_moves_blocked(start_board):
-    # Rook a1 -> a3 blocked by pawn
-    move = MoveArray((7, 0), (5, 0))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert not valid
-
-    # Clear path (simulate pawn removed)
-    start_board.board[6][0] = ""
-    move = MoveArray((7, 0), (5, 0))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid
-
-
-def test_bishop_moves(start_board):
-    # Bishop f1 -> c4 blocked initially
-    move = MoveArray((7, 5), (4, 2))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert not valid
-
-    # Clear path
-    start_board.board[6][4] = ""
-    move = MoveArray((7, 5), (4, 2))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid
-
-
-def test_queen_moves(start_board):
-    # Queen d1 -> h5 blocked by own pieces
-    move = MoveArray((7, 3), (3, 7))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert not valid
-
-    # Clear path
-    start_board.board[6][4] = ""
-    start_board.board[5][5] = ""
-    start_board.board[4][6] = ""
-    move = MoveArray((7, 3), (3, 7))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid
-
-
-def test_king_moves(start_board):
-    # King e1 -> e2 blocked
-    move = MoveArray((7, 4), (6, 4))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert not valid
-
-    # Clear path
-    start_board.board[6][4] = ""
-    move = MoveArray((7, 4), (6, 4))
-    mi = MoveInformation(start_board, move)
-    valid, msg = is_pseudo_legal(mi)
-
-    assert valid
-
-
 @pytest.fixture
 def empty_castling_board():
     board = BoardArray()
     board.from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
     return board
-
-
-def test_white_kingside_castling_pseudo_legal(empty_castling_board):
-    # King e1 -> g1
-    move = MoveArray((7, 4), (7, 6))
-    mi = MoveInformation(empty_castling_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, msg
-
-
-def test_white_queenside_castling_pseudo_legal(empty_castling_board):
-    # King e1 -> c1
-    move = MoveArray((7, 4), (7, 2))
-    mi = MoveInformation(empty_castling_board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, msg
-
-
-def test_black_kingside_castling_pseudo_legal():
-    board = BoardArray()
-    board.from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1")
-
-    # King e8 -> g8
-    move = MoveArray((0, 4), (0, 6))
-    mi = MoveInformation(board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, msg
-
-
-def test_black_queenside_castling_pseudo_legal():
-    board = BoardArray()
-    board.from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1")
-
-    # King e8 -> c8
-    move = MoveArray((0, 4), (0, 2))
-    mi = MoveInformation(board, move)
-    valid, msg = is_pseudo_legal(mi)
-    assert valid, msg

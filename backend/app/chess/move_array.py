@@ -1,5 +1,6 @@
 from typing import Optional, Tuple, List, Dict
-
+from app.chess.static import PAWN_OFFSETS, KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_OFFSETS, ROOK_DIRS, BISHOP_DIRS, \
+    QUEEN_DIRS
 from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, PIECE_INDEX
 from dataclasses import dataclass
 
@@ -72,10 +73,6 @@ class MoveArray:
 
     def __str__(self) -> str:
         return self.to_uci()
-
-    def is_pseudo_legal(self, board: BoardArray) -> tuple[bool, str | None]:
-        mi = MoveInformation(board, self)
-        return is_pseudo_legal(mi)
 
     def apply(self, board: BoardArray) -> MoveUndo:
         from_x, from_y = self.from_square
@@ -317,35 +314,10 @@ class MoveGenerator:
             return MoveGenerator._moves_cache[self._current_hash]
         pseudo_legal_moves: List[MoveArray] = []
         is_white = self.board.active_color == "w"
+        board = self.board.board
+        enemy_king = self.board.find_king("b" if is_white else "w")
 
-        for from_x in range(0, 8):
-            for from_y in range(0, 8):
-                square = self.board.board[from_x][from_y]
-                if square == "":
-                    continue
-                square_is_upper = square.isupper()
-                if is_white != square_is_upper:
-                    continue
-                for to_x in range(0, 8):
-                    for to_y in range(0, 8):
-                        cap = self.board.board[to_x][to_y]
-                        if cap != "":
-                            if cap.isupper() == is_white:
-                                continue
-                        move = MoveArray(from_square=(from_x, from_y), to_square=(to_x, to_y), captured_piece=cap,
-                                         promotion="")
-                        mi = MoveInformation(self.board, move)
-                        valid, _ = is_pseudo_legal(mi)
-                        if valid:
-                            # if pawn reaching last rank, generate promotions
-                            if square.lower() == "p" and (to_x == 0 or to_x == 7):
-                                for promo in ["q", "r", "b", "n"]:
-                                    promo_move = MoveArray(from_square=(from_x, from_y),
-                                                           to_square=(to_x, to_y),
-                                                           promotion=promo)
-                                    pseudo_legal_moves.append(promo_move)
-                            else:
-                                pseudo_legal_moves.append(move)
+        pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board, enemy_king)
 
         # filter out moves that leave own king in check
         color = self.board.active_color
@@ -373,6 +345,25 @@ class MoveGenerator:
         MoveGenerator._moves_cache[self._current_hash] = legal_moves
         return legal_moves
 
+    def calc_range(self, piece: str, from_x: int, from_y: int):
+        to_x = []
+        to_y = []
+        piece = piece.lower()
+        if piece == "p":
+            to_x.append(from_x - 1)
+            to_x.append(from_x + 1)
+            to_x.append(from_x - 2)
+            to_x.append(from_x + 2)
+            to_y.append(from_y - 1)
+            to_y.append(from_y + 1)
+        elif piece == "k":
+            to_x.append(from_x - 1)
+            to_x.append(from_x + 1)
+            to_y.append(from_y - 1)
+            to_y.append(from_y + 1)
+            to_y.append(from_y - 2)
+            to_y.append(from_y + 2)
+
     def order_moves(self, moves: list[MoveArray], board: BoardArray) -> list[MoveArray]:
         promotions = []
         captures = []
@@ -397,199 +388,145 @@ class MoveGenerator:
         move.undo(self.board, undo)
         return ret
 
+    def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> List[MoveArray]:
+        pseudo_legal_moves: List[MoveArray] = []
+        for x in range(0, 8):
+            for y in range(0, 8):
+                square = self.board.board[x][y]
+                if not square:
+                    continue
+                square_is_upper = square.isupper()
+                if is_white != square_is_upper:
+                    continue
+                p = square.lower()
 
-def is_pseudo_legal(mi: "MoveInformation") -> tuple[bool, str | None]:
-    """
-    Checks if a move is pseudo-legal
-    """
-    if mi.from_x > 7 or mi.from_y > 7 or mi.to_x > 7 or mi.to_y > 7 or mi.from_x < 0 or mi.from_y < 0 or mi.to_y < 0 or mi.to_x < 0:
-        return False, "end of board"
-    if mi.abs_dx == 0 and mi.abs_dy == 0:
-        return False, "piece didnt move"
-    if mi.from_square_piece == "":
-        return False, "no piece selected"
-    # if mi.active_color == "b" and mi.from_square_piece.isupper():
-    #    return False, "blacks turn"
-    # if mi.active_color == "w" and not mi.from_square_piece.isupper():
-    #    return False, "whites turn"
-    if mi.to_square_piece != "":
-        if mi.to_square_piece.isupper() == mi.from_square_piece.isupper():
-            return False, "cant capture same color"
+                if p == "n":
+                    for dx, dy in KNIGHT_OFFSETS:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < 8 and 0 <= ny < 8:
+                            target = board[nx][ny]
+                            if target == "" or target.isupper() != is_white:
+                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                elif p == "k":
+                    for dx, dy in KING_OFFSETS:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < 8 and 0 <= ny < 8:
+                            ex, ey = enemy_king
+                            if abs(nx - ex) <= 1 and abs(ny - ey) <= 1:
+                                # illegal: kings adjacent
+                                continue
+                            target = board[nx][ny]
+                            if target == "" or target.isupper() != is_white:
+                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                    if (is_white and (x, y) == (7, 4)) or (not is_white and (x, y) == (0, 4)):
+                        rights = self.board.castling_rights
+                        for dx, dy in CASTLE_OFFSETS:
+                            if is_white and dy == -2 and "Q" not in rights:
+                                continue
+                            if is_white and dy == 2 and "K" not in rights:
+                                continue
+                            if not is_white and dy == -2 and "q" not in rights:
+                                continue
+                            if not is_white and dy == 2 and "k" not in rights:
+                                continue
 
-    # piece logics
-    if mi.piece == "k":  # KING
-        return pseudo_king(mi)
-    elif mi.piece == "q":  # QUEEN
-        return pseudo_queen(mi)
-    elif mi.piece == "r":  # ROOK
-        return pseudo_rook(mi)
-    elif mi.piece == "b":  # BISHOP
-        return pseudo_bishop(mi)
-    elif mi.piece == "n":  # KNIGHT
-        return pseudo_knight(mi)
-    if mi.piece == "p":  # PAWN
-        return pseudo_pawn(mi)
-    else:
-        return False, "error"
-
-
-def pseudo_king(mi: "MoveInformation"):
-    x_to_check = []
-    y_to_check = []
-    if mi.abs_dx != 0 and mi.abs_dx != 1 and mi.abs_dx != 2:
-        return False, "illegal king move"
-    if mi.abs_dy != 0 and mi.abs_dy != 1 and mi.abs_dy != 2:
-        return False, "illegal king move"
-    if mi.to_x != 0:
-        x_to_check.append(mi.to_x - 1)
-    if mi.to_x != 7:
-        x_to_check.append(mi.to_x + 1)
-    if mi.to_y != 0:
-        y_to_check.append(mi.to_y - 1)
-    if mi.to_y != 7:
-        y_to_check.append(mi.to_y + 1)
-    x_to_check.append(mi.to_x)
-    y_to_check.append(mi.to_y)
-    for x in x_to_check:
-        for y in y_to_check:
-            if x == mi.from_x and y == mi.from_y:
-                continue
-            if x == mi.to_x and y == mi.to_y:
-                continue
-            if mi.board.board[x][y].lower() == "k":
-                return False, "king to close to enemy king"
-
-    # castle logic
-    if mi.abs_dx == 0 and mi.abs_dy == 2:
-        is_white = mi.from_square_piece.isupper()
-        rights = mi.board.castling_rights
-
-        # kingside castle
-        if mi.d_y > 0:
-            if (is_white and "K" not in rights) or (not is_white and "k" not in rights):
-                return False, "no castling rights"
-
-            rook_y = 7
-            path = [(mi.from_x, 5), (mi.from_x, 6)]
-            mi.move.castling = "k"
-
-        # queenside castle
-        else:
-            if (is_white and "Q" not in rights) or (not is_white and "q" not in rights):
-                return False, "no castling rights"
-
-            rook_y = 0
-            path = [(mi.from_x, 3), (mi.from_x, 2), (mi.from_x, 1)]
-            mi.move.castling = "q"
-
-        rook_char = "R" if is_white else "r"
-        if mi.board.board[mi.from_x][rook_y] != rook_char:
-            return False, "rook missing for castling"
-
-        for x, y in path:
-            if mi.board.board[x][y] != "":
-                return False, "piece in the way for castling"
-
-        return True, None
-
-    # normal king move
-    if max(mi.abs_dx, mi.abs_dy) == 1:
-        return True, None
-
-    return False, "illegal king movement"
-
-
-def pseudo_queen(mi: "MoveInformation"):
-    # first check if diagonal or rank/file movement:
-    if mi.abs_dx == mi.abs_dy:  # diagonal movement
-        step_x = 1 if mi.d_x > 0 else -1
-        step_y = 1 if mi.d_y > 0 else -1
-        x, y = mi.from_x + step_x, mi.from_y + step_y
-        while x != mi.to_x and y != mi.to_y:
-            if mi.board.board[x][y] != "":
-                return False, "piece in the way"
-            x += step_x
-            y += step_y
-        return True, None
-    if (mi.abs_dx == 0 and mi.abs_dy > 0) or (mi.abs_dx > 0 and mi.abs_dy == 0):  # rook movement
-        if mi.abs_dx == 0:
-            step = 1 if mi.d_y > 0 else -1
-            for y in range(mi.from_y + step, mi.to_y, step):
-                if mi.board.board[mi.from_x][y] != "":
-                    return False, "piece in the way"
-        elif mi.abs_dy == 0:
-            step = 1 if mi.d_x > 0 else -1
-            for x in range(mi.from_x + step, mi.to_x, step):
-                if mi.board.board[x][mi.from_y] != "":
-                    return False, "piece in the way"
-        return True, None
-    else:
-        return False, "queen can only move ranks, files or diagonally"
-
-
-def pseudo_rook(mi: "MoveInformation"):
-    if mi.abs_dx > 0 and mi.abs_dy > 0:
-        return False, "rook can only move ranks, or files"
-    if mi.abs_dx == 0:
-        step = 1 if mi.d_y > 0 else -1
-        for y in range(mi.from_y + step, mi.to_y, step):
-            if mi.board.board[mi.from_x][y] != "":
-                return False, "piece in the way"
-
-    elif mi.abs_dy == 0:
-        step = 1 if mi.d_x > 0 else -1
-        for x in range(mi.from_x + step, mi.to_x, step):
-            if mi.board.board[x][mi.from_y] != "":
-                return False, "piece in the way"
-    return True, None
-
-
-def pseudo_bishop(mi: "MoveInformation"):
-    if mi.abs_dy != mi.abs_dx:
-        return False, "bishop can only move diagonal"
-    step_x = 1 if mi.d_x > 0 else -1
-    step_y = 1 if mi.d_y > 0 else -1
-    x, y = mi.from_x + step_x, mi.from_y + step_y
-    while x != mi.to_x and y != mi.to_y:
-        if mi.board.board[x][y] != "":
-            return False, "piece in the way"
-        x += step_x
-        y += step_y
-    return True, None
-
-
-def pseudo_knight(mi: "MoveInformation"):
-    if (mi.abs_dx, mi.abs_dy) not in [(1, 2), (2, 1)]:
-        return False, "illegal knight move"
-    return True, None
-
-
-def pseudo_pawn(mi: "MoveInformation"):
-    if mi.abs_dy != 0 and mi.abs_dy != 1:
-        return False, "illegal pawn move"
-    if mi.abs_dx != 1 and mi.abs_dx != 2:
-        return False, "illegal pawn move"
-    direction = -1 if mi.from_square_piece.isupper() else 1
-    if mi.to_square_piece != "":  # capture
-        if mi.d_x == direction and mi.abs_dy == 1:
-            return True, None
-        else:
-            return False, "illegal pawn capture"
-    else:  # move forward
-        if mi.d_x == direction and mi.abs_dy == 0:
-            return True, None
-        start_row = 6 if mi.from_square_piece.isupper() else 1
-        if mi.from_x == start_row and mi.d_x == 2 * direction and mi.d_y == 0:
-            if mi.board.board[mi.to_x - direction][mi.to_y] == "":
-                return True, None
-            else:
-                return False, "two-move pawn not possible"
-        # en passant logic
-        en_passant_row = 3 if mi.from_square_piece.isupper() else 4
-        if mi.from_x == en_passant_row:
-            if mi.board.en_passant != "-":
-                en_passant_pos = notation_to_int_tuple(mi.board.en_passant)
-                if mi.to_x == en_passant_pos[0] and mi.to_y == en_passant_pos[1]:
-                    mi.move.en_passant = True
-                    return True, None
-        return False, "illegal pawn move"
+                            nx, ny = x + dx, y + dy
+                            step_y = y + (1 if dy > 0 else -1)
+                            if 0 <= ny < 8:
+                                ex, ey = enemy_king
+                                if abs(nx - ex) <= 1 and abs(ny - ey) <= 1:
+                                    # illegal: kings adjacent
+                                    continue
+                                rook_y = 0 if dy == -2 else 7
+                                rook = board[nx][rook_y]
+                                if (is_white and rook == "R") or (not is_white and rook == "r"):
+                                    # squares between king and destination must be empty
+                                    if board[x][step_y] == "" and board[x][ny] == "":
+                                        m = MoveArray((x, y), (nx, ny))
+                                        m.castling = "k" if dy == 2 else "q"
+                                        pseudo_legal_moves.append(m)
+                elif p == "p":
+                    for dx, dy in PAWN_OFFSETS[self.board.active_color]:
+                        nx, ny = x + dx, y + dy
+                        is_promo = nx == 7 or nx == 0
+                        if 0 <= nx < 8 and 0 <= ny < 8:
+                            target = board[nx][ny]
+                            if target != "":  # capture
+                                if abs(dx) == 1 and abs(dy) == 1:
+                                    if (is_white and board[nx][ny].islower()) or (
+                                            not is_white and board[nx][ny].isupper()):
+                                        if is_promo:
+                                            for promo in ["q", "r", "b", "n"]:
+                                                promo_move = MoveArray(from_square=(x, y),
+                                                                       to_square=(nx, ny),
+                                                                       promotion=promo, captured_piece=target)
+                                                pseudo_legal_moves.append(promo_move)
+                                        else:
+                                            pseudo_legal_moves.append(
+                                                MoveArray((x, y), (nx, ny), captured_piece=target))
+                            elif dy == 0 and (abs(dx) == 1 or abs(dx) == 2):
+                                if abs(dx) == 2:
+                                    if (is_white and x == 6) or (not is_white and x == 1):
+                                        bx = 5 if is_white else 2
+                                        if board[bx][y] == "":
+                                            pseudo_legal_moves.append(
+                                                MoveArray((x, y), (nx, ny), captured_piece=target))
+                                else:
+                                    if is_promo:
+                                        for promo in ["q", "r", "b", "n"]:
+                                            promo_move = MoveArray(from_square=(x, y),
+                                                                   to_square=(nx, ny),
+                                                                   promotion=promo, captured_piece=target)
+                                            pseudo_legal_moves.append(promo_move)
+                                    else:
+                                        pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                            elif abs(dy) == 1 and abs(dx) == 1:  # check en poissant
+                                if self.board.en_passant != "-":
+                                    en_passant_pos = notation_to_int_tuple(self.board.en_passant)
+                                    ep_target = board[x][ny]
+                                    if nx == en_passant_pos[0] and ny == en_passant_pos[1]:
+                                        if (ep_target == "P" and not is_white) or (ep_target == "p" and is_white):
+                                            ep_move = MoveArray(from_square=(x, y),
+                                                                to_square=(nx, ny), captured_piece=ep_target)
+                                            ep_move.en_passant = True
+                                            pseudo_legal_moves.append(ep_move)
+                elif p == "r":
+                    for dx, dy in ROOK_DIRS:
+                        nx, ny = x + dx, y + dy
+                        while 0 <= nx < 8 and 0 <= ny < 8:
+                            target = board[nx][ny]
+                            if target == "":
+                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny)))
+                            else:
+                                if is_white == target.islower():
+                                    pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                break
+                            nx += dx
+                            ny += dy
+                elif p == "b":
+                    for dx, dy in BISHOP_DIRS:
+                        nx, ny = x + dx, y + dy
+                        while 0 <= nx < 8 and 0 <= ny < 8:
+                            target = board[nx][ny]
+                            if target == "":
+                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny)))
+                            else:
+                                if is_white == target.islower():
+                                    pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                break
+                            nx += dx
+                            ny += dy
+                elif p == "q":
+                    for dx, dy in QUEEN_DIRS:
+                        nx, ny = x + dx, y + dy
+                        while 0 <= nx < 8 and 0 <= ny < 8:
+                            target = board[nx][ny]
+                            if target == "":
+                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny)))
+                            else:
+                                if is_white == target.islower():
+                                    pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                break
+                            nx += dx
+                            ny += dy
+        return pseudo_legal_moves

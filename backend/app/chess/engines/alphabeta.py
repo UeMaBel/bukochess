@@ -33,7 +33,7 @@ class AlphaBeta(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 4
+        self.deepness = 3
         self.tt: dict[int, tuple[int, int]] = {}
         self.nodes = 0
 

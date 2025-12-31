@@ -1,6 +1,8 @@
 from typing import List
 
 from app.chess.board_base import BoardBase
+from app.chess.static import PAWN_OFFSETS, BISHOP_DIRS, QUEEN_DIRS, ROOK_DIRS, CASTLE_OFFSETS, KNIGHT_OFFSETS, \
+    KING_OFFSETS
 from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
 
 
@@ -152,15 +154,71 @@ class BoardArray(BoardBase):
                 and not self.has_legal_moves(color)
         )
 
-    def is_square_attacked(self, color: str, position: tuple[int, int]) -> bool:
-        opponent_piece_locations = self.get_pieces_location("w" if color == "b" else "b")
+    def is_square_attacked(self, color: str, target_square: tuple[int, int]) -> bool:
+        """
+        Returns True if the square is attacked by the given color.
+        Pseudo-legal moves only; ignores checks for own king safety.
+        """
+        enemy_color = "b" if color == "w" else "w"
+        ex, ey = target_square
+        b = self.board
 
-        from app.chess.move_array import MoveArray
-        for piece_location in opponent_piece_locations:
-            move = MoveArray(piece_location, position)
-            valid = move.is_pseudo_legal(self)
-            if valid[0]:
-                return True
+        for x in range(8):
+            for y in range(8):
+                piece = b[x][y]
+                if piece == "":
+                    continue
+                # skip pieces that are not enemy
+                if (piece.isupper() and enemy_color == "b") or (piece.islower() and enemy_color == "w"):
+                    continue
+
+                p = piece.lower()
+                is_white = piece.isupper()
+
+                # Pawn attacks
+                if p == "p":
+                    # Pawns attack diagonally
+                    dx = -1 if is_white else 1
+                    for dy in (-1, 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < 8 and 0 <= ny < 8 and (nx, ny) == target_square:
+                            return True
+
+                # Knight attacks
+                elif p == "n":
+                    for dx, dy in KNIGHT_OFFSETS:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < 8 and 0 <= ny < 8 and (nx, ny) == target_square:
+                            return True
+
+                # King attacks
+                elif p == "k":
+                    for dx, dy in KING_OFFSETS:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < 8 and 0 <= ny < 8 and (nx, ny) == target_square:
+                            return True
+
+                # Sliding pieces: rook, bishop, queen
+                else:
+                    dirs = []
+                    if p == "r":
+                        dirs = ROOK_DIRS
+                    elif p == "b":
+                        dirs = BISHOP_DIRS
+                    elif p == "q":
+                        dirs = ROOK_DIRS + BISHOP_DIRS
+
+                    for dx, dy in dirs:
+                        nx, ny = x + dx, y + dy
+                        while 0 <= nx < 8 and 0 <= ny < 8:
+                            target = b[nx][ny]
+                            if (nx, ny) == target_square:
+                                return True
+                            if target != "":
+                                break  # blocked
+                            nx += dx
+                            ny += dy
+
         return False
 
     def get_game_state(self):
