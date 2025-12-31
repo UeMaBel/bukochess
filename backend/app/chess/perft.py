@@ -7,8 +7,6 @@ def perft(board: BoardArray, depth: int) -> int:
         return 1
     nodes = 0
     generator = MoveGenerator(board)
-    if depth == 1:
-        a = 33
     moves = generator.legal_moves()
 
     for move in moves:

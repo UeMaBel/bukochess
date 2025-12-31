@@ -68,10 +68,11 @@ class BoardArray(BoardBase):
         self.active_color = "b" if self.active_color == "w" else "w"
 
     def create_repetition_key(self):
-        repetition_key = self.to_fen().split()[0]
-        repetition_key += self.active_color
-        repetition_key += self.castling_rights
-        repetition_key += self.en_passant
+        # repetition_key = self.to_fen().split()[0]
+        # repetition_key += self.active_color
+        # repetition_key += self.castling_rights
+        # repetition_key += self.en_passant
+        repetition_key = self.hash
         return repetition_key
 
     def is_threefold_repetition(self) -> bool:
@@ -225,8 +226,8 @@ class BoardArray(BoardBase):
         self.halfmove_clock = int(halfmove)
         self.fullmove_number = int(fullmove)
 
-        self.position_counts[self.create_repetition_key()] = 1
         self.compute_hash()
+        self.position_counts[self.create_repetition_key()] = 1
         return True, "FEN Imported"
 
     def to_fen(self) -> str:

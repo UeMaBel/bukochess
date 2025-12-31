@@ -4,7 +4,7 @@ from app.chess.board_array import BoardArray
 from app.chess.perft import perft, perft_divide
 
 PERFT_FILE = "tests/chess/perft_cases_web.epd"
-MAX_TEST_DEPTH = 2
+MAX_TEST_DEPTH = 3
 
 
 def parse_perft_line(line: str):
@@ -42,8 +42,6 @@ def test_perft_raw(line):
 
     board = BoardArray()
     board.from_fen(fen)
-    if fen == "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1":
-        a = 33
     expected_old = -1
     for depth, expected in depth_nodes:
         if depth > MAX_TEST_DEPTH:
@@ -54,6 +52,8 @@ def test_perft_raw(line):
         if result != expected and depth != 1:
 
             print("--------PERFT DIVIDE------------")
+            print(f"result: {result} - expected: {expected}")
+            print(board.print_board())
             print(f"FEN: {fen}, depth: {depth}, expected: {expected_old}")
             divide = perft_divide(board, depth)
             for move, count in divide.items():

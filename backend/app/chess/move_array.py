@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, List, Dict
 
-from app.chess.board_array import BoardArray
+from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, PIECE_INDEX
 from dataclasses import dataclass
 
 from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation
@@ -80,9 +80,14 @@ class MoveArray:
     def apply(self, board: BoardArray) -> MoveUndo:
         from_x, from_y = self.from_square
         to_x, to_y = self.to_square
-        piece = board.board[from_x][from_y]
 
+        from_sq = from_x * 8 + from_y
+        to_sq = to_x * 8 + to_y
+
+        piece = board.board[from_x][from_y]
         old_castling = board.castling_rights
+        old_castling_mask = board.castling_rights_mask()
+
         old_en_passant = board.en_passant
         old_halfmove_clock = board.halfmove_clock
         old_active_color = board.active_color
@@ -100,9 +105,12 @@ class MoveArray:
         captured_piece = board.board[captured_square[0]][captured_square[1]]
         if self.en_passant:
             board.board[captured_square[0]][captured_square[1]] = ""
+        if captured_piece:
+            board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][to_sq]
 
-        # Move the piece
+        # Move the piece and promotion
         board.board[from_x][from_y] = ""
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
         board.board[to_x][to_y] = piece
 
         # Promotion
@@ -112,6 +120,7 @@ class MoveArray:
             promotion_piece = self.promotion.upper() if piece_color == "w" else self.promotion.lower()
             board.board[to_x][to_y] = promotion_piece
             moved_piece = promotion_piece
+        board.hash ^= Z_PIECE[PIECE_INDEX[moved_piece]][to_sq]
 
         # Castling
         if piece.lower() == "k" or piece.lower() == "r":
@@ -120,26 +129,46 @@ class MoveArray:
         if self.castling.lower() == "k":  # kingside
             rook_from = (from_x, 7)
             rook_to = (from_x, 5)
-            board.board[rook_to[0]][rook_to[1]] = board.board[rook_from[0]][rook_from[1]]
+            castle_piece = board.board[rook_from[0]][rook_from[1]]
+            board.board[rook_to[0]][rook_to[1]] = castle_piece
             board.board[rook_from[0]][rook_from[1]] = ""
+
+            rook_from_sq = from_x * 8 + 7
+            rook_to_sq = from_x - 4
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_from_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_to_sq]
             castling_rook_from = rook_from
             castling_rook_to = rook_to
         elif self.castling.lower() == "q":  # queenside
             rook_from = (from_x, 0)
             rook_to = (from_x, 3)
+            castle_piece = board.board[rook_from[0]][rook_from[1]]
             board.board[rook_to[0]][rook_to[1]] = board.board[rook_from[0]][rook_from[1]]
             board.board[rook_from[0]][rook_from[1]] = ""
             castling_rook_from = rook_from
             castling_rook_to = rook_to
+            rook_from_sq = from_x * 8
+            rook_to_sq = rook_from_sq + 3
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_from_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_to_sq]
+        new_castling_mask = board.castling_rights_mask()
+        board.hash ^= Z_CASTLING[old_castling_mask]
+        board.hash ^= Z_CASTLING[new_castling_mask]
 
         # Update en-passant target
+        if board.en_passant != "-":
+            file = ord(board.en_passant[0]) - ord("a")
+            board.hash ^= Z_EP_FILE[file]
         if piece.lower() == "p" and abs(to_x - from_x) == 2:
             board.en_passant = f"{chr(from_y + ord('a'))}{(from_x + to_x) // 2 + 1}"
+            file = ord(board.en_passant[0]) - ord("a")
+            board.hash ^= Z_EP_FILE[file]
         else:
             board.en_passant = "-"
 
         # Switch active color
         board.active_color = "b" if board.active_color == "w" else "w"
+        board.hash ^= Z_SIDE
 
         # Repetition key
         repetition_key = board.create_repetition_key()
@@ -186,28 +215,53 @@ class MoveArray:
         from_x, from_y = self.from_square
         to_x, to_y = self.to_square
 
+        from_sq = from_x * 8 + from_y
+        to_sq = to_x * 8 + to_y
+
+        # remove moved piece
+        board.hash ^= Z_PIECE[PIECE_INDEX[board.board[to_x][to_y]]][to_sq]
         board.board[to_x][to_y] = ""
         # Restore moved piece
         if not self.promotion:
             board.board[from_x][from_y] = undo.moved_piece
         else:
             board.board[from_x][from_y] = "p" if undo.old_active_color == "b" else "P"
+        piece = board.board[from_x][from_y]
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
+
         # Restore captured piece
         cap_x, cap_y = undo.captured_square
+        cap_sq = cap_x * 8 + cap_y
         board.board[cap_x][cap_y] = undo.captured_piece
+        if undo.captured_piece:
+            board.hash ^= Z_PIECE[PIECE_INDEX[undo.captured_piece]][cap_sq]
 
         # Undo castling rook move
         if undo.castling_rook_from and undo.castling_rook_to:
             rook_piece = board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]]
             board.board[undo.castling_rook_from[0]][undo.castling_rook_from[1]] = rook_piece
             board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]] = ""
+            rook_from_sq = undo.castling_rook_from[0] * 8 + undo.castling_rook_from[1]
+            rook_to_sq = undo.castling_rook_to[0] * 8 + undo.castling_rook_to[1]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook_piece]][rook_from_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook_piece]][rook_to_sq]
 
         # Restore all other board state
+        old_castling_mask = board.castling_rights_mask()
         board.castling_rights = undo.old_castling
+        new_castling_mask = board.castling_rights_mask()
+        board.hash ^= Z_CASTLING[old_castling_mask]
+        board.hash ^= Z_CASTLING[new_castling_mask]
+        if board.en_passant != "-":
+            file = ord(board.en_passant[0]) - ord("a")
+            board.hash ^= Z_EP_FILE[file]
         board.en_passant = undo.old_en_passant
+        if board.en_passant != "-":
+            file = ord(board.en_passant[0]) - ord("a")
+            board.hash ^= Z_EP_FILE[file]
         board.halfmove_clock = undo.old_halfmove_clock
         board.active_color = undo.old_active_color
-
+        board.hash ^= Z_SIDE
         # Revert repetition counter
         board.position_counts[undo.repetition_key] -= 1
         if board.position_counts[undo.repetition_key] == 0:
@@ -239,11 +293,11 @@ class MoveGenerator:
     """
     Generates all legal moves for a given BoardArray.
     """
-    _moves_cache: dict[str, list[MoveArray]] = {}
+    _moves_cache: dict[int, list[MoveArray]] = {}
 
     def __init__(self, board: BoardArray, order: bool = False):
         self._board = board
-        self._current_fen: str = board.to_fen()
+        self._current_hash: int = board.hash
         self.order = order
 
     @property
@@ -253,14 +307,14 @@ class MoveGenerator:
     @board.setter
     def board(self, new_board: BoardArray):
         self._board = new_board
-        self._current_fen = new_board.to_fen()
+        self._current_hash = new_board.hash
 
     def legal_moves(self) -> List[MoveArray]:
         """
         Return a list of all legal moves for the current active color.
         """
-        if self._current_fen in MoveGenerator._moves_cache:
-            return MoveGenerator._moves_cache[self._current_fen]
+        if self._current_hash in MoveGenerator._moves_cache:
+            return MoveGenerator._moves_cache[self._current_hash]
         pseudo_legal_moves: List[MoveArray] = []
         is_white = self.board.active_color == "w"
 
@@ -316,7 +370,7 @@ class MoveGenerator:
 
         if self.order:
             legal_moves = self.order_moves(legal_moves)
-        MoveGenerator._moves_cache[self._current_fen] = legal_moves
+        MoveGenerator._moves_cache[self._current_hash] = legal_moves
         return legal_moves
 
     def order_moves(self, moves: list[MoveArray]) -> list[MoveArray]:

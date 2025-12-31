@@ -68,19 +68,23 @@ def test_apply_undo_nested():
     board = BoardArray()
     board.from_fen(start_fen)  # White to move
 
+    start_hash = board.hash
     generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     for m in moves:
         undo = m.apply(board)
-        for n in generator.legal_moves():
+        new_generator = MoveGenerator(board)
+        for n in new_generator.legal_moves():
             undo_n = n.apply(board)
             n.undo(board, undo_n)
         m.undo(board, undo)
 
     end_fen = board.to_fen()
+    end_hash = board.hash
     print(end_fen)
     assert start_fen == end_fen
+    assert start_hash == end_hash
 
 
 def test_apply_undo_en_passant():

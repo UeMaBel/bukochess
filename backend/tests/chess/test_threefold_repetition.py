@@ -1,5 +1,6 @@
 from app.chess.board_array import BoardArray
 from app.chess.move_array import MoveArray
+from app.chess.perft import perft
 
 
 def test_threefold_repetition_knight_shuffle():
@@ -62,6 +63,14 @@ def test_repetition_en_passant_matters():
 
     # En passant square changed/reset → no repetition
     assert board.is_threefold_repetition() is False
+
+
+def test_repetition_undo_restorekjs_counts():
+    board = BoardArray()
+    board.from_fen(" 8/8/k7/p7/P7/K7/8/8 b - - 0 1")
+
+    erg = perft(board, 2)
+    assert erg == 9
 
 
 def test_repetition_undo_restores_counts():
