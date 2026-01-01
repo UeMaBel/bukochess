@@ -1,7 +1,6 @@
 import pytest
 from app.chess.board_array import BoardArray
 from app.chess.move_array import MoveArray
-from app.chess.move_array import MoveInformation
 
 
 @pytest.fixture

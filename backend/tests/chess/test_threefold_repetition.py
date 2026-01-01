@@ -1,23 +1,25 @@
 from app.chess.board_array import BoardArray
-from app.chess.move_array import MoveArray
+from app.chess.move_tuple import MoveTupleGenerator
 from app.chess.perft import perft
+from app.chess.utils import sq
 
 
 def test_threefold_repetition_knight_shuffle():
     board = BoardArray()
     board.from_fen("4k1n1/8/8/8/8/8/8/4K1N1 w - - 0 1")
+    gen = MoveTupleGenerator(board)
 
     moves = [
-        MoveArray((7, 6), (5, 5)),  # Ng1-f3
-        MoveArray((0, 6), (2, 5)),  # Ng8-f6
-        MoveArray((5, 5), (7, 6)),  # Nf3-g1
-        MoveArray((2, 5), (0, 6)),  # Nf6-g8
+        tuple((sq(7, 6), sq(5, 5), 0)),  # Ng1-f3
+        tuple((sq(0, 6), sq(2, 5), 0)),  # Ng8-f6
+        tuple((sq(5, 5), sq(7, 6), 0)),  # Nf3-g1
+        tuple((sq(2, 5), sq(0, 6), 0)),  # Nf6-g8
     ]
 
     # Repeat sequence twice (initial position counts as first)
     for _ in range(2):
         for move in moves:
-            move.apply(board)
+            gen.apply(board, move)
 
     assert board.is_threefold_repetition() is True
 
@@ -25,16 +27,17 @@ def test_threefold_repetition_knight_shuffle():
 def test_twofold_repetition_is_not_draw():
     board = BoardArray()
     board.from_fen("4k1n1/8/8/8/8/8/8/4K1N1 w - - 0 1")
+    gen = MoveTupleGenerator(board)
 
     moves = [
-        MoveArray((7, 6), (5, 5)),
-        MoveArray((0, 6), (2, 5)),
-        MoveArray((5, 5), (7, 6)),
-        MoveArray((2, 5), (0, 6)),
+        tuple((sq(7, 6), sq(5, 5), 0)),
+        tuple((sq(0, 6), sq(2, 5), 0)),
+        tuple((sq(5, 5), sq(7, 6), 0)),
+        tuple((sq(2, 5), sq(0, 6), 0)),
     ]
 
     for move in moves:
-        move.apply(board)
+        gen.apply(board, move)
 
     assert board.is_threefold_repetition() is False
 

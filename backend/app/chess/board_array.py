@@ -21,6 +21,7 @@ class BoardArray(BoardBase):
         self.position_counts: dict[str, int]
         self.position_counts = {}
         self.hash = 0
+        self.undo_stack: list[tuple] = []
 
     def compute_hash(self):
         h = 0

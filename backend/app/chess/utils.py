@@ -2,6 +2,18 @@ FILES = "abcdefgh"
 RANKS = "12345678"
 
 
+def sq(x: int, y: int) -> int:
+    return x * 8 + y
+
+
+def file(sq: int) -> int:
+    return sq & 7
+
+
+def rank(sq: int) -> int:
+    return sq >> 3
+
+
 def square_to_notation(square: tuple[int, int]) -> str:
     """
     (row, col) -> chess notation

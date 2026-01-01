@@ -43,6 +43,7 @@ def test_perft_raw(line):
     board = BoardArray()
     board.from_fen(fen)
     expected_old = -1
+    old_hash = board.hash
     for depth, expected in depth_nodes:
         if depth > MAX_TEST_DEPTH:
             pytest.skip(f"Skipping depth {depth}")
@@ -68,3 +69,4 @@ def test_perft_raw(line):
             f"Depth: {depth}\n"
             f"Expected: {expected}, Got: {result}"
         )
+    assert old_hash == board.hash

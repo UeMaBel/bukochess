@@ -265,27 +265,6 @@ class MoveArray:
             del board.position_counts[undo.repetition_key]
 
 
-class MoveInformation:
-    def __init__(self, board: BoardArray, move: MoveArray):
-        self.board = board
-        self.move = move
-
-        self.active_color = board.active_color
-        self.from_square_piece = board.board[move.from_square[0]][move.from_square[1]]
-        self.to_square_piece = board.board[move.to_square[0]][move.to_square[1]]
-        self.piece = self.from_square_piece.lower()
-
-        self.from_x = move.from_square[0]
-        self.from_y = move.from_square[1]
-        self.to_x = move.to_square[0]
-        self.to_y = move.to_square[1]
-
-        self.abs_dx = abs(self.from_x - self.to_x)
-        self.abs_dy = abs(self.from_y - self.to_y)
-        self.d_x = self.to_x - self.from_x
-        self.d_y = self.to_y - self.from_y
-
-
 class MoveGenerator:
     """
     Generates all legal moves for a given BoardArray.
@@ -312,19 +291,16 @@ class MoveGenerator:
         """
         if self._current_hash in MoveGenerator._moves_cache:
             return MoveGenerator._moves_cache[self._current_hash]
-        pseudo_legal_moves: List[MoveArray] = []
         is_white = self.board.active_color == "w"
         board = self.board.board
         enemy_king = self.board.find_king("b" if is_white else "w")
-        if self.board.to_fen() == '1r2k2r/p1ppqpb1/bn2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R w KQk - 1 1':
-            a = 33
-        pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board, enemy_king)
 
+        pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board, enemy_king)
         # filter out moves that leave own king in check
         color = self.board.active_color
+        king_was_checked = self.board.is_king_in_check(color)
         legal_moves = []
         for move in pseudo_legal_moves:
-            king_was_checked = self.board.is_king_in_check(color)
             if king_was_checked and move.castling != "":
                 continue
             undo = move.apply(self.board)
