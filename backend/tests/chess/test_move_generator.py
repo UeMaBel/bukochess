@@ -1,4 +1,6 @@
 import time
+from tokenize import generate_tokens
+
 import pytest
 
 from app.chess.board_array import BoardArray
@@ -115,6 +117,17 @@ def test_cm_white():
     moves = generator.legal_moves()
     assert board.is_checkmate()
     assert board.is_checkmate()
+
+
+def test_mg():
+    fen = "1r2k2r/p1ppqpb1/bn2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R w KQk - 1 1"
+    board = BoardArray()
+    board.from_fen(fen)
+    gen = MoveGenerator(board)
+    moves = gen.legal_moves()
+    for m in moves:
+        undo = m.apply(board)
+        m.undo(board, undo)
 
 
 @pytest.mark.parametrize("name", TEST_POSITIONS.keys())

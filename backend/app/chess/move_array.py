@@ -104,7 +104,6 @@ class MoveArray:
             board.board[captured_square[0]][captured_square[1]] = ""
         if captured_piece:
             board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][to_sq]
-
         # Move the piece and promotion
         board.board[from_x][from_y] = ""
         board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
@@ -157,7 +156,8 @@ class MoveArray:
             file = ord(board.en_passant[0]) - ord("a")
             board.hash ^= Z_EP_FILE[file]
         if piece.lower() == "p" and abs(to_x - from_x) == 2:
-            board.en_passant = f"{chr(from_y + ord('a'))}{(from_x + to_x) // 2 + 1}"
+            x_rank = 3 if "P" else 6
+            board.en_passant = f"{chr(from_y + ord('a'))}{x_rank}"
             file = ord(board.en_passant[0]) - ord("a")
             board.hash ^= Z_EP_FILE[file]
         else:
@@ -316,7 +316,8 @@ class MoveGenerator:
         is_white = self.board.active_color == "w"
         board = self.board.board
         enemy_king = self.board.find_king("b" if is_white else "w")
-
+        if self.board.to_fen() == '1r2k2r/p1ppqpb1/bn2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R w KQk - 1 1':
+            a = 33
         pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board, enemy_king)
 
         # filter out moves that leave own king in check
@@ -469,8 +470,11 @@ class MoveGenerator:
                                     if (is_white and x == 6) or (not is_white and x == 1):
                                         bx = 5 if is_white else 2
                                         if board[bx][y] == "":
-                                            pseudo_legal_moves.append(
-                                                MoveArray((x, y), (nx, ny), captured_piece=target))
+                                            m = MoveArray(
+                                                (x, y),
+                                                (nx, ny),
+                                                captured_piece=target)
+                                            pseudo_legal_moves.append(m)
                                 else:
                                     if is_promo:
                                         for promo in ["q", "r", "b", "n"]:
