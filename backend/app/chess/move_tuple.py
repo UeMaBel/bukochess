@@ -31,8 +31,8 @@ class MoveTupleGenerator:
         """
         Return a list of all legal moves for the current active color.
         """
-        # if self.board.hash in MoveTupleGenerator._moves_cache:
-        #    return MoveTupleGenerator._moves_cache[self.board.hash]
+        if self.board.hash in MoveTupleGenerator._moves_cache:
+            return MoveTupleGenerator._moves_cache[self.board.hash]
 
         is_white = self.board.active_color == "w"
         board = self.board.board
@@ -123,6 +123,12 @@ class MoveTupleGenerator:
 
         board.board[tx][ty] = piece
         board.hash ^= Z_PIECE[PIECE_INDEX[piece]][to_sq]
+
+        # save new king state
+        if piece == "k":
+            board.black_king = to_sq
+        if piece == "K":
+            board.white_king = to_sq
 
         # --- PROMOTION ---
         if flags & FLAG_PROMOTION:
@@ -374,6 +380,12 @@ class MoveTupleGenerator:
         else:
             board.board[x][y] = "p" if old_active_color == "b" else "P"
         piece = board.board[x][y]
+
+        # save old king state
+        if piece == "k":
+            board.black_king = sq(x, y)
+        if piece == "K":
+            board.white_king = sq(x, y)
 
         # Restore captured piece
         board.board[nx][ny] = ""

@@ -4,6 +4,7 @@ from app.chess.board_base import BoardBase
 from app.chess.static import PAWN_OFFSETS, BISHOP_DIRS, QUEEN_DIRS, ROOK_DIRS, CASTLE_OFFSETS, KNIGHT_OFFSETS, \
     KING_OFFSETS
 from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
+from app.chess.utils import rank_x, file_y, sq
 
 
 class BoardArray(BoardBase):
@@ -22,6 +23,8 @@ class BoardArray(BoardBase):
         self.position_counts = {}
         self.hash = 0
         self.undo_stack: list[tuple] = []
+        self.white_king = 0
+        self.black_king = 0
 
     def compute_hash(self):
         h = 0
@@ -109,11 +112,19 @@ class BoardArray(BoardBase):
         return False
 
     def find_king(self, color: str) -> tuple[int, int]:
+        sq = 0
+        if color == "w":
+            sq = self.white_king
+        else:
+            sq = self.black_king
+        return rank_x(sq), file_y(sq)
+
+    def find_king_initial(self, color: str) -> int:
         king = "K" if color == "w" else "k"
         for x in range(8):
             for y in range(8):
                 if self.board[x][y] == king:
-                    return x, y
+                    return sq(x, y)
         raise ValueError("King not found")
 
     def is_king_in_check(self, color="") -> bool:
@@ -283,6 +294,13 @@ class BoardArray(BoardBase):
 
         self.compute_hash()
         self.position_counts[self.hash] = 1
+
+        try:
+            self.white_king = self.find_king_initial("w")
+            self.black_king = self.find_king_initial("b")
+        except:
+            self.white_king = 0
+            self.black_king = 0
         return True, "FEN Imported"
 
     def to_fen(self) -> str:
