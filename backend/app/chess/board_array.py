@@ -162,7 +162,64 @@ class BoardArray(BoardBase):
                 and not self.has_legal_moves(color)
         )
 
-    def is_square_attacked(self, color: str, target_square: tuple[int, int]) -> bool:
+    def is_square_attacked(self, color: str, sq: tuple[int, int]) -> bool:
+        board = self.board
+        x, y = sq
+
+        attacker_is_white = (color == "b")
+
+        # --- pawn attacks ---
+        pawn = "P" if attacker_is_white else "p"
+        pawn_dir = 1 if attacker_is_white else -1
+        for dy in (-1, 1):
+            nx, ny = x + pawn_dir, y + dy
+            if 0 <= nx < 8 and 0 <= ny < 8:
+                if board[nx][ny] == pawn:
+                    return True
+
+        # --- knight attacks ---
+        knight = "N" if attacker_is_white else "n"
+        for dx, dy in KNIGHT_OFFSETS:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < 8 and 0 <= ny < 8:
+                if board[nx][ny] == knight:
+                    return True
+
+        # --- king attacks ---
+        king = "K" if attacker_is_white else "k"
+        for dx, dy in KING_OFFSETS:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < 8 and 0 <= ny < 8:
+                if board[nx][ny] == king:
+                    return True
+
+        # --- rook / queen rays ---
+        for dx, dy in ROOK_DIRS:
+            nx, ny = x + dx, y + dy
+            while 0 <= nx < 8 and 0 <= ny < 8:
+                p = board[nx][ny]
+                if p:
+                    if p.isupper() == attacker_is_white and p.lower() in ("r", "q"):
+                        return True
+                    break
+                nx += dx
+                ny += dy
+
+        # --- bishop / queen rays ---
+        for dx, dy in BISHOP_DIRS:
+            nx, ny = x + dx, y + dy
+            while 0 <= nx < 8 and 0 <= ny < 8:
+                p = board[nx][ny]
+                if p:
+                    if p.isupper() == attacker_is_white and p.lower() in ("b", "q"):
+                        return True
+                    break
+                nx += dx
+                ny += dy
+
+        return False
+
+    def is_square_attacked_old(self, color: str, target_square: tuple[int, int]) -> bool:
         """
         Returns True if the square is attacked by the given color.
         Pseudo-legal moves only; ignores checks for own king safety.
