@@ -6,7 +6,7 @@ from app.chess.perft import perft, perft_divide
 from app.chess.utils import to_uci
 
 PERFT_FILE = "tests/chess/perft_cases_web.epd"
-MAX_TEST_DEPTH = 3
+MAX_TEST_DEPTH = 4
 
 
 def parse_perft_line(line: str):
