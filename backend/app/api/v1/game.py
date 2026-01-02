@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from app.core.logger import get_logger
 from app.core.exceptions import BukochessException
 from app.chess.board_array import BoardArray
-from app.chess.move_array import MoveArray, MoveGenerator
+from app.chess.move_tuple import MoveTupleGenerator
+from app.chess.utils import from_uci, to_uci
 from app.chess.engines.random_engine import RandomEngine
 
 logger = get_logger(__name__)
@@ -30,30 +31,34 @@ def make_move(req: MoveRequest):
         raise HTTPException(status_code=400, detail=msg)
 
     try:
-        move = MoveArray.from_uci(req.move)
+        move = from_uci(req.move)
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid move format")
 
-    generator = MoveGenerator(board)
+    generator = MoveTupleGenerator(board)
     legal_moves = generator.legal_moves()
 
     move_found = False
     for m in legal_moves:
-        if str(m) == req.move:
+        if to_uci(m) == req.move:
             move_found = True
             move = m
             break
     if not move_found:
         raise HTTPException(status_code=400, detail="illegal move")
 
-    undo = move.apply(board)
+    generator.apply(move)
 
     status = board.get_game_state()
+    legal_moves = MoveTupleGenerator(board).legal_moves()
+    legal_moves_str = []
+    for m in legal_moves:
+        legal_moves_str.append(to_uci(m))
 
     return {
         "fen": board.to_fen(),
         "status": status,
-        "legal_moves": [str(m) for m in MoveGenerator(board).legal_moves()],
+        "legal_moves": legal_moves_str
     }
 
 

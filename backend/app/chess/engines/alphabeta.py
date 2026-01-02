@@ -1,6 +1,6 @@
 import random
 from app.chess.board_array import BoardArray
-from app.chess.move_array import MoveArray, MoveGenerator
+from app.chess.move_tuple import MoveTupleGenerator
 from app.chess.engines.base import Engine
 
 
@@ -37,10 +37,9 @@ class AlphaBeta(Engine):
         self.tt: dict[int, tuple[int, int]] = {}
         self.nodes = 0
 
-    def choose_move(self, board):
-        generator = MoveGenerator(board, True)
-        moves = generator.legal_moves()
-
+    def choose_move(self, gen: MoveTupleGenerator):
+        moves = gen.legal_moves()
+        board = gen.board
         if not moves:
             return None
 
@@ -49,15 +48,15 @@ class AlphaBeta(Engine):
         best_moves = []
 
         for m in moves:
-            undo = m.apply(board)
+            gen.apply(m)
             value = self.alphabeta(
-                board,
+                gen,
                 self.deepness - 1,
                 -float("inf"),
                 float("inf"),
                 not maximizing
             )
-            m.undo(board, undo)
+            gen.undo(m)
 
             if maximizing:
                 if value > best_value:
@@ -74,15 +73,15 @@ class AlphaBeta(Engine):
 
         return self._rng.choice(best_moves)
 
-    def alphabeta(self, board: BoardArray, depth: int, alpha: float, beta: float, maximizing: bool) -> int:
+    def alphabeta(self, gen: MoveTupleGenerator, depth: int, alpha: float, beta: float, maximizing: bool) -> int:
         self.nodes += 1
+        board = gen.board
         entry = self.tt.get(board.hash)
         if entry and entry[0] >= depth:
             return entry[1]
         if depth == 0:
             return self.evaluate_position(board)
-        generator = MoveGenerator(board, True)
-        moves = generator.legal_moves()
+        moves = gen.legal_moves()
 
         if not moves:
             value = self.evaluate_position(board)
@@ -92,10 +91,9 @@ class AlphaBeta(Engine):
         if maximizing:
             value = -float("inf")
             for m in moves:
-                undo = m.apply(board)
-                value = max(value, self.alphabeta(board, depth - 1, alpha, beta, False))
-                m.undo(board, undo)
-
+                gen.apply(m)
+                value = max(value, self.alphabeta(gen, depth - 1, alpha, beta, False))
+                gen.undo(m)
                 alpha = max(alpha, value)
                 if alpha >= beta:
                     break  # β cutoff
@@ -104,9 +102,9 @@ class AlphaBeta(Engine):
         else:
             value = float("inf")
             for m in moves:
-                undo = m.apply(board)
-                value = min(value, self.alphabeta(board, depth - 1, alpha, beta, True))
-                m.undo(board, undo)
+                gen.apply(m)
+                value = min(value, self.alphabeta(gen, depth - 1, alpha, beta, True))
+                gen.undo(m)
 
                 beta = min(beta, value)
                 if beta <= alpha:

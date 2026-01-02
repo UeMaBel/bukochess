@@ -362,7 +362,7 @@ class MoveGenerator:
     def gives_check(self, move: MoveArray):
         undo = move.apply(self.board)
         ret = self.board.is_king_in_check()
-        move.undo(self.board, undo)
+        move.undo(undo)
         return ret
 
     def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> List[MoveArray]:

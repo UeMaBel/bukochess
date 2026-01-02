@@ -5,7 +5,7 @@ from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_
 from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLAG_EN_PASSANT, FLAG_NONE, FLAG_PROMO_B, \
     FLAG_PROMO_N, FLAG_PROMO_Q, FLAG_PROMO_R, FLAG_PROMOTION
 
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation, rank, file, sq
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation, rank_x, file_y, sq
 
 
 class MoveTupleGenerator:
@@ -17,7 +17,6 @@ class MoveTupleGenerator:
 
     def __init__(self, board: BoardArray, order: bool = False):
         self._board = board
-        self._current_hash: int = board.hash
         self.order = order
 
     @property
@@ -27,52 +26,184 @@ class MoveTupleGenerator:
     @board.setter
     def board(self, new_board: BoardArray):
         self._board = new_board
-        self._current_hash = new_board.hash
 
     def legal_moves(self) -> List[tuple[int, int, int]]:
         """
         Return a list of all legal moves for the current active color.
         """
-        if self._current_hash in MoveTupleGenerator._moves_cache:
-            return MoveTupleGenerator._moves_cache[self._current_hash]
+        # if self.board.hash in MoveTupleGenerator._moves_cache:
+        #    return MoveTupleGenerator._moves_cache[self.board.hash]
 
         is_white = self.board.active_color == "w"
         board = self.board.board
         enemy_king = self.board.find_king("b" if is_white else "w")
         board = self.board
 
-        pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board, enemy_king)
+        pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board.board, enemy_king)
         # filter out moves that leave own king in check
         color = self.board.active_color
         king_was_checked = self.board.is_king_in_check(color)
         legal_moves = []
         for move in pseudo_legal_moves:
             xy, nxy, flags = move
+            x = rank_x(xy)
+            y = file_y(xy)
+            nx = rank_x(nxy)
+            ny = file_y(nxy)
             if king_was_checked and ((flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)):
                 continue
-            undo = self.apply(board, move)
+            self.apply(move)
             if not self.board.is_king_in_check(color):
                 if flags & FLAG_CASTLE_K:
-                    if self.board.is_square_attacked(color, (move.from_square[0], move.from_square[1] + 1)):
+                    if self.board.is_square_attacked(color, (x, y + 1)):
+                        self.undo(move)
                         continue
                 if flags & FLAG_CASTLE_Q:
-                    if self.board.is_square_attacked(color, (move.to_square[0], move.to_square[1] + 1)):
+                    if self.board.is_square_attacked(color, (x, ny + 1)):
+                        self.undo(move)
                         continue
                 legal_moves.append(move)
-            self.undo(self.board, undo)
+            self.undo(move)
 
         if self.order:
             legal_moves = self.order_moves(legal_moves, self.board)
-        MoveTupleGenerator._moves_cache[self._current_hash] = legal_moves
+        MoveTupleGenerator._moves_cache[self.board.hash] = legal_moves
         return legal_moves
 
-    def apply(self, board: BoardArray, move: Tuple[int, int, int]):
+    def apply(self, move: Tuple[int, int, int]):
+        board = self.board
+        from_sq, to_sq, flags = move
+
+        fx, fy = rank_x(from_sq), file_y(from_sq)
+        tx, ty = rank_x(to_sq), file_y(to_sq)
+
+        piece = board.board[fx][fy]
+        captured_piece = ""
+        captured_square = None
+        rook_from = rook_to = None
+
+        # --- SAVE OLD STATE ---
+        old_castling = board.castling_rights
+        old_hash = board.hash
+
+        old_en_passant = board.en_passant
+        old_halfmove_clock = board.halfmove_clock
+        old_active_color = board.active_color
+
+        # --- REMOVE OLD EP HASH ---
+        if board.en_passant != "-":
+            f = ord(board.en_passant[0]) - ord("a")
+            board.hash ^= Z_EP_FILE[f]
+
+        board.en_passant = "-"
+
+        # --- HALF MOVE CLOCK ---
+        board.halfmove_clock += 1
+        if piece.lower() == "p":
+            board.halfmove_clock = 0
+
+        # --- CAPTURE ---
+        if flags & FLAG_EN_PASSANT:
+            captured_square = (fx, ty)
+        elif flags & FLAG_CAPTURE:
+            captured_square = (tx, ty)
+
+        if captured_square:
+            cx, cy = captured_square
+            captured_piece = board.board[cx][cy]
+            board.board[cx][cy] = ""
+            board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][sq(cx, cy)]
+            board.halfmove_clock = 0
+        else:
+            captured_square = (tx, ty)
+
+        # --- MOVE PIECE ---
+        board.board[fx][fy] = ""
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
+
+        board.board[tx][ty] = piece
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][to_sq]
+
+        # --- PROMOTION ---
+        if flags & FLAG_PROMOTION:
+            board.hash ^= Z_PIECE[PIECE_INDEX[piece]][to_sq]
+
+            piece_color = "w" if piece.isupper() else "b"
+            if flags & FLAG_PROMO_N:
+                promotion_piece = "n"
+            elif flags & FLAG_PROMO_B:
+                promotion_piece = "b"
+            elif flags & FLAG_PROMO_R:
+                promotion_piece = "r"
+            else:
+                promotion_piece = "q"
+            promotion_piece = promotion_piece if piece_color == "b" else promotion_piece.upper()
+            board.board[tx][ty] = promotion_piece
+            board.hash ^= Z_PIECE[PIECE_INDEX[promotion_piece]][to_sq]
+
+        # --- CASTLING ---
+        rook_from = None
+        rook_to = None
+        if flags & FLAG_CASTLE_K:
+            rook_from = (fx, 7)
+            rook_to = (fx, 5)
+        elif flags & FLAG_CASTLE_Q:
+            rook_from = (fx, 0)
+            rook_to = (fx, 3)
+
+        if rook_from:
+            rf, rt = rook_from, rook_to
+            rook = board.board[rf[0]][rf[1]]
+
+            board.board[rf[0]][rf[1]] = ""
+            board.board[rt[0]][rt[1]] = rook
+
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook]][sq(*rf)]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook]][sq(*rt)]
+
+        # --- CASTLING RIGHTS ---
+        old_mask = board.castling_rights_mask()
+        self.remove_castling_character(board, piece, fy)
+        new_mask = board.castling_rights_mask()
+
+        if old_mask != new_mask:
+            board.hash ^= Z_CASTLING[old_mask]
+            board.hash ^= Z_CASTLING[new_mask]
+
+        # --- EN PASSANT CREATION ---
+        if flags & FLAG_EN_PASSANT:
+            ep_rank = 3 if piece == "P" else 6
+            board.en_passant = f"{chr(fy + ord('a'))}{ep_rank}"
+            board.hash ^= Z_EP_FILE[fy]
+
+        # --- SIDE TO MOVE ---
+        board.active_color = "b" if board.active_color == "w" else "w"
+        board.hash ^= Z_SIDE
+
+        # --- REPETITION ---
+        board.position_counts[board.hash] = board.position_counts.get(board.hash, 0) + 1
+
+        # save undo info
+        board.undo_stack.append((
+            captured_piece,  # captured piece ("" if none)
+            captured_square,
+            piece,
+            rook_from,
+            rook_to,
+            old_castling,
+            old_en_passant,
+            old_halfmove_clock,
+            old_active_color,
+            old_hash
+        ))
+
+    def apply_old(self, board: BoardArray, move: Tuple[int, int, int]):
         xy, nxy, flags = move
 
-        x = file(xy)
-        y = rank(xy)
-        nx = file(nxy)
-        ny = rank(nxy)
+        x = rank_x(xy)
+        y = file_y(xy)
+        nx = rank_x(nxy)
+        ny = file_y(nxy)
 
         piece = board.board[x][y]
         old_castling = board.castling_rights
@@ -97,32 +228,33 @@ class MoveTupleGenerator:
         if flags & FLAG_CAPTURE:
             board.board[captured_square[0]][captured_square[1]] = ""
         if captured_piece:
-            board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][nxy]
+            csq = sq(captured_square[0], captured_square[1])
+            board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][csq]
         # Move the piece and promotion
         board.board[x][y] = ""
         board.hash ^= Z_PIECE[PIECE_INDEX[piece]][xy]
         board.board[nx][ny] = piece
-
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][nxy]
         # Promotion
         moved_piece = piece
         if flags & FLAG_PROMOTION:
             piece_color = "w" if piece.isupper() else "b"
             if flags & FLAG_PROMO_N:
                 promotion_piece = "n"
-            if flags & FLAG_PROMO_B:
+            elif flags & FLAG_PROMO_B:
                 promotion_piece = "b"
-            if flags & FLAG_PROMO_R:
+            elif flags & FLAG_PROMO_R:
                 promotion_piece = "r"
             else:
                 promotion_piece = "q"
             promotion_piece = promotion_piece if piece_color == "b" else promotion_piece.upper()
             board.board[nx][ny] = promotion_piece
             moved_piece = promotion_piece
-        board.hash ^= Z_PIECE[PIECE_INDEX[moved_piece]][nxy]
+            board.hash ^= Z_PIECE[PIECE_INDEX[moved_piece]][nxy]
 
         # Castling
         if piece.lower() == "k" or piece.lower() == "r":
-            self.remove_castling_character(board, piece)
+            self.remove_castling_character(board, piece, y)
         castling_rook_from = castling_rook_to = None
         if flags & FLAG_CASTLE_K:  # kingside
             rook_from = (x, 7)
@@ -188,7 +320,7 @@ class MoveTupleGenerator:
             old_hash
         ))
 
-    def remove_castling_character(self, board: BoardArray, piece: str):
+    def remove_castling_character(self, board: BoardArray, piece: str, y: int):
         """
         Remove castling rights for a given piece that moved.
         Returns:
@@ -199,26 +331,27 @@ class MoveTupleGenerator:
         elif piece == "k":  # Black king moved
             board.castling_rights = board.castling_rights.replace("k", "").replace("q", "")
         elif piece == "R":  # White rook moved
-            if self.from_square[1] == 7:
+            if y == 7:
                 board.castling_rights = board.castling_rights.replace("K", "")
-            if self.from_square[1] == 0:
+            if y == 0:
                 board.castling_rights = board.castling_rights.replace("Q", "")
         elif piece == "r":  # Black rook moved
-            if self.from_square[1] == 7:
+            if y == 7:
                 board.castling_rights = board.castling_rights.replace("k", "")
-            if self.from_square[1] == 0:
+            if y == 0:
                 board.castling_rights = board.castling_rights.replace("q", "")
 
         if board.castling_rights == "" or board.castling_rights == " ":
             board.castling_rights = board.castling_rights = "-"  # no castling rights left
 
-    def undo(self, board: BoardArray, move: Tuple[int, int, int]):
+    def undo(self, move: Tuple[int, int, int]):
+        board = self.board
         xy, nxy, flags = move
 
-        x = file(xy)
-        y = rank(xy)
-        nx = file(nxy)
-        ny = rank(nxy)
+        x = rank_x(xy)
+        y = file_y(xy)
+        nx = rank_x(nxy)
+        ny = file_y(nxy)
 
         (
             captured_piece,  # captured piece ("" if none)
@@ -230,7 +363,6 @@ class MoveTupleGenerator:
             old_en_passant,
             old_halfmove_clock,
             old_active_color,
-            repetition_key,
             old_hash
         ) = board.undo_stack.pop()
 
@@ -244,8 +376,10 @@ class MoveTupleGenerator:
         piece = board.board[x][y]
 
         # Restore captured piece
+        board.board[nx][ny] = ""
         cap_x, cap_y = captured_square
         cap_sq = cap_x * 8 + cap_y
+        # if not flags & FLAG_EN_PASSANT:
         board.board[cap_x][cap_y] = captured_piece
 
         # Undo castling rook move
@@ -260,9 +394,10 @@ class MoveTupleGenerator:
         board.halfmove_clock = old_halfmove_clock
         board.active_color = old_active_color
         # Revert repetition counter
-        board.position_counts[repetition_key] -= 1
-        if board.position_counts[repetition_key] == 0:
-            del board.position_counts[repetition_key]
+        if board.position_counts.get(old_hash):
+            board.position_counts[old_hash] -= 1
+            if board.position_counts[old_hash] == 0:
+                del board.position_counts[old_hash]
 
     def order_moves(self, moves: list[Tuple[int, int, int]], board: BoardArray) -> list[Tuple[int, int, int]]:
 
@@ -287,9 +422,9 @@ class MoveTupleGenerator:
         return promotions + captures + checks + quiet
 
     def gives_check(self, move: tuple[int, int, int]):
-        self.apply(self.board, move)
+        self.apply(move)
         ret = self.board.is_king_in_check()
-        self.undo(self.board, move)
+        self.undo(move)
         return ret
 
     def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> List[tuple[int, int, int]]:
@@ -303,7 +438,6 @@ class MoveTupleGenerator:
                 if is_white != square_is_upper:
                     continue
                 p = square.lower()
-
                 if p == "n":
                     for dx, dy in KNIGHT_OFFSETS:
                         nx, ny = x + dx, y + dy
@@ -322,7 +456,7 @@ class MoveTupleGenerator:
                                 # illegal: kings adjacent
                                 continue
                             target = board[nx][ny]
-                            if target == "" or target.isupper() != is_white:
+                            if target == "":
                                 moves.append((sq(x, y), sq(nx, ny), FLAG_NONE))
                             elif target.isupper() != is_white:
                                 moves.append((sq(x, y), sq(nx, ny), FLAG_CAPTURE))

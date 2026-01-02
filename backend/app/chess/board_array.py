@@ -54,7 +54,7 @@ class BoardArray(BoardBase):
 
     def copy(self) -> "BoardArray":
         new_board = BoardArray()
-        self.compute_hash()
+        new_board.hash = self.hash
         new_board.board = [row[:] for row in self.board]
 
         new_board.active_color = self.active_color
@@ -71,10 +71,6 @@ class BoardArray(BoardBase):
         self.active_color = "b" if self.active_color == "w" else "w"
 
     def create_repetition_key(self):
-        # repetition_key = self.to_fen().split()[0]
-        # repetition_key += self.active_color
-        # repetition_key += self.castling_rights
-        # repetition_key += self.en_passant
         repetition_key = self.hash
         return repetition_key
 
@@ -126,12 +122,12 @@ class BoardArray(BoardBase):
         return self.is_square_attacked(color, king_position)
 
     def has_legal_moves(self, color: str) -> bool:
-        from app.chess.move_array import MoveGenerator
+        from app.chess.move_tuple import MoveTupleGenerator
         if color == "": color = self.active_color
         current_color = self.active_color
         self.active_color = color
 
-        moves = MoveGenerator(self).legal_moves()
+        moves = MoveTupleGenerator(self).legal_moves()
 
         self.active_color = current_color
         return len(moves) > 0
@@ -286,7 +282,7 @@ class BoardArray(BoardBase):
         self.fullmove_number = int(fullmove)
 
         self.compute_hash()
-        self.position_counts[self.create_repetition_key()] = 1
+        self.position_counts[self.hash] = 1
         return True, "FEN Imported"
 
     def to_fen(self) -> str:

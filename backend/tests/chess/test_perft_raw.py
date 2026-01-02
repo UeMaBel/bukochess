@@ -1,7 +1,9 @@
 import pytest
 
 from app.chess.board_array import BoardArray
+from app.chess.move_tuple import MoveTupleGenerator
 from app.chess.perft import perft, perft_divide
+from app.chess.utils import to_uci
 
 PERFT_FILE = "tests/chess/perft_cases_web.epd"
 MAX_TEST_DEPTH = 3
@@ -44,11 +46,12 @@ def test_perft_raw(line):
     board.from_fen(fen)
     expected_old = -1
     old_hash = board.hash
+    gen = MoveTupleGenerator(board)
     for depth, expected in depth_nodes:
         if depth > MAX_TEST_DEPTH:
             pytest.skip(f"Skipping depth {depth}")
 
-        result = perft(board, depth)
+        result = perft(gen, depth)
 
         if result != expected and depth != 1:
 
@@ -58,7 +61,7 @@ def test_perft_raw(line):
             print(f"FEN: {fen}, depth: {depth}, expected: {expected_old}")
             divide = perft_divide(board, depth)
             for move, count in divide.items():
-                print(move, count)
+                print(to_uci(move), count)
             assert False
 
         expected_old = expected

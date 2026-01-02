@@ -1,34 +1,32 @@
 from app.chess.board_array import BoardArray
-from app.chess.move_array import MoveGenerator
+from app.chess.move_tuple import MoveTupleGenerator
 
 
-def perft(board: BoardArray, depth: int) -> int:
+def perft(gen: MoveTupleGenerator, depth: int) -> int:
     if depth == 0:
         return 1
     nodes = 0
-    generator = MoveGenerator(board)
-    moves = generator.legal_moves()
-
+    moves = gen.legal_moves()
     for move in moves:
-        undo = move.apply(board)
-        nodes += perft(board, depth - 1)
-        move.undo(board, undo)
+        gen.apply(move)
+        nodes += perft(gen, depth - 1)
+        gen.undo(move)
 
     return nodes
 
 
-def perft_divide(board: BoardArray, depth: int) -> dict[str, int]:
+def perft_divide(board: BoardArray, depth: int) -> dict[tuple[int, int, int], int]:
     if depth < 1:
         raise ValueError("perft_divide depth must be >= 1")
 
-    results: dict[str, int] = {}
-    generator = MoveGenerator(board)
+    results: dict[tuple[int, int, int], int] = {}
+    generator = MoveTupleGenerator(board)
 
     for move in generator.legal_moves():
-        undo = move.apply(board)
-        nodes = perft(board, depth - 1)
-        move.undo(board, undo)
+        generator.apply(move)
+        nodes = perft(generator, depth - 1)
+        generator.undo(move)
 
-        results[str(move)] = nodes
+        results[move] = nodes
 
     return results

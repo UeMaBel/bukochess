@@ -2,6 +2,7 @@ import os
 import pytest
 
 from app.chess.board_array import BoardArray
+from app.chess.move_tuple import MoveTupleGenerator
 from app.chess.perft import perft
 from tests.chess.perft_cases import PERFT_CASES
 
@@ -13,12 +14,12 @@ def test_perft(case):
     assert True
     board = BoardArray()
     board.from_fen(case["fen"])
-
+    gen = MoveTupleGenerator(board)
     for depth, expected_nodes in case["nodes"].items():
         if depth > MAX_PERFT_DEPTH:
             pytest.skip(f"Skipping depth {depth} (limit={MAX_PERFT_DEPTH})")
 
-        result = perft(board, depth)
+        result = perft(gen, depth)
         assert result == expected_nodes, (
             f"Perft mismatch in {case['name']} at depth {depth}: "
             f"expected {expected_nodes}, got {result}"

@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.core.exceptions import BukochessException
 from app.core.logger import get_logger
 from app.chess.board_array import BoardArray
+from app.chess.utils import rank_x, file_y, to_uci
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["position"])
@@ -59,7 +60,7 @@ def validate_fen_endpoint(req: FENRequest):
 
 
 from typing import List
-from app.chess.move_array import MoveGenerator
+from app.chess.move_tuple import MoveTupleGenerator
 from app.chess.utils import notation_to_int_tuple
 
 
@@ -82,17 +83,21 @@ def legal_moves(req: LegalMovesRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
-    generator = MoveGenerator(board)
+    generator = MoveTupleGenerator(board)
     moves = generator.legal_moves()
     final_moves = []
     if req.square != "":
         from_tuple = notation_to_int_tuple(req.square)
+
         for m in moves:
-            if m.from_square == from_tuple:
+            xy, nxy, flags = m
+            if rank_x(xy) == from_tuple[0] and file_y(xy) == from_tuple[1]:
                 final_moves.append(m)
     else:
         final_moves = moves
-    print([str(m) for m in final_moves])
+    m_str = []
+    for m in final_moves:
+        m_str.append(to_uci(m))
     return {
-        "moves": [str(m) for m in final_moves],
+        "moves": m_str,
     }

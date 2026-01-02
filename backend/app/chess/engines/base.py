@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from app.chess.board_array import BoardArray
-from app.chess.move_array import MoveArray
+from app.chess.move_array_deprecated import MoveArray
 
 
 class Engine(ABC):
