@@ -2,6 +2,7 @@ import random
 from app.chess.board_array import BoardArray
 from app.chess.move_tuple import MoveTupleGenerator
 from app.chess.engines.base import Engine
+from app.chess.engines.transposition import TranspositionTable, TT_EXACT, TT_LOWER, TT_UPPER, TTEntry
 
 
 class AlphaBeta(Engine):
@@ -33,9 +34,9 @@ class AlphaBeta(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 4
-        self.tt: dict[int, tuple[int, int]] = {}
+        self.deepness = 5
         self.nodes = 0
+        self.tt = TranspositionTable()
 
     def choose_move(self, gen: MoveTupleGenerator):
         moves = gen.legal_moves()
@@ -73,44 +74,65 @@ class AlphaBeta(Engine):
 
         return self._rng.choice(best_moves)
 
-    def alphabeta(self, gen: MoveTupleGenerator, depth: int, alpha: float, beta: float, maximizing: bool) -> int:
+    def alphabeta(self, gen: MoveTupleGenerator, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
         self.nodes += 1
         board = gen.board
-        entry = self.tt.get(board.hash)
-        if entry and entry[0] >= depth:
-            return entry[1]
+        alpha_orig = alpha
+        key = board.hash
+
+        # --- TT probe ---
+        tt_score = self.tt.probe(key, depth, alpha, beta)
+        if tt_score is not None:
+            return tt_score
+
         if depth == 0:
             return self.evaluate_position(board)
-        moves = gen.legal_moves()
 
+        moves = gen.legal_moves()
         if not moves:
-            value = self.evaluate_position(board)
-            self.tt[board.hash] = (depth, value)
-            return value
+            return self.evaluate_position(board)
+
+        best_move = None
 
         if maximizing:
-            value = -float("inf")
+            value = -10 ** 9
             for m in moves:
                 gen.apply(m)
-                value = max(value, self.alphabeta(gen, depth - 1, alpha, beta, False))
+                score = self.alphabeta(gen, depth - 1, alpha, beta, False)
                 gen.undo(m)
+
+                if score > value:
+                    value = score
+                    best_move = m
+
                 alpha = max(alpha, value)
                 if alpha >= beta:
-                    break  # β cutoff
-            self.tt[board.hash] = (depth, value)
-            return value
+                    break
         else:
-            value = float("inf")
+            value = 10 ** 9
             for m in moves:
                 gen.apply(m)
-                value = min(value, self.alphabeta(gen, depth - 1, alpha, beta, True))
+                score = self.alphabeta(gen, depth - 1, alpha, beta, True)
                 gen.undo(m)
+
+                if score < value:
+                    value = score
+                    best_move = m
 
                 beta = min(beta, value)
                 if beta <= alpha:
-                    break  # α cutoff
-            self.tt[board.hash] = (depth, value)
-            return value
+                    break
+
+        # --- TT store ---
+        if value <= alpha_orig:
+            flag = TT_UPPER
+        elif value >= beta:
+            flag = TT_LOWER
+        else:
+            flag = TT_EXACT
+
+        self.tt.store(key, depth, value, flag, best_move)
+        return value
 
     def evaluate_tree(self, tree: dict, white_to_move: bool):
         """
