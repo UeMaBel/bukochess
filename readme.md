@@ -65,3 +65,4 @@ Start the CLI:
 - added CLI GUI
 - added POC UI
 - added second engine "dumb": Algorithm: MINIMAX in Python. Can checkmate intermediate beginners
+- added mailbox logic and bitwise operators. Movegenerator hits almost 200k nodes per second
