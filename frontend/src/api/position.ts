@@ -4,6 +4,7 @@ export interface BoardResponse {
 }
 
 export async function importFEN(fen: string): Promise<BoardResponse> {
+    console.log(fen);
   const res = await fetch("/api/v1/position/fen", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
