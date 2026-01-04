@@ -5,7 +5,7 @@ from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_
 from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLAG_EN_PASSANT, FLAG_NONE, FLAG_PROMO_B, \
     FLAG_PROMO_N, FLAG_PROMO_Q, FLAG_PROMO_R, FLAG_PROMOTION
 
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation, rank_x, file_y, sq
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation, rank_x, file_y, sq
 
 
 class MoveTupleGenerator:
@@ -303,8 +303,8 @@ class MoveTupleGenerator:
             elif flags & FLAG_CAPTURE:
                 captures.append(move)
                 continue
-            elif self.gives_check(move):
-                checks.append(move)
+            # elif self.gives_check(move):
+            #    checks.append(move)
             else:
                 quiet.append(move)
 

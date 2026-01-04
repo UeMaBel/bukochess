@@ -4,7 +4,7 @@ from app.chess.board_base import BoardBase
 from app.chess.static import PAWN_OFFSETS, BISHOP_DIRS, QUEEN_DIRS, ROOK_DIRS, CASTLE_OFFSETS, KNIGHT_OFFSETS, \
     KING_OFFSETS
 from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
-from app.chess.utils import rank_x, file_y, sq
+from app.chess.utils import rank_x, file_y, sq, piece_flag_to_str, piece_str_to_flag
 
 
 class BoardArray(BoardBase):
@@ -54,21 +54,6 @@ class BoardArray(BoardBase):
         if "k" in self.castling_rights: mask |= 4
         if "q" in self.castling_rights: mask |= 8
         return mask
-
-    def copy(self) -> "BoardArray":
-        new_board = BoardArray()
-        new_board.hash = self.hash
-        new_board.board = [row[:] for row in self.board]
-
-        new_board.active_color = self.active_color
-        new_board.castling_rights = self.castling_rights
-        new_board.en_passant = self.en_passant
-        new_board.halfmove_clock = self.halfmove_clock
-        new_board.fullmove_number = self.fullmove_number
-
-        new_board.position_counts = self.position_counts.copy()
-
-        return new_board
 
     def switch_active_color(self):
         self.active_color = "b" if self.active_color == "w" else "w"
@@ -330,6 +315,7 @@ class BoardArray(BoardBase):
 
         # fill board
         cur_row = []
+        i = 0
         for c in board:
             if c == "/":
                 self.board.append(cur_row)
@@ -340,6 +326,7 @@ class BoardArray(BoardBase):
                     cur_row.append("")
             else:
                 cur_row.append(c)
+                i += 1
         self.board.append(cur_row)
 
         # metadata

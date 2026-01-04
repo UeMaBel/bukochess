@@ -1,8 +1,8 @@
-from app.chess.board_array import BoardArray
-from app.chess.move_tuple import MoveTupleGenerator
+from app.chess.board_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 
 
-def perft(gen: MoveTupleGenerator, depth: int) -> int:
+def perft(gen: MoveGenerator, depth: int) -> int:
     if depth == 0:
         return 1
     nodes = 0
@@ -15,12 +15,12 @@ def perft(gen: MoveTupleGenerator, depth: int) -> int:
     return nodes
 
 
-def perft_divide(board: BoardArray, depth: int) -> dict[tuple[int, int, int], int]:
+def perft_divide(board: Board, depth: int) -> dict[tuple[int, int, int], int]:
     if depth < 1:
         raise ValueError("perft_divide depth must be >= 1")
 
     results: dict[tuple[int, int, int], int] = {}
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
 
     for move in generator.legal_moves():
         generator.apply(move)

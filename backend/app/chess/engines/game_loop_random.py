@@ -1,15 +1,14 @@
 from app.chess.engines.dumb_engine import DumbEngine
-from app.chess.engines.alphabeta import AlphaBeta
-from app.chess.engines.random_engine import RandomEngine, BoardArray
-from app.chess.move_tuple import MoveTupleGenerator
+from app.chess.engines.alphabeta import AlphaBeta, MoveGenerator, Board
+from app.chess.engines.random_engine import RandomEngine
 from app.core.utils import measure_time
 
-board = BoardArray()
+board = Board()
 board.from_fen("rnbqkbnr/ppp1pppp/8/3p4/2P5/8/PP1PPPPP/RNBQKBNR w KQkq d6 0 1")
 engine = RandomEngine()
 engine_dumb = DumbEngine()
 engine_alphabeta = AlphaBeta()
-gen = MoveTupleGenerator(board, order=True)
+gen = MoveGenerator(board, order=True)
 
 
 @measure_time
@@ -40,5 +39,9 @@ def loop():
         idx += 1
 
 
-board.print_board()
-loop()
+def main():
+    board.print_board()
+    loop()
+
+
+main()

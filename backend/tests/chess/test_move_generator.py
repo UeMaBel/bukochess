@@ -3,34 +3,43 @@ from tokenize import generate_tokens
 
 import pytest
 
-from app.chess.board_array import BoardArray
-from app.chess.move_tuple import MoveTupleGenerator
+from app.chess.board_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from tests.chess.move_generator_cases import TEST_POSITIONS
+from app.chess.static import *
+from app.chess.utils import piece_flag_to_str, piece_str_to_flag, to_uci
 
 
 # -----------------------------
 # Functional correctness tests
 # -----------------------------
+def test_piece_flags():
+    pieces = ["p", "P", "b", "B", "n", "N", "R", "r", "k", "K", "q", "Q"]
+    for p in pieces:
+        flag = piece_str_to_flag(p)
+        p_n = piece_flag_to_str(flag)
+        assert p_n == p
+
 
 def test_black_pawn_moves():
     fen = "8/8/3pkp2/4P3/4Kp2/8/8/8 b - - 0 1"
     possible_moves = 8
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
 
 
 def test_black_pawn_moves_2():
-    fen = "k7/8/8/4p3/3P4/8/8/K7 b - - 0 1"
-    possible_moves = 5
-    board = BoardArray()
+    fen = "4k2r/8/8/8/8/8/8/4K3 b k - 0 1"
+    possible_moves = 15
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
@@ -39,11 +48,13 @@ def test_black_pawn_moves_2():
 def test_check_castling_in_check_kingside():
     fen = "2r1kr2/8/8/8/8/8/8/R3K2R w KQ - 0 1"
     possible_moves = 22
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
+    for m in moves:
+        print(to_uci(m))
 
     assert len(moves) == possible_moves
 
@@ -51,10 +62,10 @@ def test_check_castling_in_check_kingside():
 def test_check_castling_in_check_queenside():
     fen = "3rkr2/8/8/8/8/8/8/R3K2R w KQ - 0 1"
     possible_moves = 20
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
@@ -63,10 +74,10 @@ def test_check_castling_in_check_queenside():
 def test_promotion_2():
     fen = "2n5/PPPk4/1n6/8/8/8/4Kppp/5N1N w - - 0 1"
     possible_moves = 24
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
@@ -75,10 +86,10 @@ def test_promotion_2():
 def test_in_check():
     fen = "8/1k6/P7/8/3r4/8/6Kp/8 b - - 0 1"
     possible_moves = 8
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
@@ -92,10 +103,10 @@ def tetst_pawn_block():
 
     m = (sq(1, 3), sq(3, 3), 0)
     possible_moves = 3
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     n_m = []
     m_m = generator.legal_moves()
     for m in generator.legal_moves():
@@ -117,10 +128,10 @@ def tetst_pawn_block():
 def test_promotion():
     fen = "8/8/8/8/k7/8/K6p/8 b - - 0 1"
     possible_moves = 7
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
@@ -129,44 +140,48 @@ def test_promotion():
 def test_black_pawn_moves_3():
     fen = "4k3/4p3/4N3/8/8/8/8/7K b - - 0 1"
     possible_moves = 2
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
-
+    for m in moves:
+        print(to_uci(m))
     assert len(moves) == possible_moves
 
 
 def test_cm_white():
     fen = "rnbqkbnr/ppppp2p/8/1B3ppQ/4P3/8/PPPP1PPP/RNB1K1NR b KQkq - 1 3"
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
     assert board.is_checkmate()
     assert board.is_checkmate()
 
 
 def test_mg():
-    fen = "1r2k2r/p1ppqpb1/bn2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R w KQk - 1 1"
-    board = BoardArray()
+    fen = "rnbqkb1r/pppp1ppp/5n2/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3"
+    board = Board()
     board.from_fen(fen)
-    gen = MoveTupleGenerator(board)
+    gen = MoveGenerator(board)
     moves = gen.legal_moves()
     for m in moves:
         gen.apply(m)
         gen.undo(m)
+        print(to_uci(m))
+
+    assert 30 == len(moves)
 
 
 @pytest.mark.parametrize("name", TEST_POSITIONS.keys())
 def test_legal_moves_basic(name):
     pos = TEST_POSITIONS[name]
-    board = BoardArray()
+    board = Board()
     board.from_fen(pos["fen"])
 
-    generator = MoveTupleGenerator(board)
+    generator = MoveGenerator(board)
     moves = generator.legal_moves()
 
     assert moves is not None

@@ -1,35 +1,11 @@
 import random
-from app.chess.board_array import BoardArray
-from app.chess.move_tuple import MoveTupleGenerator
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
 from app.chess.engines.base import Engine
 from app.chess.engines.transposition import TranspositionTable, TT_EXACT, TT_LOWER, TT_UPPER, TTEntry
+from app.chess.engines.tables import PIECE_VALUE_TABLE, BOARD_VALUE_TABLE
 
 
 class AlphaBeta(Engine):
-    PIECE_VALUE = {
-        "p": -100,
-        "b": -300,
-        "n": -300,
-        "r": -500,
-        "q": -900,
-        "k": -10000,
-        "P": 100,
-        "B": 300,
-        "N": 300,
-        "R": 500,
-        "Q": 900,
-        "K": 10000
-    }
-    BOARD_VALUE = [
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 5, 8, 8, 8, 8, 5, 0],
-        [0, 8, 10, 10, 10, 10, 8, 0],
-        [0, 8, 10, 10, 10, 10, 8, 0],
-        [0, 5, 8, 8, 8, 8, 5, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-    ]
 
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
@@ -38,7 +14,7 @@ class AlphaBeta(Engine):
         self.nodes = 0
         self.tt = TranspositionTable()
 
-    def choose_move(self, gen: MoveTupleGenerator):
+    def choose_move(self, gen: MoveGenerator):
         moves = gen.legal_moves()
         board = gen.board
         if not moves:
@@ -74,7 +50,7 @@ class AlphaBeta(Engine):
 
         return self._rng.choice(best_moves)
 
-    def alphabeta(self, gen: MoveTupleGenerator, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
+    def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
         self.nodes += 1
         board = gen.board
         alpha_orig = alpha
@@ -170,11 +146,10 @@ class AlphaBeta(Engine):
 
         return best_score, best_moves
 
-    def evaluate_position(self, board: BoardArray) -> int:
+    def evaluate_position(self, board: Board) -> int:
         score = 0
 
-        for p, x, y in board.get_pieces():
-            multiplier = -1 if p.islower() else 1
-            score += self.PIECE_VALUE[p]
-            score += self.BOARD_VALUE[x][y] * multiplier
+        for p, sq in board.get_pieces():
+            score += PIECE_VALUE_TABLE[p]
+            score += BOARD_VALUE_TABLE[p][sq]
         return score

@@ -1,7 +1,7 @@
 import random
-from app.chess.board_array import BoardArray
-from app.chess.move_array_deprecated import MoveArray, MoveGenerator
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
 from app.chess.engines.base import Engine
+from app.chess.utils import to_uci
 
 
 class DumbEngine(Engine):
@@ -35,7 +35,7 @@ class DumbEngine(Engine):
         self.move_value = {}
         self.deepness = 2
 
-    def choose_move(self, board: BoardArray) -> MoveArray | None:
+    def choose_move(self, board: Board) -> str:
         generator = MoveGenerator(board)
         moves = generator.legal_moves()
 
@@ -64,9 +64,9 @@ class DumbEngine(Engine):
                 elif score == best_score:
                     best_moves.append(m)
 
-        return self._rng.choice(best_moves)
+        return to_uci(self._rng.choice(best_moves))
 
-    def minimax(self, board: BoardArray, depth: int, maximizing: bool) -> int:
+    def minimax(self, board: Board, depth: int, maximizing: bool) -> int:
         if depth == 0:
             return self.evaluate_position(board)
 
@@ -79,17 +79,17 @@ class DumbEngine(Engine):
         if maximizing:
             best = -float("inf")
             for m in moves:
-                undo = m.apply(board)
+                generator.apply(m)
                 score = self.minimax(board, depth - 1, False)
-                m.undo(board, undo)
+                generator.undo()
                 best = max(best, score)
             return best
         else:
             best = float("inf")
             for m in moves:
-                undo = m.apply(board)
+                generator.apply(m)
                 score = self.minimax(board, depth - 1, True)
-                m.undo(board, undo)
+                generator.undo(m)
                 best = min(best, score)
             return best
 
@@ -129,7 +129,7 @@ class DumbEngine(Engine):
 
         return best_score, best_moves
 
-    def evaluate_position(self, board: BoardArray) -> int:
+    def evaluate_position(self, board: Board) -> int:
         score = 0
 
         for p, x, y in board.get_pieces():

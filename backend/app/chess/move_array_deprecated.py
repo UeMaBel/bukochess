@@ -4,7 +4,7 @@ from app.chess.static import PAWN_OFFSETS, KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_
 from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, PIECE_INDEX
 from dataclasses import dataclass
 
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, square_to_notation
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation
 
 
 @dataclass
@@ -63,8 +63,8 @@ class MoveArray:
         """
         UCI-style move notation: e2e4, e7e8q
         """
-        from_sq = square_to_notation(self.from_square)
-        to_sq = square_to_notation(self.to_square)
+        from_sq = squaretuple_to_notation(self.from_square)
+        to_sq = squaretuple_to_notation(self.to_square)
 
         if self.promotion:
             return f"{from_sq}{to_sq}{self.promotion.lower()}"

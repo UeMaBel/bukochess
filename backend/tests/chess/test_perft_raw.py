@@ -1,7 +1,5 @@
 import pytest
-
-from app.chess.board_array import BoardArray
-from app.chess.move_tuple import MoveTupleGenerator
+from app.chess.move_mailbox import BoardMailbox as Board, MoveMailBoxGenerator as MoveGenerator
 from app.chess.perft import perft, perft_divide
 from app.chess.utils import to_uci
 
@@ -42,11 +40,11 @@ def load_perft_lines():
 def test_perft_raw(line):
     fen, depth_nodes = parse_perft_line(line)
 
-    board = BoardArray()
+    board = Board()
     board.from_fen(fen)
     expected_old = -1
     old_hash = board.hash
-    gen = MoveTupleGenerator(board)
+    gen = MoveGenerator(board)
     for depth, expected in depth_nodes:
         if depth > MAX_TEST_DEPTH:
             pytest.skip(f"Skipping depth {depth}")

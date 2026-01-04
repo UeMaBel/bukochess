@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.chess.board_array import BoardArray
+from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.engines.random_engine import RandomEngine
 from app.chess.engines.dumb_engine import DumbEngine
 from app.chess.engines.alphabeta import AlphaBeta
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.core.exceptions import BukochessException
 
 router = APIRouter(tags=["engine"])
@@ -23,7 +24,7 @@ class EngineMoveResponse(BaseModel):
 
 @router.post("/move", response_model=EngineMoveResponse)
 def engine_move(req: EngineMoveRequest):
-    board = BoardArray()
+    board = Board()
     try:
         board.from_fen(req.fen)
     except ValueError as e:
@@ -37,11 +38,12 @@ def engine_move(req: EngineMoveRequest):
     else:
         raise BukochessException("Unknown engine")
 
+    generator = MoveGenerator(board)
     move = engine.choose_move(board)
     if move is None:
         raise BukochessException("No legal moves")
 
-    undo = move.apply(board)
+    generator.apply_uci(move)
     status = board.get_game_state()
 
     return EngineMoveResponse(

@@ -1,7 +1,8 @@
 import random
-from app.chess.board_array import BoardArray
-from app.chess.move_array_deprecated import MoveArray, MoveGenerator
+from app.chess.board_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as Generator
 from app.chess.engines.base import Engine
+from app.chess.utils import to_uci
 
 
 class RandomEngine(Engine):
@@ -9,11 +10,11 @@ class RandomEngine(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
 
-    def choose_move(self, board: BoardArray) -> MoveArray | None:
-        generator = MoveGenerator(board)
+    def choose_move(self, board: Board) -> str:
+        generator = Generator(board)
         moves = generator.legal_moves()
 
         if not moves:
             return None
 
-        return self._rng.choice(moves)
+        return to_uci(self._rng.choice(moves))
