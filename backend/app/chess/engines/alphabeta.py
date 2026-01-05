@@ -3,6 +3,7 @@ from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardM
 from app.chess.engines.base import Engine
 from app.chess.engines.transposition import TranspositionTable, TT_EXACT, TT_LOWER, TT_UPPER, TTEntry
 from app.chess.engines.tables import PIECE_VALUE_TABLE, BOARD_VALUE_TABLE
+from app.chess.utils import to_uci
 
 
 class AlphaBeta(Engine):
@@ -10,11 +11,12 @@ class AlphaBeta(Engine):
     def __init__(self, seed: int | None = None):
         self._rng = random.Random(seed)
         self.move_value = {}
-        self.deepness = 5
+        self.deepness = 4
         self.nodes = 0
         self.tt = TranspositionTable()
 
-    def choose_move(self, gen: MoveGenerator):
+    def choose_move(self, board: Board):
+        gen = MoveGenerator(board)
         moves = gen.legal_moves()
         board = gen.board
         if not moves:
@@ -48,7 +50,7 @@ class AlphaBeta(Engine):
                 elif value == best_value:
                     best_moves.append(m)
 
-        return self._rng.choice(best_moves)
+        return to_uci(self._rng.choice(best_moves))
 
     def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
         self.nodes += 1

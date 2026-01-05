@@ -6,6 +6,7 @@ from app.chess.engines.dumb_engine import DumbEngine
 from app.chess.engines.alphabeta import AlphaBeta
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.core.exceptions import BukochessException
+from app.chess.utils import to_uci
 
 router = APIRouter(tags=["engine"])
 
@@ -37,9 +38,12 @@ def engine_move(req: EngineMoveRequest):
         engine = AlphaBeta(seed=req.seed)
     else:
         raise BukochessException("Unknown engine")
+    print(req.engine)
 
     generator = MoveGenerator(board)
+    print("searching move")
     move = engine.choose_move(board)
+    print(f"move ")
     if move is None:
         raise BukochessException("No legal moves")
 
@@ -48,6 +52,6 @@ def engine_move(req: EngineMoveRequest):
 
     return EngineMoveResponse(
         fen=board.to_fen(),
-        move=str(move),
+        move=move,
         status=status,
     )

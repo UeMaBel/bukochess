@@ -18,6 +18,7 @@ export async function getEngineMove(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
   });
+    console.log(req.engine)
 
   if (!res.ok) {
     const err = await res.json();
