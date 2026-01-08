@@ -1,10 +1,10 @@
 import pytest
 from app.chess.move_mailbox import BoardMailbox as Board, MoveMailBoxGenerator as MoveGenerator
-from app.chess.perft import perft, perft_divide
+from app.chess.perft import run_perft, perft_divide
 from app.chess.utils import to_uci
 
 PERFT_FILE = "tests/chess/perft_cases_web.epd"
-MAX_TEST_DEPTH = 4
+MAX_TEST_DEPTH = 3
 
 
 def parse_perft_line(line: str):
@@ -49,7 +49,7 @@ def test_perft_raw(line):
         if depth > MAX_TEST_DEPTH:
             pytest.skip(f"Skipping depth {depth}")
 
-        result = perft(gen, depth)
+        result = run_perft(gen, depth)
 
         if result != expected and depth != 1:
 

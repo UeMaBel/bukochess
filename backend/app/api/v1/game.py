@@ -84,7 +84,7 @@ def game_status(req: GameStatusRequest):
 
     active = board.active_color
 
-    in_check = board.is_king_in_check(active)
+    in_check = board.is_king_in_check
 
     status = board.get_game_state()
     active_color = "w" if active == WHITE else "b"

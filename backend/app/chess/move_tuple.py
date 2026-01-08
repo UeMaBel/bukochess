@@ -42,7 +42,7 @@ class MoveTupleGenerator:
         pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board.board, enemy_king)
         # filter out moves that leave own king in check
         color = self.board.active_color
-        king_was_checked = self.board.is_king_in_check(color)
+        king_was_checked = self.board.is_king_in_check
         legal_moves = []
         for move in pseudo_legal_moves:
             xy, nxy, flags = move
@@ -53,7 +53,7 @@ class MoveTupleGenerator:
             if king_was_checked and ((flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)):
                 continue
             self.apply(move)
-            if not self.board.is_king_in_check(color):
+            if not self.board.is_king_in_check:
                 if flags & FLAG_CASTLE_K:
                     if self.board.is_square_attacked(color, (x, y + 1)):
                         self.undo(move)
@@ -189,6 +189,9 @@ class MoveTupleGenerator:
         # --- REPETITION ---
         board.position_counts[board.hash] = board.position_counts.get(board.hash, 0) + 1
 
+        if board.hash != board.compute_hash():
+            a = 33
+
         # save undo info
         board.undo_stack.append((
             captured_piece,  # captured piece ("" if none)
@@ -312,7 +315,7 @@ class MoveTupleGenerator:
 
     def gives_check(self, move: tuple[int, int, int]):
         self.apply(move)
-        ret = self.board.is_king_in_check()
+        ret = self.board.is_king_in_check
         self.undo(move)
         return ret
 

@@ -22,12 +22,14 @@ class BoardMailbox(BoardBase):
         self.en_passant = 0
         self.halfmove_clock = 0
         self.fullmove_number = 1
-        self.position_counts: dict[str, int]
+        self.position_counts: dict[int, int]
         self.position_counts = {}
         self.hash = 0
         self.undo_stack: list[tuple] = []
         self.white_king = 0
         self.black_king = 0
+        self.is_king_in_check = False
+        self.is_other_king_in_check = False
 
     def compute_hash(self):
         h = 0
@@ -53,7 +55,10 @@ class BoardMailbox(BoardBase):
             file = self.en_passant & 7
             h ^= Z_EP_FILE[file]
 
-        self.hash = h
+        return h
+
+    def set_hash(self):
+        self.hash = self.compute_hash()
 
     def castling_rights_mask(self) -> int:
         mask = 0
@@ -117,7 +122,7 @@ class BoardMailbox(BoardBase):
                 return sq
         raise ValueError("King not found")
 
-    def is_king_in_check(self, color: int = None) -> bool:
+    def precompute_is_king_in_check(self, color: int = None) -> bool:
         if color is None:
             color = self.active_color
         king_sq = self.white_king if color == WHITE else self.black_king
@@ -141,7 +146,7 @@ class BoardMailbox(BoardBase):
     def is_checkmate(self, color: int = None) -> bool:
         if color is None:
             color = self.active_color
-        return self.is_king_in_check(color) and not self.has_legal_moves(color)
+        return self.is_king_in_check and not self.has_legal_moves(color)
 
     def is_draw(self, color: int = None) -> bool:
         if color is None:
@@ -153,7 +158,7 @@ class BoardMailbox(BoardBase):
         if color is None:
             color = self.active_color
         return (
-                not self.is_king_in_check(color)
+                not self.is_king_in_check
                 and not self.has_legal_moves(color)
         )
 
@@ -216,7 +221,7 @@ class BoardMailbox(BoardBase):
             status = "stalemate"
         if self.is_draw():
             status = "draw"
-        if self.is_king_in_check():
+        if self.is_king_in_check:
             status = "check"
         if self.is_checkmate():
             status = "checkmate"
@@ -321,7 +326,9 @@ class BoardMailbox(BoardBase):
                 else:
                     self.black_king = sq
 
-        self.compute_hash()
+        self.set_hash()
+        self.is_other_king_in_check = self.precompute_is_king_in_check(WHITE if self.active_color == BLACK else BLACK)
+        self.is_king_in_check = self.precompute_is_king_in_check()
 
         return True, "FEN Imported"
 

@@ -11,28 +11,19 @@ class TTEntry:
     depth: int
     score: int
     flag: int
-    best_move: Optional[tuple[int, int, int]]
+    move: tuple[int, int, int]
 
 
 class TranspositionTable:
     def __init__(self):
         self.table: dict[int, TTEntry] = {}
 
-    def probe(self, key: int, depth: int, alpha: int, beta: int):
-        entry = self.table.get(key)
-        if entry is None or entry.depth < depth:
-            return None
+    def get_entry(self, key: int):
+        """Returns the full entry object if it exists, otherwise None."""
+        return self.table.get(key)
 
-        if entry.flag == TT_EXACT:
-            return entry.score
-        elif entry.flag == TT_LOWER and entry.score >= beta:
-            return entry.score
-        elif entry.flag == TT_UPPER and entry.score <= alpha:
-            return entry.score
-
-        return None
-
-    def store(self, key: int, depth: int, score: int, flag: int, best_move):
-        old = self.table.get(key)
-        if old is None or depth >= old.depth:
-            self.table[key] = TTEntry(depth, score, flag, best_move)
+    def store(self, key: int, depth: int, score: int, flag: int, move: tuple[int, int, int]):
+        # Always replace if the new search was deeper
+        existing = self.table.get(key)
+        if existing is None or depth >= existing.depth:
+            self.table[key] = TTEntry(score, depth, flag, move)

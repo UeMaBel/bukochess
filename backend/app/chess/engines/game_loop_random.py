@@ -2,6 +2,7 @@ from app.chess.engines.dumb_engine import DumbEngine
 from app.chess.engines.alphabeta import AlphaBeta, MoveGenerator, Board
 from app.chess.engines.random_engine import RandomEngine
 from app.core.utils import measure_time
+from app.chess.utils import from_uci_move
 
 board = Board()
 board.from_fen("rnbqkbnr/ppp1pppp/8/3p4/2P5/8/PP1PPPPP/RNBQKBNR w KQkq d6 0 1")
@@ -20,13 +21,13 @@ def in_loop(idx):
         print("Game over - stalemate")
     if board.is_insufficient_material():
         print("Game over - insufficient material")
-    m = engine_alphabeta.choose_move(gen)
+    m = engine_alphabeta.choose_move(gen.board)
     if m is None:
         print("Game over")
         return
 
     print(f"{str(idx)}: {board.active_color} is moving {str(m)} calc nodes: {engine_alphabeta.nodes}")
-    gen.apply(m)
+    gen.apply_uci(m)
     print(f"fen: {board.to_fen()}")
     print(board.print_board())
 

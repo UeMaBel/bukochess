@@ -19,7 +19,7 @@ class BoardArray(BoardBase):
         self.en_passant = "-"
         self.halfmove_clock = 0
         self.fullmove_number = 1
-        self.position_counts: dict[str, int]
+        self.position_counts: dict[int, int]
         self.position_counts = {}
         self.hash = 0
         self.undo_stack: list[tuple] = []

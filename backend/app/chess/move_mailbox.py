@@ -9,6 +9,7 @@ from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLA
     ROOK_SLIDERS, BISHOP_SLIDERS, EMPTY
 from app.chess.utils import rank_x, file_y, from_uci_move
 from app.chess.zobrist import piece_flag_to_index
+from app.chess.utils import to_uci
 
 
 class MoveMailBoxGenerator:
@@ -44,21 +45,22 @@ class MoveMailBoxGenerator:
         pseudo_legal_moves = self.generate_pseudo_legal_moves(color, enemy_king)
 
         # filter out moves that leave own king in check
-        king_was_checked = self.board.is_king_in_check(color)
-        legal_moves = []
+        king_was_checked = self.board.is_king_in_check
+        scored_moves = []
         for move in pseudo_legal_moves:
             xy, nxy, flags = move
             if king_was_checked and ((flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)):
                 continue
-            if flags & FLAG_EN_PASSANT:
-                a = 33
-            self.apply(move)
-            if not self.board.is_king_in_check(color):
-                legal_moves.append(move)
+            self.apply(move, light_apply=False)
+            if not self.board.is_other_king_in_check:
+                self.board.is_king_in_check = self.board.precompute_is_king_in_check()
+                candidate = self.board.is_king_in_check
+                scored_moves.append((move, candidate))
             self.undo(move)
 
         if self.order:
-            legal_moves = self.order_moves(legal_moves)
+            scored_moves = self.order_moves(scored_moves)
+        legal_moves = [m for m, _ in scored_moves]
         MoveMailBoxGenerator._moves_cache[self.board.hash] = legal_moves
         return legal_moves
 
@@ -83,9 +85,10 @@ class MoveMailBoxGenerator:
 
         self.apply((from_sq, to_sq, flags))
 
-    def apply(self, move: tuple[int, int, int]):
+    def apply(self, move: tuple[int, int, int], light_apply=False):
         board = self.board.board
         from_sq, to_sq, flags = move
+        board_items = self.board
 
         piece = board[from_sq]
         captured_piece = EMPTY
@@ -93,15 +96,17 @@ class MoveMailBoxGenerator:
         rook_from = rook_to = None
 
         # --- SAVE OLD STATE ---
-        old_castling = self.board.castling_rights
-        old_hash = self.board.hash
-        old_en_passant = self.board.en_passant
-        old_halfmove_clock = self.board.halfmove_clock
-        old_active_color = self.board.active_color
+        old_castling = board_items.castling_rights
+        old_hash = board_items.hash
+        old_en_passant = board_items.en_passant
+        old_halfmove_clock = board_items.halfmove_clock
+        old_active_color = board_items.active_color
+        old_check = board_items.is_king_in_check
+        old_other_check = board_items.is_other_king_in_check
 
         # --- REMOVE OLD EN PASSANT HASH ---
         if self.board.en_passant != -1:
-            self.board.hash ^= Z_EP_FILE[self.board.en_passant % 8]
+            self.board.hash ^= Z_EP_FILE[board_items.en_passant % 8]
         self.board.en_passant = -1
 
         # --- HALF MOVE CLOCK ---
@@ -168,7 +173,7 @@ class MoveMailBoxGenerator:
 
         # --- CASTLING RIGHTS ---
         old_mask = self.board.castling_rights_mask()
-        self.remove_castling_character(piece, from_sq % 8)
+        self.remove_castling_character(piece, from_sq % 8, to_sq % 8, captured_piece)
         new_mask = self.board.castling_rights_mask()
         if old_mask != new_mask:
             self.board.hash ^= Z_CASTLING[old_mask]
@@ -187,6 +192,12 @@ class MoveMailBoxGenerator:
         # --- REPETITION COUNT ---
         self.board.position_counts[self.board.hash] = self.board.position_counts.get(self.board.hash, 0) + 1
 
+        # --- CHECK ---
+        if not light_apply:
+            self.board.is_king_in_check = self.board.precompute_is_king_in_check()
+        self.board.is_other_king_in_check = self.board.precompute_is_king_in_check(
+            WHITE if self.board.active_color == BLACK else BLACK)
+
         # --- SAVE UNDO INFO ---
         self.board.undo_stack.append((
             captured_piece,
@@ -198,10 +209,12 @@ class MoveMailBoxGenerator:
             old_en_passant,
             old_halfmove_clock,
             old_active_color,
-            old_hash
+            old_hash,
+            old_check,
+            old_other_check
         ))
 
-    def remove_castling_character(self, piece: int, file: int):
+    def remove_castling_character(self, piece: int, file: int, to_file: int, to_piece: int):
         """
         Remove castling rights for a moved piece.
         """
@@ -221,6 +234,15 @@ class MoveMailBoxGenerator:
                     self.board.castling_rights = self.board.castling_rights.replace("k", "")
                 elif file == 0:
                     self.board.castling_rights = self.board.castling_rights.replace("q", "")
+        elif to_piece & ROOK:
+            if to_file == 0 and piece & BLACK:
+                self.board.castling_rights = self.board.castling_rights.replace("Q", "")
+            elif to_file == 7 and piece & BLACK:
+                self.board.castling_rights = self.board.castling_rights.replace("K", "")
+            elif to_file == 0 and piece & WHITE:
+                self.board.castling_rights = self.board.castling_rights.replace("q", "")
+            elif to_file == 7 and piece & BLACK:
+                self.board.castling_rights = self.board.castling_rights.replace("K", "")
 
         if not self.board.castling_rights:
             self.board.castling_rights = "-"
@@ -240,11 +262,14 @@ class MoveMailBoxGenerator:
             old_en_passant,
             old_halfmove,
             old_active_color,
-            old_hash
+            old_hash,
+            old_check,
+            old_other_check
         ) = self.board.undo_stack.pop()
 
         self.board.hash = old_hash
-
+        self.board.is_king_in_check = old_check
+        self.board.is_other_king_in_check = old_other_check
         # Restore moved piece
         if flags & FLAG_PROMOTION:
             piece = PAWN | old_active_color
@@ -282,25 +307,27 @@ class MoveMailBoxGenerator:
             if self.board.position_counts[old_hash] == 0:
                 del self.board.position_counts[old_hash]
 
-    def order_moves(self, moves: list[tuple[int, int, int]]) -> list[tuple[int, int, int]]:
+    def order_moves(self, moves: list[tuple[tuple[int, int, int], bool]]) -> list[tuple[tuple[int, int, int], bool]]:
         promotions = []
         captures = []
+        checks = []
         quiet = []
-
-        for move in moves:
+        for move, gives_check in moves:
             _, _, flags = move
             if flags & FLAG_PROMOTION:
-                promotions.append(move)
+                promotions.append((move, gives_check))
             elif flags & FLAG_CAPTURE:
-                captures.append(move)
+                captures.append((move, gives_check))
+            elif gives_check:
+                checks.append((move, gives_check))
             else:
-                quiet.append(move)
+                quiet.append((move, gives_check))
 
-        return promotions + captures + quiet
+        return checks + promotions + captures + quiet
 
     def gives_check(self, move: tuple[int, int, int]):
         self.apply(move)
-        ret = self.board.is_king_in_check()
+        ret = self.board.is_king_in_check
         self.undo(move)
         return ret
 
