@@ -1,6 +1,6 @@
 import pytest
 from app.chess.board_mailbox import BoardMailbox as Board
-from app.chess.move_flags import FLAG_PROMOTION, FLAG_PROMO_Q, FLAG_PROMO_N
+from app.chess.move_flags import FLAG_PROMOTION, FLAG_PROMO_Q, FLAG_PROMO_N, FLAG_NONE
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.chess.static import PAWN, WHITE, BLACK, QUEEN, KNIGHT, ROOK, BISHOP
 
@@ -35,6 +35,17 @@ def test_pawn_promotion_to_knight():
     gen.undo(move)
     assert board.board[7 * 8] == 0
     assert board.board[6 * 8] == (WHITE | PAWN)
+
+
+def test_en_passant_creation():
+    board = Board()
+    fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    board.from_fen(fen)  # Black pawn on a2
+    gen = MoveGenerator(board)
+    move = (8, 24, FLAG_NONE)
+    gen.apply(move)
+
+    assert board.to_fen() == fen
 
 
 def test_black_pawn_promotion():

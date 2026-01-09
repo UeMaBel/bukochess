@@ -1,138 +1,249 @@
-.chess-board {
-  display: grid;
-  grid-template-rows: repeat(8, 40px);
-  border: 1px solid #333;
-}
+/* board.css */
 
-.chess-rank {
-  display: grid;
-  grid-template-columns: repeat(8, 40px);
-}
+/* --- Main Layout Containers --- */
 
-.chess-square {
-  width: 40px;
-  height: 40px;
+.game-container {
   display: flex;
-  align-items: center;
+  flex-direction: row;
   justify-content: center;
-  cursor: grab;
-
-  font-size: 28px;
-  font-weight: 700;
-  color: #111;
-  text-shadow:
-    0 0 1px rgba(0,0,0,0.4),
-    0 1px 1px rgba(0,0,0,0.3);
+  align-items: flex-start; /* Aligns top of all panels */
+  gap: 30px;
+  padding: 40px;
+  background-color: #1e1e1e;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
-.chess-square.dark {
-  background: #b58863;
+/* Base style for both Side Panels (Left & Right) */
+.engine-sidebar,
+.game-status-panel {
+  width: 300px;
+  /* (Board 640px) + (2 * Labels 40px) = 720px */
+  height: 720px;
+  background: #262626;
+  border: 1px solid #3d3d3d;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 
+/* --- Sidebar Specifics (Left) --- */
 
-.chess-square.light {
-  background: #f0d9b5;
+.engine-sidebar {
+  gap: 20px;
 }
+
+.engine-sidebar h3,
+.game-status-panel h3 {
+  margin: 0 0 10px 0;
+  color: #fff;
+  font-size: 1.25rem;
+  border-bottom: 2px solid #3d3d3d;
+  padding-bottom: 8px;
+  text-align: left;
+}
+
+.engine-row {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 8px;
+}
+
+.engine-row label {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+}
+
+.engine-row select {
+  padding: 12px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.engine-row select:hover {
+  border-color: #779556;
+}
+
+/* --- Board Area (Center) --- */
 
 .board-wrapper {
   display: grid;
-  grid-template-columns: 20px auto 20px;
-  grid-template-rows: 20px auto 20px;
+  grid-template-columns: 40px 640px 40px;
+  grid-template-rows: 40px 640px 40px;
+  align-items: center;
+  justify-items: center;
 }
 
-.file-labels {
-  display: grid;
-  grid-template-columns: repeat(8, 40px);
-  text-align: center;
-  font-size: 12px;
+.chess-board {
+  grid-column: 2;
+  grid-row: 2;
+  width: 640px;
+  height: 640px;
+  display: flex;
+  flex-direction: column;
+  border: 4px solid #1a1a1a;
+  box-sizing: border-box;
+  position: relative;
+  background-color: #333;
+}
+
+.chess-rank {
+  display: flex;
+  flex: 1 1 0;
+  width: 100%;
+}
+
+.chess-square {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  position: relative;
+}
+
+.chess-square.light { background-color: #ebecd0; }
+.chess-square.dark { background-color: #779556; }
+.chess-square.selected { background-color: #f6f669 !important; }
+.chess-square span,
+.piece-white,
+.piece-black {
+  position: relative;
+  z-index: 2;
+}
+.chess-square.legal-target::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 24px;
+  height: 24px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.chess-square.check { background-color: #f71d1d !important; }
+
+/* --- Pieces --- */
+
+.piece-white {
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, 0 0 1px #000;
+}
+
+.piece-black { color: #000; }
+
+/* --- Labels --- */
+
+.rank-labels, .file-labels {
+  display: flex;
+  color: #666;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 .rank-labels {
-  display: grid;
-  grid-template-rows: repeat(8, 40px);
-  text-align: center;
-  font-size: 12px;
-}
-@keyframes shake {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(-5px); }
-  40% { transform: translateX(5px); }
-  60% { transform: translateX(-5px); }
-  80% { transform: translateX(5px); }
-  100% { transform: translateX(0); }
+  flex-direction: column;
+  height: 640px;
+  justify-content: space-around;
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+.file-labels {
+  width: 640px;
+  justify-content: space-around;
 }
 
-.shake {
-  animation: shake 0.3s;
-}
-
-.error-message {
-  color: red;
-  margin-top: 8px;
-}
-
-.error-message.fade {
-  animation: fadeOut 2s forwards;
-}
-.chess-square.check {
-  box-shadow: inset 0 0 0 3px red;
-}
-.legal-target {
-  box-shadow: inset 0 0 0 3px rgba(0, 255, 0, 0.6);
-}
-
-.chess-square:active {
-  cursor: grabbing;
-}
-.piece-white {
-  color: #fdfdfd;
-  text-shadow:
-    0 0 1px #000,
-    0 0 2px #000,
-    0 1px 2px #000;
-}
-
-
-.piece-black {
-  color: #111;
-}
-.chess-square.piece-white {
-  font-weight: 800;
-}
-.promotion-btn {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 2.5rem;
-
-  /* THIS CENTERS THE PIECE ICON */
-  display: flex;
-  align-items: center;      /* Vertical center */
-  justify-content: center;   /* Horizontal center */
-  padding: 0;               /* Remove any default button padding */
-  margin: 0;
-  line-height: 1;           /* Prevents line-height from pushing icon down */
-}
+/* --- Promotion Modal --- */
 
 .promotion-overlay-floating {
   position: absolute;
   z-index: 1000;
-  width: 12.5%;
+  width: 80px;
   background: white;
   border: 2px solid #333;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
-  padding: 0;
+  overflow: hidden;
 }
 
-.promotion-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+.promotion-btn {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.promotion-btn:hover { background: #f0f0f0; }
+
+.game-status-panel {
+  justify-content: flex-start;
+}
+
+.status-info {
+  flex-grow: 1;
+}
+
+.status-text {
+  font-size: 1.1rem;
+  color: #779556;
+  margin-bottom: 15px;
+}
+
+.check-text {
+  background: #f71d1d;
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+  visibility: hidden;
+  margin-bottom: 20px;
+}
+
+.check-text.visible { visibility: visible; }
+
+.fen-section label {
+  font-size: 0.75rem;
+  color: #888;
+  display: block;
+  margin-bottom: 5px;
+}
+
+textarea {
+  width: 100%;
+  background: #111;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  resize: none;
+  box-sizing: border-box;
 }

@@ -180,10 +180,11 @@ class MoveMailBoxGenerator:
             self.board.hash ^= Z_CASTLING[new_mask]
 
         # --- EN PASSANT CREATION ---
-        if flags & FLAG_EN_PASSANT:
-            ep_rank = 5 if piece & WHITE else 2
-            self.board.en_passant = to_sq - 8 if piece & WHITE == 0 else to_sq + 8
-            self.board.hash ^= Z_EP_FILE[self.board.en_passant % 8]
+        if piece & PAWN:
+            if abs(from_sq - to_sq) == 16:
+                ep_target = (from_sq + to_sq) // 2
+                self.board.en_passant = ep_target
+                self.board.hash ^= Z_EP_FILE[ep_target % 8]
 
         # --- SIDE TO MOVE ---
         self.board.active_color ^= WHITE | BLACK

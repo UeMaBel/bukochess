@@ -145,10 +145,15 @@ export const BoardWrapper: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
-      <div className="player-selectors" style={{ display: "flex", gap: 16, marginBottom: 10 }}>
-        <EngineSelector playerColor="w" value={whitePlayer} onChange={setWhitePlayer} />
-        <EngineSelector playerColor="b" value={blackPlayer} onChange={setBlackPlayer} />
+    <div className="game-container">
+      <div className="engine-sidebar">
+        <h3>Players</h3>
+        <div className="engine-row">
+          <EngineSelector playerColor="w" value={whitePlayer} onChange={setWhitePlayer} />
+        </div>
+        <div className="engine-row">
+          <EngineSelector playerColor="b" value={blackPlayer} onChange={setBlackPlayer} />
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 20, position: "relative" }}>

@@ -47,7 +47,7 @@ class BoardBase(ABC):
             return False, "Invalid castling rights"
 
         if not ENPASSANT_RE.match(ep):
-            return False, "Invalid en passant square"
+            return False, f"Invalid en passant square {ep}"
 
         if not HALFMOVE_RE.match(halfmove):
             return False, "Halfmove clock must be a non-negative integer"
