@@ -22,7 +22,17 @@ def to_uci(move: tuple[int, int, int]) -> str:
     sqxy = squaretuple_to_notation((rank_x(xy), file_y(xy)))
     sqnxy = squaretuple_to_notation((rank_x(nxy), file_y(nxy)))
 
-    return sqxy + sqnxy
+    promo = ""
+    if flag & FLAG_PROMO_R:
+        promo = "r"
+    elif flag & FLAG_PROMO_N:
+        promo = "n"
+    elif flag & FLAG_PROMO_B:
+        promo = "b"
+    elif flag & FLAG_PROMO_Q:
+        promo = "q"
+
+    return sqxy + sqnxy + promo
 
 
 def from_uci(uci: str) -> int:
@@ -71,7 +81,6 @@ def from_uci_move(uci: str) -> tuple[int, int, int]:
             flags |= FLAG_PROMO_B
         elif promo == "n":
             flags |= FLAG_PROMO_N
-        flags |= FLAG_PROMOTION
 
     return from_sq, to_sq, flags
 

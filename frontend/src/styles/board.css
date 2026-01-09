@@ -104,3 +104,35 @@
 .chess-square.piece-white {
   font-weight: 800;
 }
+.promotion-btn {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 2.5rem;
+
+  /* THIS CENTERS THE PIECE ICON */
+  display: flex;
+  align-items: center;      /* Vertical center */
+  justify-content: center;   /* Horizontal center */
+  padding: 0;               /* Remove any default button padding */
+  margin: 0;
+  line-height: 1;           /* Prevents line-height from pushing icon down */
+}
+
+.promotion-overlay-floating {
+  position: absolute;
+  z-index: 1000;
+  width: 12.5%;
+  background: white;
+  border: 2px solid #333;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  padding: 0;              
+}
+
+.promotion-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}

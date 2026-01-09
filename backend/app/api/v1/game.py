@@ -30,11 +30,13 @@ def make_move(req: MoveRequest):
     ok, msg = board.from_fen(req.fen)
     if not ok:
         raise HTTPException(status_code=400, detail=msg)
-
     try:
         move = from_uci_move(req.move)
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid move format")
+
+    print(req.move)
+    print(to_uci(move))
 
     generator = MoveGenerator(board)
     legal_moves = generator.legal_moves()
