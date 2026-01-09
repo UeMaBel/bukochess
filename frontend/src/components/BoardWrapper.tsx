@@ -5,6 +5,7 @@ import { getLegalMoves } from "../api/position";
 import { getEngineMove } from "../api/engine";
 import { useGameStore } from "../store/gameStore";
 import { EngineSelector } from "./EngineSelector";
+import { BukoLoader } from "./BukoLoader";
 import "../styles/board.css";
 
 const PIECE_UNICODE: Record<string, string> = {
@@ -29,6 +30,7 @@ export const BoardWrapper: React.FC = () => {
 
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const [promotionCoords, setPromotionCoords] = useState<{ top: number; left: number } | null>(null);
+  const [isEngineThinking, setIsEngineThinking] = useState(false);
 
   // --- State Sync ---
   const updateGameState = useCallback(async (newFen: string) => {
@@ -67,12 +69,15 @@ export const BoardWrapper: React.FC = () => {
     const currentPlayer = activeColor === "w" ? whitePlayer : blackPlayer;
     if (currentPlayer === "human" || status.toLowerCase().includes("mate")) return;
 
+    setIsEngineThinking(true);
     try {
       const res = await getEngineMove({ fen, engine: currentPlayer });
       await updateGameState(res.fen);
     } catch (e: any) {
       console.error("Engine failed:", e.message);
-    }
+    } finally {
+        setIsEngineThinking(false);}
+
   }, [fen, activeColor, whitePlayer, blackPlayer, status, updateGameState]);
 
   useEffect(() => {
@@ -147,7 +152,7 @@ export const BoardWrapper: React.FC = () => {
   return (
     <div className="game-container">
       <div className="engine-sidebar">
-        <h3>Players</h3>
+        <h3>🥥 Players</h3>
         <div className="engine-row">
           <EngineSelector playerColor="w" value={whitePlayer} onChange={setWhitePlayer} />
         </div>
@@ -192,16 +197,32 @@ export const BoardWrapper: React.FC = () => {
 
           <div className="rank-labels">{RANKS.map(r => <div key={r}>{r}</div>)}</div>
           <div /><div className="file-labels">{FILES.map(f => <div key={f}>{f}</div>)}</div><div />
+          <div className="fen-container-wide">
+        <label>Current FEN Position</label>
+        <textarea
+          value={fen}
+          readOnly
+          rows={2}
+          onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+        />
+      </div>
         </div>
 
         <div className="game-status-panel">
-          <div><strong>Status:</strong> {status}</div>
+          <div>
+          <h3>🥥 Status</h3>
+          {isEngineThinking ? (
+            <BukoLoader />
+          ) : (
+            <div className="status-text">{status}</div>
+          )}
+          </div>
           <div className={`check-text ${inCheck ? "visible" : ""}`} style={{ color: "red", fontWeight: "bold" }}>
             {inCheck ? "CHECK!" : ""}
           </div>
-          <textarea value={fen} readOnly rows={3} style={{ width: '100%', marginTop: 10 }} />
         </div>
       </div>
     </div>
+
   );
 };

@@ -1,4 +1,10 @@
 :root {
+  --buko-meat: #fdf5e6;
+  --buko-green: #82a03a;
+  --buko-shell: #2d1e17;
+  --buko-husk: #556b2f;
+  --buko-ground: #121a0f;
+  --buko-fiber: #bcaaa4;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;

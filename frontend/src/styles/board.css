@@ -1,15 +1,39 @@
-/* board.css */
 
 /* --- Main Layout Containers --- */
+/* board.css - Buko Logo Icon */
+.buko-logo {
+  width: 40px;
+  height: 40px;
+  background-color: var(--buko-shell);
+  border-radius: 50%; /* Round like a coconut */
+  position: relative;
+  border: 2px solid var(--buko-fiber);
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+/* The "Meat" inside (the half-cut look) */
+.buko-logo::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 30px;
+  height: 30px;
+  background-color: var(--buko-meat);
+  border-radius: 50%;
+  clip-path: ellipse(100% 50% at 50% 100%); /* Makes it look like a hollowed half */
+}
 
 .game-container {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: flex-start; /* Aligns top of all panels */
+  align-items: flex-start;
   gap: 30px;
   padding: 40px;
-  background-color: #1e1e1e;
+  background-color: var(--buko-ground);
   min-height: 100vh;
   box-sizing: border-box;
 }
@@ -18,11 +42,10 @@
 .engine-sidebar,
 .game-status-panel {
   width: 300px;
-  /* (Board 640px) + (2 * Labels 40px) = 720px */
   height: 720px;
-  background: #262626;
-  border: 1px solid #3d3d3d;
-  border-radius: 8px;
+  background: var(--buko-shell);
+  border: 2px solid var(--buko-fiber);
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -39,9 +62,9 @@
 .engine-sidebar h3,
 .game-status-panel h3 {
   margin: 0 0 10px 0;
-  color: #fff;
+  color: var(--buko-green);
   font-size: 1.25rem;
-  border-bottom: 2px solid #3d3d3d;
+  border-bottom: 2px solid var(--buko-fiber);
   padding-bottom: 8px;
   text-align: left;
 }
@@ -55,7 +78,7 @@
 
 .engine-row label {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--buko-fiber);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: bold;
@@ -63,9 +86,9 @@
 
 .engine-row select {
   padding: 12px;
-  background: #1a1a1a;
-  color: #fff;
-  border: 1px solid #444;
+  background: var(--buko-ground);
+  color: var(--buko-meat);
+  border: 1px solid var(--buko-fiber);
   border-radius: 6px;
   font-size: 1rem;
   cursor: pointer;
@@ -73,7 +96,7 @@
 }
 
 .engine-row select:hover {
-  border-color: #779556;
+  border-color: var(--buko-green);
 }
 
 /* --- Board Area (Center) --- */
@@ -81,7 +104,7 @@
 .board-wrapper {
   display: grid;
   grid-template-columns: 40px 640px 40px;
-  grid-template-rows: 40px 640px 40px;
+  grid-template-rows: 40px 640px 40px auto;
   align-items: center;
   justify-items: center;
 }
@@ -93,10 +116,10 @@
   height: 640px;
   display: flex;
   flex-direction: column;
-  border: 4px solid #1a1a1a;
+  border: 8px solid var(--buko-shell);
   box-sizing: border-box;
   position: relative;
-  background-color: #333;
+  background-color: var(--buko-shell);
 }
 
 .chess-rank {
@@ -116,22 +139,23 @@
   position: relative;
 }
 
-.chess-square.light { background-color: #ebecd0; }
-.chess-square.dark { background-color: #779556; }
-.chess-square.selected { background-color: #f6f669 !important; }
+.chess-square.light { background-color: var(--buko-meat); }
+.chess-square.dark { background-color: var(--buko-husk); }
+.chess-square.selected { background-color: rgba(130, 160, 58, 0.6) !important; }
+
 .chess-square span,
 .piece-white,
 .piece-black {
   position: relative;
   z-index: 2;
 }
+
 .chess-square.legal-target::after {
   content: "";
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-
   width: 24px;
   height: 24px;
   background-color: rgba(0, 0, 0, 0.15);
@@ -146,16 +170,22 @@
 
 .piece-white {
   color: #fff;
-  text-shadow: 1px 1px 2px #000, 0 0 1px #000;
+  /* Outlining for visibility on Creamy Meat squares */
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     1px 1px 2px rgba(0,0,0,0.5);
 }
 
-.piece-black { color: #000; }
+.piece-black { color: #1a120f; }
 
 /* --- Labels --- */
 
 .rank-labels, .file-labels {
   display: flex;
-  color: #666;
+  color: var(--buko-green);
   font-weight: bold;
   font-family: 'Courier New', Courier, monospace;
 }
@@ -177,17 +207,19 @@
   position: absolute;
   z-index: 1000;
   width: 80px;
-  background: white;
-  border: 2px solid #333;
-  border-radius: 4px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  background: var(--buko-meat);
+  border: 3px solid var(--buko-shell);
+  border-radius: 12px;
+  box-shadow: 0 15px 45px rgba(0,0,0,0.7);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 0;
+  margin: 0;
 }
 
 .promotion-btn {
-  width: 80px;
+  width: 100%;
   height: 80px;
   display: flex;
   align-items: center;
@@ -195,11 +227,33 @@
   font-size: 2.8rem;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--buko-fiber);
   cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.promotion-btn:hover { background: #f0f0f0; }
+.promotion-btn:last-child {
+  border-bottom: none;
+}
+
+.promotion-btn:hover {
+  background-color: var(--buko-green);
+  color: white;
+}
+
+.promotion-btn .piece-white {
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* --- Status Panel --- */
 
 .game-status-panel {
   justify-content: flex-start;
@@ -211,8 +265,9 @@
 
 .status-text {
   font-size: 1.1rem;
-  color: #779556;
+  color: var(--buko-green);
   margin-bottom: 15px;
+  font-weight: bold;
 }
 
 .check-text {
@@ -228,22 +283,106 @@
 
 .check-text.visible { visibility: visible; }
 
-.fen-section label {
-  font-size: 0.75rem;
-  color: #888;
-  display: block;
-  margin-bottom: 5px;
+.fen-container-wide {
+  grid-column: 1 / span 3;
+  grid-row: 4; /* Force it into the new 4th row */
+
+  width: 100%;
+  max-width: 720px; /* 40 + 640 + 40 */
+  margin-top: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
 }
 
-textarea {
-  width: 100%;
-  background: #111;
-  color: #aaa;
-  border: 1px solid #444;
-  padding: 10px;
-  border-radius: 4px;
-  font-family: 'Courier New', Courier, monospace;
+.fen-container-wide label {
   font-size: 0.8rem;
+  color: var(--buko-fiber);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.fen-container-wide textarea {
+  width: 100%;
+  background: var(--buko-ground);
+  color: var(--buko-meat);
+  border: 2px solid var(--buko-shell);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
   resize: none;
   box-sizing: border-box;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  transition: border-color 0.2s;
+}
+
+.fen-container-wide textarea:focus {
+  outline: none;
+  border-color: var(--buko-green);
+}
+/* --- Buko Rolling Spinner --- */
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 20px;
+}
+
+.buko-spinner {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  position: relative;
+  background: var(--buko-shell);
+  border: 3px solid var(--buko-fiber);
+  /* The "Rolling" animation */
+  animation: roll-buko 1.5s infinite linear;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* The "Meat" inside the spinner */
+.buko-spinner::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 20px;
+  height: 20px;
+  background-color: var(--buko-meat);
+  border-radius: 50%;
+  /* Creates the half-cut coconut look */
+  clip-path: circle(50% at 50% 50%);
+}
+
+@keyframes roll-buko {
+  0% {
+    transform: rotate(0deg) translateX(0px);
+  }
+  25% {
+    transform: rotate(90deg) translateX(5px); /* Slight wobble */
+  }
+  100% {
+    transform: rotate(360deg) translateX(0px);
+  }
+}
+
+.loading-text {
+  color: var(--buko-green);
+  font-family: monospace;
+  font-weight: bold;
+  letter-spacing: 2px;
+  /* Soft pulse effect */
+  animation: pulse-text 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
