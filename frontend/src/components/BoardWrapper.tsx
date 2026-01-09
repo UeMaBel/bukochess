@@ -14,7 +14,7 @@ const PIECE_UNICODE: Record<string, string> = {
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
-const START_FEN = "4k3/p6P/8/8/8/8/P6p/4K3 w - - 0 1";
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 export const BoardWrapper: React.FC = () => {
   const [fen, setFen] = useState(START_FEN);
