@@ -17,7 +17,7 @@ class AlphaBeta(Engine):
         if deepness:
             self.deepness = deepness
         else:
-            self.deepness = 5
+            self.deepness = 4
         self.nodes = 0
         self.tt = TranspositionTable()
         self.color = WHITE
