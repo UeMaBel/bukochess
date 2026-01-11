@@ -51,7 +51,7 @@ def self_play_test(depth, moves_to_play=10):
 
         gen.apply_uci(move)
         history.append(move)
-        gen.board.print_board()
+        # gen.board.print_board()
 
     return history
 
@@ -60,8 +60,9 @@ def run_profile(depth: int):
     print(f"Starting pofile depth {depth}...")
 
     start_time = time.perf_counter()
-    # self_play_test(depth, 1)
-    eval(depth)
+    # self_play_test(depth, 10)
+    # eval(depth)
+    profile(depth)
     end_time = time.perf_counter()
 
     duration = end_time - start_time
@@ -85,9 +86,9 @@ def profile(depth):
     b.from_fen(fen_4)
     gen = MoveGenerator(b)
     en = AlphaBeta(depth)
-    # run_perft(gen, deepness)
+    run_perft(gen, depth)
     print(en.choose_move(b))
     print(f"nodes: {en.nodes}, cutoffs: {en.cutoffs}, fm_cuttoffs: {en.first_move_cutoffs}, tt: {en.tt_hits}")
 
 
-run_profile(5)
+run_profile(4)

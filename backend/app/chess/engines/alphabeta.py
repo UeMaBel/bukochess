@@ -2,14 +2,16 @@ import random
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
 from app.chess.engines.base import Engine
 from app.chess.engines.transposition import TranspositionTable, TT_EXACT, TT_LOWER, TT_UPPER
-from app.chess.engines.tables import PIECE_VALUE_TABLE, BOARD_VALUE_TABLE
 from app.chess.utils import to_uci
 from app.chess.static import WHITE, BLACK
 from app.chess.move_flags import FLAG_CAPTURE
+from app.chess.static import PIECE_VALUE_TABLE
+
+MATE_SCORE = 100000
+MATE_THRESHOLD = 90000
 
 
 class AlphaBeta(Engine):
-    CHECKMATE = 999999
 
     def __init__(self, deepness: int | None = None, seed: int | None = None):
         self._rng = random.Random(seed)
@@ -46,7 +48,7 @@ class AlphaBeta(Engine):
                 self.deepness - 1,
                 -float("inf"),
                 float("inf"),
-                not maximizing
+                not maximizing, ply=0
             )
             gen.undo(m)
 
@@ -67,38 +69,36 @@ class AlphaBeta(Engine):
         print(f"Best Move: {m} | Score: {best_value}")
         return m
 
-    def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
+    def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool, ply: int) -> int:
         self.nodes += 1
         board = gen.board
         alpha_orig = alpha
 
-        # tt probe
+        # 1. TT PROBE
         tt_entry = self.tt.get_entry(board.hash)
         if tt_entry is not None and tt_entry.depth >= depth:
+            score = self.unscore_mate(tt_entry.score, ply)  # ADJUST MATE
+            self.tt_hits += 1
             if tt_entry.flag == TT_EXACT:
-                return tt_entry.score
+                return score
             elif tt_entry.flag == TT_LOWER:
-                alpha = max(alpha, tt_entry.score)
+                alpha = max(alpha, score)
             elif tt_entry.flag == TT_UPPER:
-                beta = min(beta, tt_entry.score)
+                beta = min(beta, score)
 
             if alpha >= beta:
-                self.tt_hits += 1
-                return tt_entry.score
+                return score
 
         if depth == 0:
-            return self.evaluate_position(board, depth)
+            return self.evaluate_position(board)
 
         moves = gen.legal_moves()
-
-        # checkmate / stalemate
         if not moves:
-            if board.is_king_in_check:  # Checkmate
-                return -(self.CHECKMATE + depth) if maximizing else (self.CHECKMATE + depth)
-            print("stalemate")
+            if board.is_king_in_check:
+                return -MATE_SCORE + ply if maximizing else MATE_SCORE - ply
             return 0  # Stalemate
 
-        # We prioritize the move found in the TT first, then captures.
+            # We prioritize the move found in the TT first, then captures.
         best_move_from_tt = tt_entry.move if tt_entry else None
         moves.sort(key=lambda m: self.order_moves(m, board, best_move_from_tt), reverse=True)
 
@@ -109,7 +109,7 @@ class AlphaBeta(Engine):
             for m in moves:
                 i += 1
                 gen.apply(m)
-                score = self.alphabeta(gen, depth - 1, alpha, beta, False)
+                score = self.alphabeta(gen, depth - 1, alpha, beta, False, ply + 1)
                 gen.undo(m)
 
                 if score > value:
@@ -126,7 +126,7 @@ class AlphaBeta(Engine):
             for m in moves:
                 i += 1
                 gen.apply(m)
-                score = self.alphabeta(gen, depth - 1, alpha, beta, True)
+                score = self.alphabeta(gen, depth - 1, alpha, beta, True, ply + 1)
                 gen.undo(m)
 
                 if score < value:
@@ -139,15 +139,28 @@ class AlphaBeta(Engine):
                     if i == 0: self.first_move_cutoffs += 1
                     break
 
+        # 2. TT STORE
+        # Determine flag using the original alpha/beta window
         if value <= alpha_orig:
             flag = TT_UPPER
-        elif value >= beta:
+        elif value >= beta:  # Use the beta passed into function
             flag = TT_LOWER
         else:
             flag = TT_EXACT
 
-        self.tt.store(board.hash, depth, value, flag, best_move)
+        stored_score = self.score_mate(value, ply)  # ADJUST MATE
+        self.tt.store(board.hash, depth, stored_score, flag, best_move)
         return value
+
+    def score_mate(self, score, ply):
+        if score > MATE_THRESHOLD: return score + ply
+        if score < -MATE_THRESHOLD: return score - ply
+        return score
+
+    def unscore_mate(self, score, ply):
+        if score > MATE_THRESHOLD: return score - ply
+        if score < -MATE_THRESHOLD: return score + ply
+        return score
 
     def order_moves(self, move, board, tt_move):
         """
@@ -165,69 +178,6 @@ class AlphaBeta(Engine):
             return 1000 + (PIECE_VALUE_TABLE[captured_piece & 0x07] - PIECE_VALUE_TABLE[moving_piece & 0x07])
 
         return 0
-
-    def alphabeta_old(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
-        self.nodes += 1
-        board = gen.board
-        alpha_orig = alpha
-        beta_orig = beta
-        key = board.hash
-
-        # --- TT probe ---
-        tt_score = self.tt.probe(key, depth, alpha, beta)
-        if tt_score is not None:
-            return tt_score
-
-        if depth == 0:
-            return self.evaluate_position(board, depth)
-
-        moves = gen.legal_moves()
-        if not moves:
-            return self.evaluate_position(board, depth)
-
-        best_move = None
-
-        if maximizing:
-            value = -10 ** 9
-            for m in moves:
-                if to_uci(m) == "h4f6":
-                    b = 3
-                gen.apply(m)
-                score = self.alphabeta(gen, depth - 1, alpha, beta, False)
-                gen.undo(m)
-
-                if score > value:
-                    value = score
-                    best_move = m
-
-                alpha = max(alpha, value)
-                if alpha >= beta:
-                    break
-        else:
-            value = 10 ** 9
-            for m in moves:
-                gen.apply(m)
-                score = self.alphabeta(gen, depth - 1, alpha, beta, True)
-                gen.undo(m)
-
-                if score < value:
-                    value = score
-                    best_move = m
-
-                beta = min(beta, value)
-                if beta <= alpha:
-                    break
-
-        # --- TT store ---
-        if value <= alpha_orig:
-            flag = TT_UPPER
-        elif value >= beta_orig:
-            flag = TT_LOWER
-        else:
-            flag = TT_EXACT
-
-        self.tt.store(key, depth, value, flag, best_move)
-        return value
 
     def evaluate_tree(self, tree: dict, white_to_move: bool):
         """
@@ -263,28 +213,5 @@ class AlphaBeta(Engine):
 
         return best_score, best_moves
 
-    def evaluate_position(self, board: Board, depth: int) -> int:
-        """
-        Returns the static evaluation of the board from White's perspective.
-        Positive = White advantage, Negative = Black advantage.
-        """
-        # Checkmate/Stalemate
-        if board.is_checkmate():
-            if board.active_color == WHITE:
-                return -(self.CHECKMATE + depth)
-            else:
-                return self.CHECKMATE + depth
-        if board.is_draw():
-            return 0
-
-        score = 0
-
-        for piece, square in board.get_pieces():
-            material_value = PIECE_VALUE_TABLE[piece]
-            positional_value = BOARD_VALUE_TABLE[piece][square]
-            if piece & WHITE:
-                score += (material_value + positional_value)
-            else:
-                score -= (material_value + positional_value)
-
-        return score
+    def evaluate_position(self, board: Board):
+        return board.score

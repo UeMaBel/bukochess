@@ -40,12 +40,13 @@ def test_pawn_promotion_to_knight():
 def test_en_passant_creation():
     board = Board()
     fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    fen_end = "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 1"
     board.from_fen(fen)  # Black pawn on a2
     gen = MoveGenerator(board)
     move = (8, 24, FLAG_NONE)
     gen.apply(move)
 
-    assert board.to_fen() == fen
+    assert board.to_fen() == fen_end
 
 
 def test_black_pawn_promotion():

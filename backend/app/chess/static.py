@@ -51,3 +51,115 @@ PIECE_TO_INDEX = {
     QUEEN: 4,
     KING: 5,
 }
+
+PIECE_VALUE_TABLE = [0] * 256
+
+for color in (WHITE, BLACK):
+    PIECE_VALUE_TABLE[color | PAWN] = 100
+    PIECE_VALUE_TABLE[color | KNIGHT] = 320
+    PIECE_VALUE_TABLE[color | BISHOP] = 330
+    PIECE_VALUE_TABLE[color | ROOK] = 500
+    PIECE_VALUE_TABLE[color | QUEEN] = 900
+    PIECE_VALUE_TABLE[color | KING] = 20000
+
+PAWN_PST = [
+    0, 0, 0, 0, 0, 0, 0, 0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    5, 5, 10, 25, 25, 10, 5, 5,
+    0, 0, 0, 20, 20, 0, 0, 0,
+    5, -5, -10, 0, 0, -10, -5, 5,
+    5, 10, 10, -20, -20, 10, 10, 5,
+    0, 0, 0, 0, 0, 0, 0, 0
+]
+
+KNIGHT_PST = [
+    -50, -40, -30, -30, -30, -30, -40, -50,
+    -40, -20, 0, 0, 0, 0, -20, -40,
+    -30, 0, 10, 15, 15, 10, 0, -30,
+    -30, 5, 15, 20, 20, 15, 5, -30,
+    -30, 0, 15, 20, 20, 15, 0, -30,
+    -30, 5, 10, 15, 15, 10, 5, -30,
+    -40, -20, 0, 5, 5, 0, -20, -40,
+    -50, -40, -30, -30, -30, -30, -40, -50,
+]
+
+BISHOP_PST = [
+    -20, -10, -10, -10, -10, -10, -10, -20,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -10, 0, 5, 10, 10, 5, 0, -10,
+    -10, 5, 5, 10, 10, 5, 5, -10,
+    -10, 0, 10, 10, 10, 10, 0, -10,
+    -10, 10, 10, 10, 10, 10, 10, -10,
+    -10, 5, 0, 0, 0, 0, 5, -10,
+    -20, -10, -10, -10, -10, -10, -10, -20,
+]
+ROOK_PST = [
+    0, 0, 0, 5, 5, 0, 0, 0,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    5, 10, 10, 10, 10, 10, 10, 5,
+    0, 0, 0, 5, 5, 0, 0, 0
+]
+QUEEN_PST = [
+    -20, -10, -10, -5, -5, -10, -10, -20,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -10, 0, 5, 5, 5, 5, 0, -10,
+    -5, 0, 5, 5, 5, 5, 0, -5,
+    -5, 0, 5, 5, 5, 5, 0, -5,
+    -10, 5, 5, 5, 5, 5, 0, -10,
+    -10, 0, 5, 0, 0, 0, 0, -10,
+    -20, -10, -10, -5, -5, -10, -10, -20
+]
+
+KING_PST = [
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -20, -30, -30, -40, -40, -30, -30, -20,
+    -10, -20, -20, -20, -20, -20, -20, -10,
+    20, 20, 0, 0, 0, 0, 20, 20,
+    20, 30, 10, 0, 0, 10, 30, 20,
+]
+
+
+def flip_sq(sq):
+    return sq ^ 56
+
+
+# Initialize a flat list for O(1) access
+COMBINED_TABLE = [[0] * 64 for _ in range(256)]
+
+
+def init_tables():
+    # 1. Map piece types to their PSTs
+    pst_map = {
+        PAWN: PAWN_PST,
+        KNIGHT: KNIGHT_PST,
+        BISHOP: BISHOP_PST,
+        ROOK: ROOK_PST,
+        QUEEN: QUEEN_PST,
+        KING: KING_PST
+    }
+
+    # 2. Base Material Values
+    material = {
+        PAWN: 100,
+        KNIGHT: 320,
+        BISHOP: 330,
+        ROOK: 500,
+        QUEEN: 900,
+        KING: 20000
+    }
+
+    for p_type, pst in pst_map.items():
+        val = material[p_type]
+        for sq in range(64):
+            white_piece = WHITE | p_type
+            COMBINED_TABLE[white_piece][sq] = val + pst[sq]
+            black_piece = BLACK | p_type
+            COMBINED_TABLE[black_piece][sq] = -(val + pst[flip_sq(sq)])

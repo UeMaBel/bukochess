@@ -1,8 +1,7 @@
 from typing import List
 
 from app.chess.board_base import BoardBase
-from app.chess.static import PAWN_OFFSETS, BISHOP_DIRS, QUEEN_DIRS, ROOK_DIRS, CASTLE_OFFSETS, KNIGHT_OFFSETS, \
-    KING_OFFSETS
+from app.chess.static import *
 from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, PIECE_TO_INDEX, \
     ROOK_SLIDERS, BISHOP_SLIDERS, EMPTY
 from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
@@ -28,8 +27,31 @@ class BoardMailbox(BoardBase):
         self.undo_stack: list[tuple] = []
         self.white_king = 0
         self.black_king = 0
-        self.is_king_in_check = False
-        self.is_other_king_in_check = False
+        self._is_king_in_check = -1
+        self._is_other_king_in_check = -1
+        self.score = 0
+        init_tables()
+
+    @property
+    def is_king_in_check(self):
+        if self._is_king_in_check == -1:
+            self._is_king_in_check = self.precompute_is_king_in_check()
+        return bool(self._is_king_in_check)
+
+    @is_king_in_check.setter
+    def is_king_in_check(self, value):
+        self._is_king_in_check = value
+
+    @property
+    def is_other_king_in_check(self):
+        if self._is_other_king_in_check == -1:
+            self._is_other_king_in_check = self.precompute_is_king_in_check(
+                WHITE if self.active_color == BLACK else BLACK)
+        return bool(self._is_other_king_in_check)
+
+    @is_other_king_in_check.setter
+    def is_other_king_in_check(self, value):
+        self._is_other_king_in_check = value
 
     def compute_hash(self):
         h = 0
@@ -327,10 +349,21 @@ class BoardMailbox(BoardBase):
                     self.black_king = sq
 
         self.set_hash()
-        self.is_other_king_in_check = self.precompute_is_king_in_check(WHITE if self.active_color == BLACK else BLACK)
-        self.is_king_in_check = self.precompute_is_king_in_check()
+        self.score = self.calculate_total_score()
+        # self.is_other_king_in_check = self.precompute_is_king_in_check(WHITE if self.active_color == BLACK else BLACK)
+        # self.is_king_in_check = self.precompute_is_king_in_check()
 
         return True, "FEN Imported"
+
+    def calculate_total_score(self):
+        score = 0
+        for piece, square in self.get_pieces():
+            score += self.get_piece_sq_val(piece, square)
+        return score
+
+    def get_piece_sq_val(self, piece: int, square: int):
+        val = COMBINED_TABLE[piece][square]
+        return val
 
     def to_fen(self) -> str:
         fen_rows = []

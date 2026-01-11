@@ -36,7 +36,7 @@ def test_check_logis():
 def test_mate_in_two():
     fen = "r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PPQ2P1/R3K2R w - - 0 1"
     best_move = "d2h6"
-    eng, gen = create_test(fen, 2)
+    eng, gen = create_test(fen, 4)
     m = eng.choose_move(gen.board)
     assert m == best_move
 
@@ -44,6 +44,6 @@ def test_mate_in_two():
 def test_mate_in_three():
     fen = "2r3k1/p4p2/3Rp2p/1p2P1pK/8/1P4P1/P3Q2P/1q6 b - - 0 1"
     best_move = "b1g6"
-    eng, gen = create_test(fen, 2)
+    eng, gen = create_test(fen, 6)
     m = eng.choose_move(gen.board)
     assert m == best_move

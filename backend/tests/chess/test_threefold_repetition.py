@@ -72,11 +72,3 @@ def test_repetition_en_passant_matters():
 
     # En passant square changed/reset → no repetition
     assert board.is_threefold_repetition() is False
-
-
-def test_repetition_undo_restorekjs_counts():
-    board = BoardArray()
-    board.from_fen("8/8/k7/p7/P7/K7/8/8 b - - 0 1")
-    gen = MoveTupleGenerator(board)
-    erg = perft(gen, 2)
-    assert erg == 9

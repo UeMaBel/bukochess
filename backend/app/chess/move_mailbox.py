@@ -5,8 +5,7 @@ from app.chess.static import PAWN_OFFSETS_MAILBOX as PAWN_OFFSETS
 from app.chess.board_mailbox import BoardMailbox, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
 from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLAG_EN_PASSANT, FLAG_NONE, FLAG_PROMO_B, \
     FLAG_PROMO_N, FLAG_PROMO_Q, FLAG_PROMO_R, FLAG_PROMOTION
-from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, PIECE_TO_INDEX, \
-    ROOK_SLIDERS, BISHOP_SLIDERS, EMPTY
+from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, EMPTY, COMBINED_TABLE
 from app.chess.utils import rank_x, file_y, from_uci_move
 from app.chess.zobrist import piece_flag_to_index
 from app.chess.utils import to_uci
@@ -51,9 +50,8 @@ class MoveMailBoxGenerator:
             xy, nxy, flags = move
             if king_was_checked and ((flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)):
                 continue
-            self.apply(move, light_apply=False)
+            self.apply(move)
             if not self.board.is_other_king_in_check:
-                self.board.is_king_in_check = self.board.precompute_is_king_in_check()
                 candidate = self.board.is_king_in_check
                 scored_moves.append((move, candidate))
             self.undo(move)
@@ -85,10 +83,10 @@ class MoveMailBoxGenerator:
 
         self.apply((from_sq, to_sq, flags))
 
-    def apply(self, move: tuple[int, int, int], light_apply=False):
-        board = self.board.board
-        from_sq, to_sq, flags = move
+    def apply(self, move: tuple[int, int, int]):
         board_items = self.board
+        board = board_items.board
+        from_sq, to_sq, flags = move
 
         piece = board[from_sq]
         captured_piece = EMPTY
@@ -103,6 +101,9 @@ class MoveMailBoxGenerator:
         old_active_color = board_items.active_color
         old_check = board_items.is_king_in_check
         old_other_check = board_items.is_other_king_in_check
+
+        self.board.is_king_in_check = -1
+        self.board.is_other_king_in_check = -1
 
         # --- REMOVE OLD EN PASSANT HASH ---
         if self.board.en_passant != -1:
@@ -124,6 +125,7 @@ class MoveMailBoxGenerator:
             captured_piece = board[captured_sq]
             board[captured_sq] = EMPTY
             self.board.hash ^= Z_PIECE[piece_flag_to_index(captured_piece)][captured_sq]
+            self.board.score -= COMBINED_TABLE[captured_piece][captured_sq]
             self.board.halfmove_clock = 0
 
         # --- MOVE PIECE ---
@@ -132,6 +134,8 @@ class MoveMailBoxGenerator:
 
         board[to_sq] = piece
         self.board.hash ^= Z_PIECE[piece_flag_to_index(piece)][to_sq]
+        self.board.score -= COMBINED_TABLE[piece][from_sq]
+        self.board.score += COMBINED_TABLE[piece][to_sq]
 
         # --- UPDATE KING POSITION ---
         if piece & KING:
@@ -155,6 +159,8 @@ class MoveMailBoxGenerator:
 
             board[to_sq] = promo_piece
             self.board.hash ^= Z_PIECE[piece_flag_to_index(promo_piece)][to_sq]
+            self.board.score -= COMBINED_TABLE[piece][to_sq]
+            self.board.score += COMBINED_TABLE[promo_piece][from_sq]
 
         # --- CASTLING ---
         if flags & FLAG_CASTLE_K:
@@ -170,6 +176,8 @@ class MoveMailBoxGenerator:
             board[rook_to] = rook
             self.board.hash ^= Z_PIECE[piece_flag_to_index(rook)][rook_from]
             self.board.hash ^= Z_PIECE[piece_flag_to_index(rook)][rook_to]
+            self.board.score -= COMBINED_TABLE[rook][rook_from]
+            self.board.score += COMBINED_TABLE[rook][rook_to]
 
         # --- CASTLING RIGHTS ---
         old_mask = self.board.castling_rights_mask()
@@ -192,12 +200,6 @@ class MoveMailBoxGenerator:
 
         # --- REPETITION COUNT ---
         self.board.position_counts[self.board.hash] = self.board.position_counts.get(self.board.hash, 0) + 1
-
-        # --- CHECK ---
-        if not light_apply:
-            self.board.is_king_in_check = self.board.precompute_is_king_in_check()
-        self.board.is_other_king_in_check = self.board.precompute_is_king_in_check(
-            WHITE if self.board.active_color == BLACK else BLACK)
 
         # --- SAVE UNDO INFO ---
         self.board.undo_stack.append((
