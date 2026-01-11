@@ -163,3 +163,22 @@ def init_tables():
             COMBINED_TABLE[white_piece][sq] = val + pst[sq]
             black_piece = BLACK | p_type
             COMBINED_TABLE[black_piece][sq] = -(val + pst[flip_sq(sq)])
+
+
+# 1 = W_KING_SIDE (K)
+# 2 = W_QUEEN_SIDE (Q)
+# 4 = B_KING_SIDE (k)
+# 8 = B_QUEEN_SIDE (q)
+
+# Initialize with 15 (all rights preserved)
+CASTLING_KEEP_MASK = [15] * 64
+
+# --- WHITE RIGHTS ---
+CASTLING_KEEP_MASK[4] = 15 ^ 3  # e1: King moves (Removes bits 1 & 2) -> 12
+CASTLING_KEEP_MASK[0] = 15 ^ 2  # a1: Rook moves/captured (Removes bit 2) -> 13
+CASTLING_KEEP_MASK[7] = 15 ^ 1  # h1: Rook moves/captured (Removes bit 1) -> 14
+
+# --- BLACK RIGHTS ---
+CASTLING_KEEP_MASK[60] = 15 ^ 12  # e8: King moves (Removes bits 4 & 8) -> 3
+CASTLING_KEEP_MASK[56] = 15 ^ 8  # a8: Rook moves/captured (Removes bit 8) -> 7
+CASTLING_KEEP_MASK[63] = 15 ^ 4  # h8: Rook moves/captured (Removes bit 4) -> 11

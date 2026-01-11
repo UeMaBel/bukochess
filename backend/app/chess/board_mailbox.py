@@ -17,7 +17,7 @@ class BoardMailbox(BoardBase):
         # a list with 64 entries
         self.board: List[int] = [EMPTY] * 64
         self.active_color: int = WHITE
-        self.castling_rights = "-"
+        self.castling_rights: int = 0
         self.en_passant = 0
         self.halfmove_clock = 0
         self.fullmove_number = 1
@@ -70,7 +70,7 @@ class BoardMailbox(BoardBase):
             h ^= Z_SIDE
 
         # castling rights
-        h ^= Z_CASTLING[self.castling_rights_mask()]
+        h ^= Z_CASTLING[self.castling_rights]
 
         # en passant (file only, if any)
         if self.en_passant != -1:
@@ -81,14 +81,6 @@ class BoardMailbox(BoardBase):
 
     def set_hash(self):
         self.hash = self.compute_hash()
-
-    def castling_rights_mask(self) -> int:
-        mask = 0
-        if "K" in self.castling_rights: mask |= 1
-        if "Q" in self.castling_rights: mask |= 2
-        if "k" in self.castling_rights: mask |= 4
-        if "q" in self.castling_rights: mask |= 8
-        return mask
 
     def switch_active_color(self):
         self.active_color ^= (WHITE | BLACK)
@@ -326,7 +318,11 @@ class BoardMailbox(BoardBase):
         self.active_color = WHITE if active == "w" else BLACK
 
         # Castling
-        self.castling_rights = castling
+        self.castling_rights = 0
+        if "K" in castling: self.castling_rights |= 1
+        if "Q" in castling: self.castling_rights |= 2
+        if "k" in castling: self.castling_rights |= 4
+        if "q" in castling: self.castling_rights |= 8
 
         # En passant
         if ep == "-":
@@ -365,6 +361,17 @@ class BoardMailbox(BoardBase):
         val = COMBINED_TABLE[piece][square]
         return val
 
+    def castling_to_string(self) -> str:
+        if self.castling_rights == 0:
+            return "-"
+
+        res = ""
+        if self.castling_rights & 1: res += "K"
+        if self.castling_rights & 2: res += "Q"
+        if self.castling_rights & 4: res += "k"
+        if self.castling_rights & 8: res += "q"
+        return res
+
     def to_fen(self) -> str:
         fen_rows = []
         for rank in range(7, -1, -1):
@@ -388,4 +395,4 @@ class BoardMailbox(BoardBase):
         active = "w" if self.active_color == WHITE else "b"
         ep = "-" if self.en_passant == -1 else chr((self.en_passant % 8) + ord("a")) + str((self.en_passant // 8) + 1)
 
-        return f"{board_part} {active} {self.castling_rights} {ep} {self.halfmove_clock} {self.fullmove_number}"
+        return f"{board_part} {active} {self.castling_to_string()} {ep} {self.halfmove_clock} {self.fullmove_number}"

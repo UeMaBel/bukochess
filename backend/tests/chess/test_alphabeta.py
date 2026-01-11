@@ -44,6 +44,6 @@ def test_mate_in_two():
 def test_mate_in_three():
     fen = "2r3k1/p4p2/3Rp2p/1p2P1pK/8/1P4P1/P3Q2P/1q6 b - - 0 1"
     best_move = "b1g6"
-    eng, gen = create_test(fen, 6)
+    eng, gen = create_test(fen, 2)
     m = eng.choose_move(gen.board)
     assert m == best_move

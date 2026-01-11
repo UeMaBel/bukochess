@@ -91,4 +91,4 @@ def profile(depth):
     print(f"nodes: {en.nodes}, cutoffs: {en.cutoffs}, fm_cuttoffs: {en.first_move_cutoffs}, tt: {en.tt_hits}")
 
 
-run_profile(4)
+run_profile(3)
