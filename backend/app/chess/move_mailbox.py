@@ -8,7 +8,6 @@ from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLA
 from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, EMPTY, COMBINED_TABLE, \
     CASTLE_OFFSETS, CASTLING_KEEP_MASK
 from app.chess.utils import rank_x, file_y, from_uci_move
-from app.chess.zobrist import piece_flag_to_index
 from app.chess.utils import to_uci
 
 
@@ -106,19 +105,19 @@ class MoveMailBoxGenerator:
         hash = old_hash
         score = old_score
 
-        self.board.is_king_in_check = -1
-        self.board.is_other_king_in_check = -1
+        board_items._is_king_in_check = -1
+        board_items._is_other_king_in_check = -1
 
         # --- REMOVE OLD EN PASSANT HASH ---
         if board_items.en_passant != -1:
             hash ^= Z_EP_FILE[board_items.en_passant % 8]
-        self.board.en_passant = -1
+        board_items.en_passant = -1
 
         # --- HALF MOVE CLOCK ---
         if piece & PAWN:
-            self.board.halfmove_clock = 0
+            board_items.halfmove_clock = 0
         else:
-            self.board.halfmove_clock += 1
+            board_items.halfmove_clock += 1
 
         # --- CAPTURE ---
         if flags & FLAG_EN_PASSANT:
@@ -129,29 +128,29 @@ class MoveMailBoxGenerator:
         if captured_sq is not None:
             captured_piece = board[captured_sq]
             board[captured_sq] = EMPTY
-            hash ^= Z_PIECE[piece_flag_to_index(captured_piece)][captured_sq]
+            hash ^= Z_PIECE[captured_piece][captured_sq]
             score -= COMBINED_TABLE[captured_piece][captured_sq]
-            self.board.halfmove_clock = 0
+            board_items.halfmove_clock = 0
 
         # --- MOVE PIECE ---
         board[from_sq] = EMPTY
-        hash ^= Z_PIECE[piece_flag_to_index(piece)][from_sq]
+        hash ^= Z_PIECE[piece][from_sq]
 
         board[to_sq] = piece
-        hash ^= Z_PIECE[piece_flag_to_index(piece)][to_sq]
+        hash ^= Z_PIECE[piece][to_sq]
         score -= COMBINED_TABLE[piece][from_sq]
         score += COMBINED_TABLE[piece][to_sq]
 
         # --- UPDATE KING POSITION ---
         if piece & KING:
             if piece & WHITE:
-                self.board.white_king = to_sq
+                board_items.white_king = to_sq
             else:
-                self.board.black_king = to_sq
+                board_items.black_king = to_sq
 
         # --- PROMOTION ---
         if flags & FLAG_PROMOTION:
-            hash ^= Z_PIECE[piece_flag_to_index(piece)][to_sq]
+            hash ^= Z_PIECE[piece][to_sq]
 
             if flags & FLAG_PROMO_N:
                 promo_piece = KNIGHT | (piece & COLOR)
@@ -163,7 +162,7 @@ class MoveMailBoxGenerator:
                 promo_piece = QUEEN | (piece & COLOR)
 
             board[to_sq] = promo_piece
-            hash ^= Z_PIECE[piece_flag_to_index(promo_piece)][to_sq]
+            hash ^= Z_PIECE[promo_piece][to_sq]
             score -= COMBINED_TABLE[piece][to_sq]
             score += COMBINED_TABLE[promo_piece][from_sq]
 
@@ -179,8 +178,8 @@ class MoveMailBoxGenerator:
             rook = board[rook_from]
             board[rook_from] = EMPTY
             board[rook_to] = rook
-            hash ^= Z_PIECE[piece_flag_to_index(rook)][rook_from]
-            hash ^= Z_PIECE[piece_flag_to_index(rook)][rook_to]
+            hash ^= Z_PIECE[rook][rook_from]
+            hash ^= Z_PIECE[rook][rook_to]
             score -= COMBINED_TABLE[rook][rook_from]
             score += COMBINED_TABLE[rook][rook_to]
 
@@ -191,26 +190,26 @@ class MoveMailBoxGenerator:
             # Hash updates are now extremely fast lookups
             hash ^= Z_CASTLING[old_castling]
             hash ^= Z_CASTLING[new_rights]
-            self.board.castling_rights = new_rights
+            board_items.castling_rights = new_rights
 
         # --- EN PASSANT CREATION ---
         if piece & PAWN:
             if abs(from_sq - to_sq) == 16:
                 ep_target = (from_sq + to_sq) // 2
-                self.board.en_passant = ep_target
+                board_items.en_passant = ep_target
                 hash ^= Z_EP_FILE[ep_target % 8]
 
         # --- SIDE TO MOVE ---
-        self.board.active_color ^= WHITE | BLACK
+        board_items.active_color ^= WHITE | BLACK
         hash ^= Z_SIDE
 
         # --- REPETITION COUNT ---
-        self.board.position_counts[hash] = self.board.position_counts.get(hash, 0) + 1
+        board_items.position_counts[hash] = board_items.position_counts.get(hash, 0) + 1
 
-        self.board.hash = hash
-        self.board.score = score
+        board_items.hash = hash
+        board_items.score = score
         # --- SAVE UNDO INFO ---
-        self.board.undo_stack.append((
+        board_items.undo_stack.append((
             captured_piece,
             captured_sq,
             piece,
