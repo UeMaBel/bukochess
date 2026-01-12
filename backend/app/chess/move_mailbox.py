@@ -83,7 +83,6 @@ class MoveMailBoxGenerator:
 
         self.apply((from_sq, to_sq, flags))
 
-    @profile
     def apply(self, move: tuple[int, int, int]):
         board_items = self.board
         board = board_items.board

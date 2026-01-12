@@ -10,6 +10,8 @@ from app.chess.static import PIECE_VALUE_TABLE
 MATE_SCORE = 100000
 MATE_THRESHOLD = 90000
 
+MAX_DEPTH = 64
+
 
 class AlphaBeta(Engine):
 
@@ -27,6 +29,7 @@ class AlphaBeta(Engine):
         self.cutoffs = 0
         self.tt_hits = 0
         self.first_move_cutoffs = 0
+        self.killers = [[None, None] for _ in range(MAX_DEPTH)]
 
     def choose_move(self, board: Board):
         print(f"searching move with alphabeta. deepness = {self.deepness}")
@@ -69,6 +72,7 @@ class AlphaBeta(Engine):
         print(f"Best Move: {m} | Score: {best_value}")
         return m
 
+    @profile
     def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool, ply: int) -> int:
         self.nodes += 1
         board = gen.board
@@ -98,9 +102,22 @@ class AlphaBeta(Engine):
                 return -MATE_SCORE + ply if maximizing else MATE_SCORE - ply
             return 0  # Stalemate
 
-            # We prioritize the move found in the TT first, then captures.
+        # We prioritize the move found in the TT first, then captures.
         best_move_from_tt = tt_entry.move if tt_entry else None
-        moves.sort(key=lambda m: self.order_moves(m, board, best_move_from_tt), reverse=True)
+
+        # sorting
+        scored_moves = []
+        for m in moves:
+            xy, nxy, flag = m
+            score = 0
+            if m == best_move_from_tt:
+                score = 10000
+            elif flag & FLAG_CAPTURE:  # m[2] is the flag
+                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[xy] & 0x07] * 10) - PIECE_VALUE_TABLE[
+                    gen.board.board[nxy] & 0x07]
+            scored_moves.append((score, m))
+
+        scored_moves.sort(key=lambda x: x[0], reverse=True)
 
         best_move = None
         i = -1
