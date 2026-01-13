@@ -88,6 +88,6 @@ def profile(depth):
     en = AlphaBeta(depth)
     run_perft(gen, depth)
     print(en.choose_move(b))
-    
 
-run_profile(4)
+
+run_profile(5)

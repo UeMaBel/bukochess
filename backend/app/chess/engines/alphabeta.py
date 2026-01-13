@@ -208,6 +208,9 @@ class AlphaBeta(Engine):
             for m in captures:
                 f, t, _ = m
                 score = (PIECE_VALUE_TABLE[gen.board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[gen.board.board[f] & 7]
+
+                if stand_pat + PIECE_VALUE_TABLE[gen.board.board[t] & 7] < alpha:
+                    continue
                 scored_captures.append((score, m))
             scored_captures.sort(key=lambda x: x[0], reverse=True)
 
@@ -231,6 +234,8 @@ class AlphaBeta(Engine):
             for m in captures:
                 f, t, _ = m
                 score = (PIECE_VALUE_TABLE[gen.board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[gen.board.board[f] & 7]
+                if stand_pat - PIECE_VALUE_TABLE[gen.board.board[t] & 7] > beta:
+                    continue
                 scored_captures.append((score, m))
             scored_captures.sort(key=lambda x: x[0], reverse=True)
 
