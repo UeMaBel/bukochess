@@ -201,7 +201,6 @@ export const BoardWrapper: React.FC = () => {
         <label>Current FEN Position</label>
         <textarea
           value={fen}
-          readOnly
           rows={2}
           onClick={(e) => (e.target as HTMLTextAreaElement).select()}
         />

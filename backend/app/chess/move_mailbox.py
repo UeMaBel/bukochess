@@ -20,7 +20,6 @@ class MoveMailBoxGenerator:
 
     def __init__(self, board: BoardMailbox, order: bool = False):
         self._board = board
-        self.order = order
 
     @property
     def board(self) -> BoardMailbox:
@@ -56,8 +55,6 @@ class MoveMailBoxGenerator:
                 scored_moves.append((move, candidate))
             self.undo(move)
 
-        if self.order:
-            scored_moves = self.order_moves(scored_moves)
         legal_moves = [m for m, _ in scored_moves]
         MoveMailBoxGenerator._moves_cache[self.board.hash] = legal_moves
         return legal_moves
@@ -81,7 +78,7 @@ class MoveMailBoxGenerator:
             else:
                 flags |= FLAG_CASTLE_Q
 
-        self.apply((from_sq, to_sq, flags))
+        return self.apply((from_sq, to_sq, flags))
 
     def apply(self, move: tuple[int, int, int]):
         board_items = self.board
@@ -221,6 +218,7 @@ class MoveMailBoxGenerator:
             old_hash,
             old_score
         ))
+        return move
 
     def undo(self, move: tuple[int, int, int]):
         from_sq, to_sq, flags = move
@@ -303,6 +301,26 @@ class MoveMailBoxGenerator:
         ret = self.board.is_king_in_check
         self.undo(move)
         return ret
+
+    def legal_captures(self):
+        captures = []
+        # Identify who we are attacking
+        enemy_color = BLACK if self.board.active_color == WHITE else WHITE
+        e_k = self.board.black_king if self.board.active_color == WHITE else self.board.white_king
+
+        # We only care about moves where the 'to_sq' contains an enemy piece
+        # Use your existing move gen logic, but add this filter:
+        for move in self.generate_pseudo_legal_moves(self.board.active_color, e_k):
+            from_sq, to_sq, flag = move
+
+            if (flag & FLAG_CAPTURE) or (flag & FLAG_PROMOTION):
+
+                self.apply(move)
+                if not self.board.is_other_king_in_check:
+                    captures.append(move)
+                self.undo(move)
+
+        return captures
 
     def generate_pseudo_legal_moves(self, color: int, enemy_king_sq: int) -> list[tuple[int, int, int]]:
         moves: list[tuple[int, int, int]] = []

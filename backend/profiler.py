@@ -88,7 +88,6 @@ def profile(depth):
     en = AlphaBeta(depth)
     run_perft(gen, depth)
     print(en.choose_move(b))
-    print(f"nodes: {en.nodes}, cutoffs: {en.cutoffs}, fm_cuttoffs: {en.first_move_cutoffs}, tt: {en.tt_hits}")
+    
 
-
-run_profile(3)
+run_profile(4)

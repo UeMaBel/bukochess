@@ -47,3 +47,16 @@ def test_mate_in_three():
     eng, gen = create_test(fen, 2)
     m = eng.choose_move(gen.board)
     assert m == best_move
+
+
+def test_best_move_1():
+    # fen = "rnbqkbnr/ppp2ppp/8/3pp3/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3"
+    fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    m = "d4e5"
+    eng, gen = create_test(fen, 3)
+    # m = gen.apply_uci(m)
+    for i in range(10):
+        move = eng.choose_move(gen.board)
+        gen.apply_uci(move)
+        gen.board.print_board()
+    a = 33

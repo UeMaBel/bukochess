@@ -29,11 +29,12 @@ class AlphaBeta(Engine):
         self.cutoffs = 0
         self.tt_hits = 0
         self.first_move_cutoffs = 0
+        self.quiesce_calls = 0
         self.killers = [[None, None] for _ in range(MAX_DEPTH)]
 
     def choose_move(self, board: Board):
         print(f"searching move with alphabeta. deepness = {self.deepness}")
-        gen = MoveGenerator(board, order=True)
+        gen = MoveGenerator(board)
         moves = gen.legal_moves()
         board = gen.board
         self.color = WHITE if board.active_color == WHITE else BLACK
@@ -54,34 +55,38 @@ class AlphaBeta(Engine):
                 not maximizing, ply=0
             )
             gen.undo(m)
-
+            print(f"Move: {to_uci(m)} | Score: {value}")
             if maximizing:
                 if value > best_value:
                     best_value = value
                     best_moves = [m]
                 elif value == best_value:
                     best_moves.append(m)
+
             else:
                 if value < best_value:
                     best_value = value
                     best_moves = [m]
                 elif value == best_value:
                     best_moves.append(m)
+
         m = to_uci(self._rng.choice(best_moves))
 
         print(f"Best Move: {m} | Score: {best_value}")
+        print(
+            f"nodes: {self.nodes}, cutoffs: {self.cutoffs}, fm_cuttoffs: {self.first_move_cutoffs}, tt: {self.tt_hits}, quiesce {self.quiesce_calls}")
+
         return m
 
-    @profile
     def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool, ply: int) -> int:
-        self.nodes += 1
         board = gen.board
         alpha_orig = alpha
+        beta_orig = beta
 
         # 1. TT PROBE
         tt_entry = self.tt.get_entry(board.hash)
         if tt_entry is not None and tt_entry.depth >= depth:
-            score = self.unscore_mate(tt_entry.score, ply)  # ADJUST MATE
+            score = self.unscore_mate(tt_entry.score, ply)
             self.tt_hits += 1
             if tt_entry.flag == TT_EXACT:
                 return score
@@ -91,30 +96,38 @@ class AlphaBeta(Engine):
                 beta = min(beta, score)
 
             if alpha >= beta:
-                return score
+                return alpha if tt_entry.flag == TT_LOWER else beta
 
+        self.nodes += 1
         if depth == 0:
-            return self.evaluate_position(board)
+            return self.quiesce(gen, alpha, beta, maximizing)
 
         moves = gen.legal_moves()
         if not moves:
             if board.is_king_in_check:
                 return -MATE_SCORE + ply if maximizing else MATE_SCORE - ply
-            return 0  # Stalemate
+            return 0
 
-        # We prioritize the move found in the TT first, then captures.
         best_move_from_tt = tt_entry.move if tt_entry else None
+        if not best_move_from_tt in moves:
+            best_move_from_tt = None
 
-        # sorting
+        # --- KILLER MOVE SCORING ---
         scored_moves = []
         for m in moves:
             xy, nxy, flag = m
             score = 0
             if m == best_move_from_tt:
                 score = 10000
-            elif flag & FLAG_CAPTURE:  # m[2] is the flag
-                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[xy] & 0x07] * 10) - PIECE_VALUE_TABLE[
-                    gen.board.board[nxy] & 0x07]
+            elif flag & FLAG_CAPTURE:
+                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[nxy] & 0x07] * 10) - PIECE_VALUE_TABLE[
+                    gen.board.board[xy] & 0x07]
+            # Check against the two killer slots for this ply
+            elif m == self.killers[ply][0]:
+                score = 900
+            elif m == self.killers[ply][1]:
+                score = 800
+
             scored_moves.append((score, m))
 
         scored_moves.sort(key=lambda x: x[0], reverse=True)
@@ -123,7 +136,7 @@ class AlphaBeta(Engine):
         i = -1
         if maximizing:
             value = -float('inf')
-            for m in moves:
+            for _, m in scored_moves:  # Iterate over sorted moves
                 i += 1
                 gen.apply(m)
                 score = self.alphabeta(gen, depth - 1, alpha, beta, False, ply + 1)
@@ -134,13 +147,20 @@ class AlphaBeta(Engine):
                     best_move = m
 
                 alpha = max(alpha, value)
-                if alpha >= beta:  # Beta Cutoff
+                if alpha >= beta:
+                    # --- RECORD KILLER MOVE ---
+                    _, _, flag = m
+                    if not (flag & FLAG_CAPTURE):
+                        if m != self.killers[ply][0]:
+                            self.killers[ply][1] = self.killers[ply][0]
+                            self.killers[ply][0] = m
+
                     self.cutoffs += 1
                     if i == 0: self.first_move_cutoffs += 1
                     break
         else:
             value = float('inf')
-            for m in moves:
+            for _, m in scored_moves:  # Iterate over sorted moves
                 i += 1
                 gen.apply(m)
                 score = self.alphabeta(gen, depth - 1, alpha, beta, True, ply + 1)
@@ -151,23 +171,78 @@ class AlphaBeta(Engine):
                     best_move = m
 
                 beta = min(beta, value)
-                if beta <= alpha:  # Alpha Cutoff
+                if beta <= alpha:
+                    # --- RECORD KILLER MOVE ---
+                    _, _, flag = m
+                    if not (flag & FLAG_CAPTURE):
+                        if m != self.killers[ply][0]:
+                            self.killers[ply][1] = self.killers[ply][0]
+                            self.killers[ply][0] = m
+
                     self.cutoffs += 1
                     if i == 0: self.first_move_cutoffs += 1
                     break
 
-        # 2. TT STORE
-        # Determine flag using the original alpha/beta window
         if value <= alpha_orig:
             flag = TT_UPPER
-        elif value >= beta:  # Use the beta passed into function
+        elif value >= beta_orig:
             flag = TT_LOWER
         else:
             flag = TT_EXACT
 
-        stored_score = self.score_mate(value, ply)  # ADJUST MATE
+        stored_score = self.score_mate(value, ply)
         self.tt.store(board.hash, depth, stored_score, flag, best_move)
         return value
+
+    def quiesce(self, gen: MoveGenerator, alpha, beta, maximizing):
+        self.quiesce_calls += 1
+        stand_pat = self.evaluate_position(gen.board)
+
+        if maximizing:
+            if stand_pat >= beta:
+                return beta
+            alpha = max(alpha, stand_pat)
+
+            captures = gen.legal_captures()
+            scored_captures = []
+            for m in captures:
+                f, t, _ = m
+                score = (PIECE_VALUE_TABLE[gen.board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[gen.board.board[f] & 7]
+                scored_captures.append((score, m))
+            scored_captures.sort(key=lambda x: x[0], reverse=True)
+
+            for _, m in scored_captures:
+                gen.apply(m)
+                score = self.quiesce(gen, alpha, beta, False)  # Pass False for Black
+                gen.undo(m)
+
+                if score >= beta:
+                    return beta
+                alpha = max(alpha, score)
+            return alpha
+
+        else:  # Minimizing (Black)
+            if stand_pat <= alpha:
+                return alpha
+            beta = min(beta, stand_pat)
+
+            captures = gen.legal_captures()
+            scored_captures = []
+            for m in captures:
+                f, t, _ = m
+                score = (PIECE_VALUE_TABLE[gen.board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[gen.board.board[f] & 7]
+                scored_captures.append((score, m))
+            scored_captures.sort(key=lambda x: x[0], reverse=True)
+
+            for _, m in scored_captures:
+                gen.apply(m)
+                score = self.quiesce(gen, alpha, beta, True)  # Pass True for White
+                gen.undo(m)
+
+                if score <= alpha:
+                    return alpha
+                beta = min(beta, score)
+            return beta
 
     def score_mate(self, score, ply):
         if score > MATE_THRESHOLD: return score + ply
@@ -184,7 +259,6 @@ class AlphaBeta(Engine):
         Assigns a score to a move for sorting.
         High priority: TT move > Captures > Killers > Others.
         """
-        # TODO: profile and see if order here or in move_mailbox should stay...or in both
         if move == tt_move:
             return 10000
 
