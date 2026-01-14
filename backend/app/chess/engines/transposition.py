@@ -26,4 +26,4 @@ class TranspositionTable:
         # Always replace if the new search was deeper
         existing = self.table.get(key)
         if existing is None or depth >= existing.depth:
-            self.table[key] = TTEntry(score, depth, flag, move)
+            self.table[key] = TTEntry(depth, score, flag, move)

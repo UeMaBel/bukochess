@@ -81,13 +81,14 @@ def profile(depth):
     fen = "r3k2r/8/8/8/8/8/8/4K3 w kq - 0 1"
     fen_2 = "8/8/8/8/8/8/6k1/4K2R w K - 0 1"
     fen_3 = "8/8/8/8/8/8/1k6/R3K3 w Q - 0 1"
-    fen_4 = "rnbqkb1r/ppppp1pp/7n/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3"
+    fen_4 = "r2q1rk1/ppp2ppp/2n5/3bp3/3P4/2P2N2/PP1N1PPP/R1BQ1RK1 w - - 0 9"
     b = Board()
     b.from_fen(fen_4)
     gen = MoveGenerator(b)
     en = AlphaBeta(depth)
-    run_perft(gen, depth)
+    b.print_board()
+    # run_perft(gen, depth)
     print(en.choose_move(b))
 
 
-run_profile(5)
+run_profile(6)
