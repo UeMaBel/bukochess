@@ -22,10 +22,9 @@ class AlphaBeta(Engine):
             self.deepness = deepness
         else:
             self.deepness = 4
+        self.deepness=7
         self.nodes = 0
         self.tt = TranspositionTable()
-        self.color = WHITE
-        self.nodes = 0
         self.cutoffs = 0
         self.tt_hits = 0
         self.first_move_cutoffs = 0
@@ -33,59 +32,86 @@ class AlphaBeta(Engine):
         self.killers = [[None, None] for _ in range(MAX_DEPTH)]
 
     def choose_move(self, board: Board):
-        print(f"searching move with alphabeta. deepness = {self.deepness}")
+        print(f"searching move with alphabeta. max deepness = {self.deepness}")
+
         gen = MoveGenerator(board)
-        moves = gen.legal_moves()
+        best_move = None
+        for depth in range(1, self.deepness + 1):
+            # reset per-iteration stats if you want
+            self.nodes = 0
+            self.cutoffs = 0
+            self.first_move_cutoffs = 0
+            self.tt_hits = 0
+            self.quiesce_calls = 0
+
+            value, move = self.search_root(gen, depth, best_move)
+            best_move = move
+
+            print(f"depth {depth}: best {to_uci(move)} score {value}")
+            print(
+                f"nodes: {self.nodes}, cutoffs: {self.cutoffs}, "
+                f"fm_cutoffs: {self.first_move_cutoffs}, "
+                f"tt: {self.tt_hits}, quiesce {self.quiesce_calls}"
+            )
+
+        return to_uci(best_move)
+
+    def search_root(self, gen: MoveGenerator, depth: int, prev_best_move=None):
         board = gen.board
-        self.color = WHITE if board.active_color == WHITE else BLACK
-        if not moves:
-            return None
 
-        maximizing = board.active_color == WHITE
-        best_value = -float("inf") if maximizing else float("inf")
-        best_moves = []
+        alpha = -float("inf")
+        beta = float("inf")
 
+        best_value = -float("inf") if board.active_color == WHITE else float("inf")
+        best_move = None
+
+        moves = gen.legal_moves()
+
+
+        scored_moves = []
         for m in moves:
+            score = 0
+            if m == prev_best_move:
+                score = 100000  # Search previous iteration's best move
+            elif m[2] & FLAG_CAPTURE:
+                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[m[1]] & 0x07] * 10) - PIECE_VALUE_TABLE[
+                    gen.board.board[m[0]] & 0x07]
+            scored_moves.append((score, m))
+
+        scored_moves.sort(key=lambda x: x[0], reverse=True)
+
+        for _, m in scored_moves:
             gen.apply(m)
             value = self.alphabeta(
                 gen,
-                self.deepness - 1,
-                -float("inf"),
-                float("inf"),
-                not maximizing, ply=0
+                depth - 1,
+                alpha,
+                beta,
+                ply=1
             )
             gen.undo(m)
-            print(f"Move: {to_uci(m)} | Score: {value}")
-            if maximizing:
+
+            if board.active_color == WHITE:
                 if value > best_value:
                     best_value = value
-                    best_moves = [m]
-                elif value == best_value:
-                    best_moves.append(m)
-
+                    best_move = m
+                alpha = max(alpha, best_value)
             else:
                 if value < best_value:
                     best_value = value
-                    best_moves = [m]
-                elif value == best_value:
-                    best_moves.append(m)
+                    best_move = m
+                beta = min(beta, best_value)
 
-        m = to_uci(self._rng.choice(best_moves))
+        return best_value, best_move
 
-        print(f"Best Move: {m} | Score: {best_value}")
-        print(
-            f"nodes: {self.nodes}, cutoffs: {self.cutoffs}, fm_cuttoffs: {self.first_move_cutoffs}, tt: {self.tt_hits}, quiesce {self.quiesce_calls}")
-
-        return m
-
-    def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, maximizing: bool, ply: int) -> int:
+    def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, ply: int) -> int:
         board = gen.board
         alpha_orig = alpha
         beta_orig = beta
 
         # 1. TT PROBE
         tt_entry = self.tt.get_entry(board.hash)
-        if tt_entry is not None and tt_entry.depth >= depth:
+        if tt_entry is not None and tt_entry.depth >= depth and ply > 0:
             score = self.unscore_mate(tt_entry.score, ply)
             self.tt_hits += 1
             if tt_entry.flag == TT_EXACT:
@@ -96,17 +122,19 @@ class AlphaBeta(Engine):
                 beta = min(beta, score)
 
             if alpha >= beta:
-                return alpha if tt_entry.flag == TT_LOWER else beta
+                return score
 
         self.nodes += 1
         if depth == 0:
-            return self.quiesce(gen, alpha, beta, maximizing)
+            return self.quiesce(gen, alpha, beta, board)
 
         moves = gen.legal_moves()
         if not moves:
             if board.is_king_in_check:
-                return -MATE_SCORE + ply if maximizing else MATE_SCORE - ply
-            return 0
+                losing = board.active_color == WHITE
+                return (-MATE_SCORE + ply) if losing else (MATE_SCORE - ply)
+            else:
+                return 0
 
         best_move_from_tt = tt_entry.move if tt_entry else None
         if not best_move_from_tt in moves:
@@ -134,12 +162,12 @@ class AlphaBeta(Engine):
 
         best_move = None
         i = -1
-        if maximizing:
+        if board.active_color == WHITE:
             value = -float('inf')
             for _, m in scored_moves:  # Iterate over sorted moves
                 i += 1
                 gen.apply(m)
-                score = self.alphabeta(gen, depth - 1, alpha, beta, False, ply + 1)
+                score = self.alphabeta(gen, depth - 1, alpha, beta, ply + 1)
                 gen.undo(m)
 
                 if score > value:
@@ -163,7 +191,7 @@ class AlphaBeta(Engine):
             for _, m in scored_moves:  # Iterate over sorted moves
                 i += 1
                 gen.apply(m)
-                score = self.alphabeta(gen, depth - 1, alpha, beta, True, ply + 1)
+                score = self.alphabeta(gen, depth - 1, alpha, beta, ply + 1)
                 gen.undo(m)
 
                 if score < value:
@@ -191,14 +219,15 @@ class AlphaBeta(Engine):
             flag = TT_EXACT
 
         stored_score = self.score_mate(value, ply)
-        self.tt.store(board.hash, depth, stored_score, flag, best_move)
+        if best_move and depth > 0:
+            self.tt.store(board.hash, depth, stored_score, flag, best_move)
         return value
 
-    def quiesce(self, gen: MoveGenerator, alpha, beta, maximizing):
+    def quiesce(self, gen: MoveGenerator, alpha, beta, board):
         self.quiesce_calls += 1
         stand_pat = self.evaluate_position(gen.board)
 
-        if maximizing:
+        if board.active_color == WHITE:
             if stand_pat >= beta:
                 return beta
             alpha = max(alpha, stand_pat)
@@ -216,7 +245,7 @@ class AlphaBeta(Engine):
 
             for _, m in scored_captures:
                 gen.apply(m)
-                score = self.quiesce(gen, alpha, beta, False)  # Pass False for Black
+                score = self.quiesce(gen, alpha, beta, board)  # Pass False for Black
                 gen.undo(m)
 
                 if score >= beta:
@@ -241,7 +270,7 @@ class AlphaBeta(Engine):
 
             for _, m in scored_captures:
                 gen.apply(m)
-                score = self.quiesce(gen, alpha, beta, True)  # Pass True for White
+                score = self.quiesce(gen, alpha, beta, board)  # Pass True for White
                 gen.undo(m)
 
                 if score <= alpha:
@@ -258,56 +287,6 @@ class AlphaBeta(Engine):
         if score > MATE_THRESHOLD: return score - ply
         if score < -MATE_THRESHOLD: return score + ply
         return score
-
-    def order_moves(self, move, board, tt_move):
-        """
-        Assigns a score to a move for sorting.
-        High priority: TT move > Captures > Killers > Others.
-        """
-        if move == tt_move:
-            return 10000
-
-        from_sq, to_sq, flags = move
-        if flags & FLAG_CAPTURE:
-            captured_piece = board.board[to_sq]
-            moving_piece = board.board[from_sq]
-            return 1000 + (PIECE_VALUE_TABLE[captured_piece & 0x07] - PIECE_VALUE_TABLE[moving_piece & 0x07])
-
-        return 0
-
-    def evaluate_tree(self, tree: dict, white_to_move: bool):
-        """
-        Recursively evaluate a move tree.
-        Returns (best_score, best_moves)
-        """
-
-        best_score = None
-        best_moves = []
-
-        for move, value in tree.items():
-            # Leaf node
-            if isinstance(value, int):
-                score = value
-            else:
-                score, _ = self.evaluate_tree(value, not white_to_move)
-            if best_score is None:
-                best_score = score
-                best_moves = [move]
-            else:
-                if white_to_move:
-                    if score > best_score:
-                        best_score = score
-                        best_moves = [move]
-                    elif score == best_score:
-                        best_moves.append(move)
-                else:
-                    if score < best_score:
-                        best_score = score
-                        best_moves = [move]
-                    elif score == best_score:
-                        best_moves.append(move)
-
-        return best_score, best_moves
 
     def evaluate_position(self, board: Board):
         return board.score
