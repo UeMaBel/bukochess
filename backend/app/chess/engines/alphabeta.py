@@ -126,7 +126,7 @@ class AlphaBeta(Engine):
 
         self.nodes += 1
         if depth == 0:
-            return self.quiesce(gen, alpha, beta, board)
+            return self.quiesce(gen, alpha, beta)
 
         moves = gen.legal_moves()
         if not moves:
@@ -223,9 +223,10 @@ class AlphaBeta(Engine):
             self.tt.store(board.hash, depth, stored_score, flag, best_move)
         return value
 
-    def quiesce(self, gen: MoveGenerator, alpha, beta, board):
+    def quiesce(self, gen: MoveGenerator, alpha, beta):
         self.quiesce_calls += 1
-        stand_pat = self.evaluate_position(gen.board)
+        board=gen.board
+        stand_pat = self.evaluate_position(board)
 
         if board.active_color == WHITE:
             if stand_pat >= beta:
@@ -236,16 +237,16 @@ class AlphaBeta(Engine):
             scored_captures = []
             for m in captures:
                 f, t, _ = m
-                score = (PIECE_VALUE_TABLE[gen.board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[gen.board.board[f] & 7]
+                score = (PIECE_VALUE_TABLE[board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[board.board[f] & 7]
 
-                if stand_pat + PIECE_VALUE_TABLE[gen.board.board[t] & 7] < alpha:
+                if stand_pat + PIECE_VALUE_TABLE[board.board[t] & 7] < alpha:
                     continue
                 scored_captures.append((score, m))
             scored_captures.sort(key=lambda x: x[0], reverse=True)
 
             for _, m in scored_captures:
                 gen.apply(m)
-                score = self.quiesce(gen, alpha, beta, board)  # Pass False for Black
+                score = self.quiesce(gen, alpha, beta)  # Pass False for Black
                 gen.undo(m)
 
                 if score >= beta:
@@ -262,15 +263,15 @@ class AlphaBeta(Engine):
             scored_captures = []
             for m in captures:
                 f, t, _ = m
-                score = (PIECE_VALUE_TABLE[gen.board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[gen.board.board[f] & 7]
-                if stand_pat - PIECE_VALUE_TABLE[gen.board.board[t] & 7] > beta:
+                score = (PIECE_VALUE_TABLE[board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[board.board[f] & 7]
+                if stand_pat - PIECE_VALUE_TABLE[board.board[t] & 7] > beta:
                     continue
                 scored_captures.append((score, m))
             scored_captures.sort(key=lambda x: x[0], reverse=True)
 
             for _, m in scored_captures:
                 gen.apply(m)
-                score = self.quiesce(gen, alpha, beta, board)  # Pass True for White
+                score = self.quiesce(gen, alpha, beta)  # Pass True for White
                 gen.undo(m)
 
                 if score <= alpha:

@@ -1,0 +1,17 @@
+# Force language detection for Python backend
+*.py linguist-language=Python
+
+# Force language detection for TypeScript frontend
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+
+# Force language detection for HTML files
+*.html linguist-language=HTML
+
+# Markdown documentation
+*.md linguist-language=Markdown
+
+# Optional: exclude generated or vendor files
+node_modules/** linguist-vendored
+dist/** linguist-vendored
+*.min.js linguist-vendored
