@@ -22,7 +22,7 @@ class AlphaBeta(Engine):
             self.deepness = deepness
         else:
             self.deepness = 4
-        self.deepness=7
+        self.deepness = 5
         self.nodes = 0
         self.tt = TranspositionTable()
         self.cutoffs = 0
@@ -66,7 +66,6 @@ class AlphaBeta(Engine):
         best_move = None
 
         moves = gen.legal_moves()
-
 
         scored_moves = []
         for m in moves:
@@ -225,7 +224,7 @@ class AlphaBeta(Engine):
 
     def quiesce(self, gen: MoveGenerator, alpha, beta):
         self.quiesce_calls += 1
-        board=gen.board
+        board = gen.board
         stand_pat = self.evaluate_position(board)
 
         if board.active_color == WHITE:

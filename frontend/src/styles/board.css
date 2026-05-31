@@ -386,3 +386,44 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.move-history-rows {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  max-height: 400px;
+  overflow-y: auto;
+}
+.history-move {
+  display: inline-block;
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ddd;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.history-move:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.history-move.active {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.move-number {
+  width: 24px;
+  color: #888;
+  font-family: monospace;
+}

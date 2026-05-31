@@ -6,6 +6,8 @@ import { getEngineMove } from "../api/engine";
 import { useGameStore } from "../store/gameStore";
 import { EngineSelector } from "./EngineSelector";
 import { BukoLoader } from "./BukoLoader";
+import { HistoryControls } from "./HistoryControls";
+import { MoveHistory } from "./MoveHistory";
 import "../styles/board.css";
 
 const PIECE_UNICODE: Record<string, string> = {
@@ -32,8 +34,39 @@ export const BoardWrapper: React.FC = () => {
   const [promotionCoords, setPromotionCoords] = useState<{ top: number; left: number } | null>(null);
   const [isEngineThinking, setIsEngineThinking] = useState(false);
 
+  interface MoveEntry {
+  move: string;
+  fen: string;
+  }
+  const [moveHistory, setMoveHistory] = useState<MoveEntry[]>([
+    {
+      move: "start",
+      fen: START_FEN,
+    },
+  ]);
+
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
+
+  const isViewingHistory =
+    historyIndex < moveHistory.length -1;
+
+  const jumpToHistory = async (index: number) => {
+      if (index < 0 || index >= moveHistory.length) return;
+
+      setHistoryIndex(index);
+
+      await updateGameState(moveHistory[index].fen);
+  };
+  const goBack = () => {
+    jumpToHistory(historyIndex - 1);
+  };
+
+  const goForward = () => {
+    jumpToHistory(historyIndex + 1);
+  };
+
   // --- State Sync ---
-  const updateGameState = useCallback(async (newFen: string) => {
+  const updateGameState = useCallback(async (newFen: string, move?: string) => {
     try {
       const [boardRes, statusRes, movesRes] = await Promise.all([
         importFEN(newFen),
@@ -46,6 +79,13 @@ export const BoardWrapper: React.FC = () => {
       setActiveColor(statusRes.active_color);
       setStatus(statusRes.status);
       setLegalMoves(movesRes.moves);
+      if (move) {
+          setMoveHistory(prev => [
+            ...prev,
+            { move, fen: newFen }
+          ]);
+          setHistoryIndex(prev => prev + 1);
+      }
     } catch (e) {
       console.error("Game state sync failed:", e);
     }
@@ -56,23 +96,26 @@ export const BoardWrapper: React.FC = () => {
   // --- Move Handlers ---
   const handleMoveExecution = async (uci: string) => {
     try {
+      if (isViewingHistory) return;
       setSelectedSquare(null);
       setPendingPromotion(null);
       const res = await makeMove(fen, uci);
-      await updateGameState(res.fen);
+      await updateGameState(res.fen, uci);
+
     } catch (e: any) {
       console.error("Move execution failed:", e.message);
     }
   };
 
   const onEngineMove = useCallback(async () => {
+    if (isViewingHistory) return;
     const currentPlayer = activeColor === "w" ? whitePlayer : blackPlayer;
     if (currentPlayer === "human" || status.toLowerCase().includes("mate")) return;
 
     setIsEngineThinking(true);
     try {
       const res = await getEngineMove({ fen, engine: currentPlayer });
-      await updateGameState(res.fen);
+      await updateGameState(res.fen, res.move);
     } catch (e: any) {
       console.error("Engine failed:", e.message);
     } finally {
@@ -202,20 +245,38 @@ export const BoardWrapper: React.FC = () => {
         <textarea
           value={fen}
           rows={2}
+          readOnly
           onClick={(e) => (e.target as HTMLTextAreaElement).select()}
         />
       </div>
         </div>
 
         <div className="game-status-panel">
-          <div>
-          <h3>🥥 Status</h3>
-          {isEngineThinking ? (
-            <BukoLoader />
-          ) : (
-            <div className="status-text">{status}</div>
-          )}
-          </div>
+
+            <div>
+              <h3>🥥 Status</h3>
+
+              {isEngineThinking ? (
+                <BukoLoader />
+              ) : (
+                <div className="status-text">{status}</div>
+              )}
+
+              <HistoryControls
+                canGoBack={historyIndex > 0}
+                canGoForward={historyIndex < moveHistory.length - 1}
+                onBack={goBack}
+                onForward={goForward}
+              />
+
+              <MoveHistory
+                moves={moveHistory}
+                currentIndex={historyIndex}
+                onSelect={jumpToHistory}
+              />
+            </div>
+
+
           <div className={`check-text ${inCheck ? "visible" : ""}`} style={{ color: "red", fontWeight: "bold" }}>
             {inCheck ? "CHECK!" : ""}
           </div>
