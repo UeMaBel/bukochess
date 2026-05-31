@@ -100,6 +100,7 @@ export const BoardWrapper: React.FC = () => {
       setSelectedSquare(null);
       setPendingPromotion(null);
       const res = await makeMove(fen, uci);
+      setFen(res.fen);
       await updateGameState(res.fen, uci);
 
     } catch (e: any) {
