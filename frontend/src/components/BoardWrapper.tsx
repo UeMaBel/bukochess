@@ -117,6 +117,24 @@ export const BoardWrapper: React.FC = () => {
       setSelectedSquare(null);
       setPendingPromotion(null);
       const res = await makeMoveFast(fen, uci);
+      setEngineInfo({
+          evaluation: 0,
+          depth: 0,
+          nodes: 0,
+          time_ms: 0,
+          nps: 0,
+          pv: 0,
+          played_color:res.played_color,
+        });
+
+        //ADD TO CHAT
+        setEngineChat(prev => [
+          {
+            ...res,
+            timestamp: Date.now(),
+          },
+          ...prev,
+        ]);
       setFen(res.fen);
       await updateGameState(res.fen, uci);
 

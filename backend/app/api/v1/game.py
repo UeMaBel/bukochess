@@ -26,6 +26,9 @@ class MoveResponse(BaseModel):
 
 class MoveResponseFast(BaseModel):
     fen: str
+    played_color: str
+    engine: str
+    move: str
 
 
 @router.post("/fast-move", response_model=MoveResponseFast)
@@ -40,10 +43,14 @@ def make_fast_move(req: MoveRequest):
         raise HTTPException(status_code=400, detail="invalid move format")
 
     generator = MoveGenerator(board)
+
     generator.apply_uci(req.move)
 
     return {
         "fen": board.to_fen(),
+        "played_color": "b" if board.active_color == WHITE else "w",
+        "engine": "Human",
+        "move": req.move,
     }
 
 

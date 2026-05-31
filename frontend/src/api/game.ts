@@ -1,5 +1,8 @@
 export interface MoveResponseFast {
   fen: string;
+  played_color: string;
+  engine: string;
+  move: string;
 }
 export async function makeMoveFast(fen: string, move: string): Promise<MoveResponseFast> {
   const res = await fetch("/api/v1/game/fast-move", {
