@@ -7,6 +7,7 @@ from app.chess.engines.alphabeta import AlphaBeta
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.core.exceptions import BukochessException
 from app.chess.utils import to_uci
+from typing import List
 
 router = APIRouter(tags=["engine"])
 
@@ -21,6 +22,12 @@ class EngineMoveResponse(BaseModel):
     fen: str
     move: str
     status: str
+    evaluation: float
+    depth: int
+    nodes: int
+    nps: int
+    pv: List[str]
+    engine: str
 
 
 @router.post("/move", response_model=EngineMoveResponse)
@@ -54,4 +61,10 @@ def engine_move(req: EngineMoveRequest):
         fen=board.to_fen(),
         move=move,
         status=status,
+        evaluation=engine.evaluation,
+        depth=engine.depth,
+        nodes=engine.nodes,
+        nps=engine.nps,
+        pv=engine.pv,
+        engine=engine.engine_name,
     )

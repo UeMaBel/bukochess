@@ -8,6 +8,7 @@ import { EngineSelector } from "./EngineSelector";
 import { BukoLoader } from "./BukoLoader";
 import { HistoryControls } from "./HistoryControls";
 import { MoveHistory } from "./MoveHistory";
+import { EngineChat } from "./EngineChat";
 import "../styles/board.css";
 
 const PIECE_UNICODE: Record<string, string> = {
@@ -38,6 +39,22 @@ export const BoardWrapper: React.FC = () => {
   move: string;
   fen: string;
   }
+
+  interface EngineChatEntry {
+    fen: string;
+    move: string;
+    evaluation: number;
+    depth: number;
+    nodes: number;
+    nps: number;
+    pv: string[];
+    engine: string;
+    timestamp: number;
+  }
+
+  const [engineChat, setEngineChat] = useState<EngineChatEntry[]>([]);
+  const [engineInfo, setEngineInfo] = useState<EngineInfo | null>(null);
+
   const [moveHistory, setMoveHistory] = useState<MoveEntry[]>([
     {
       move: "start",
@@ -116,6 +133,26 @@ export const BoardWrapper: React.FC = () => {
     setIsEngineThinking(true);
     try {
       const res = await getEngineMove({ fen, engine: currentPlayer });
+
+      setEngineInfo({
+          evaluation: res.evaluation,
+          depth: res.depth,
+          nodes: res.nodes,
+          time_ms: res.time_ms,
+          nps: res.nps,
+          pv: res.pv,
+        });
+
+        //ADD TO CHAT
+        setEngineChat(prev => [
+          {
+            ...res,
+            timestamp: Date.now(),
+          },
+          ...prev,
+        ]);
+
+
       await updateGameState(res.fen, res.move);
     } catch (e: any) {
       console.error("Engine failed:", e.message);
@@ -203,6 +240,7 @@ export const BoardWrapper: React.FC = () => {
         <div className="engine-row">
           <EngineSelector playerColor="b" value={blackPlayer} onChange={setBlackPlayer} />
         </div>
+        <EngineChat entries={engineChat} />
       </div>
 
       <div style={{ display: "flex", gap: 20, position: "relative" }}>

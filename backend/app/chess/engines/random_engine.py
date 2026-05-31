@@ -8,6 +8,8 @@ from app.chess.utils import to_uci
 class RandomEngine(Engine):
 
     def __init__(self, seed: int | None = None):
+        super().__init__()
+        self.engine_name = "Random Engine"
         self._rng = random.Random(seed)
 
     def choose_move(self, board: Board) -> str:

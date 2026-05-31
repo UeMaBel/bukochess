@@ -15,14 +15,15 @@ MAX_DEPTH = 64
 
 class AlphaBeta(Engine):
 
-    def __init__(self, deepness: int | None = None, seed: int | None = None):
+    def __init__(self, depth: int | None = None, seed: int | None = None):
+        super().__init__()
         self._rng = random.Random(seed)
+        self.engine_name = "Alpha Beta Engine"
         self.move_value = {}
-        if deepness:
-            self.deepness = deepness
+        if depth:
+            self.depth = depth
         else:
-            self.deepness = 4
-        self.deepness = 5
+            self.depth = 4
         self.nodes = 0
         self.tt = TranspositionTable()
         self.cutoffs = 0
@@ -32,11 +33,11 @@ class AlphaBeta(Engine):
         self.killers = [[None, None] for _ in range(MAX_DEPTH)]
 
     def choose_move(self, board: Board):
-        print(f"searching move with alphabeta. max deepness = {self.deepness}")
+        print(f"searching move with alphabeta. max deepness = {self.depth}")
 
         gen = MoveGenerator(board)
         best_move = None
-        for depth in range(1, self.deepness + 1):
+        for depth in range(1, self.depth + 1):
             # reset per-iteration stats if you want
             self.nodes = 0
             self.cutoffs = 0
@@ -53,7 +54,7 @@ class AlphaBeta(Engine):
                 f"fm_cutoffs: {self.first_move_cutoffs}, "
                 f"tt: {self.tt_hits}, quiesce {self.quiesce_calls}"
             )
-
+            self.evaluation = value
         return to_uci(best_move)
 
     def search_root(self, gen: MoveGenerator, depth: int, prev_best_move=None):

@@ -8,6 +8,12 @@ export interface EngineMoveResponse {
   fen: string;
   move: string;
   status: string;
+  evaluation: number;
+  depth: number;
+  nodes: number;
+  nps: number;
+  pv: string[];
+  engine: string;
 }
 
 export async function getEngineMove(

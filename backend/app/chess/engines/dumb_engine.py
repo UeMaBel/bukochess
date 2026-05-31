@@ -3,6 +3,8 @@ from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardM
 from app.chess.engines.base import Engine
 from app.chess.utils import to_uci
 
+from app.chess.utils import piece_flag_to_str
+
 
 class DumbEngine(Engine):
     PIECE_VALUE = {
@@ -31,13 +33,15 @@ class DumbEngine(Engine):
     ]
 
     def __init__(self, seed: int | None = None):
+        super().__init__()
+        self.engine_name = "Dumb Engine"
         self._rng = random.Random(seed)
+        self.depth = 3
         self.move_value = {}
-        self.deepness = 2
 
     def choose_move(self, board: Board) -> str:
-        generator = MoveGenerator(board)
-        moves = generator.legal_moves()
+        gen = MoveGenerator(board)
+        moves = gen.legal_moves()
 
         if not moves:
             return None
@@ -47,9 +51,9 @@ class DumbEngine(Engine):
         best_moves = []
 
         for m in moves:
-            undo = m.apply(board)
-            score = self.minimax(board, self.deepness - 1, not maximizing)
-            m.undo(board, undo)
+            undo = gen.apply(m)
+            score = self.minimax(board, self.depth - 1, not maximizing)
+            gen.undo(m)
 
             if maximizing:
                 if score > best_score:
@@ -63,15 +67,15 @@ class DumbEngine(Engine):
                     best_moves = [m]
                 elif score == best_score:
                     best_moves.append(m)
-
+            self.evaluation = score
         return to_uci(self._rng.choice(best_moves))
 
     def minimax(self, board: Board, depth: int, maximizing: bool) -> int:
         if depth == 0:
             return self.evaluate_position(board)
 
-        generator = MoveGenerator(board)
-        moves = generator.legal_moves()
+        gen = MoveGenerator(board)
+        moves = gen.legal_moves()
 
         if not moves:
             return self.evaluate_position(board)
@@ -79,17 +83,17 @@ class DumbEngine(Engine):
         if maximizing:
             best = -float("inf")
             for m in moves:
-                generator.apply(m)
+                gen.apply(m)
                 score = self.minimax(board, depth - 1, False)
-                generator.undo()
+                gen.undo(m)
                 best = max(best, score)
             return best
         else:
             best = float("inf")
             for m in moves:
-                generator.apply(m)
+                gen.apply(m)
                 score = self.minimax(board, depth - 1, True)
-                generator.undo(m)
+                gen.undo(m)
                 best = min(best, score)
             return best
 
@@ -132,7 +136,10 @@ class DumbEngine(Engine):
     def evaluate_position(self, board: Board) -> int:
         score = 0
 
-        for p, x, y in board.get_pieces():
+        for p, xy in board.get_pieces():
+            p = piece_flag_to_str(p)
+            x = xy >> 3
+            y = xy & 7
             multiplier = -1 if p.islower() else 1
             score += self.PIECE_VALUE[p]
             score += self.BOARD_VALUE[x][y] * multiplier

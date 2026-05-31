@@ -4,6 +4,14 @@ from app.chess.move_array_deprecated import MoveArray
 
 
 class Engine(ABC):
+    def __init__(self):
+        self.evaluation: float = 0
+        self.nps: int = -99
+        self.pv: list[str] = []
+        self.depth = 0
+        self.nodes = 0
+        self.engine_name: str = ""
+
     @abstractmethod
     def choose_move(self, board: BoardArray) -> str | None:
         """
