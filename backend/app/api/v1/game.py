@@ -24,6 +24,29 @@ class MoveResponse(BaseModel):
     legal_moves: list[str]
 
 
+class MoveResponseFast(BaseModel):
+    fen: str
+
+
+@router.post("/fast-move", response_model=MoveResponseFast)
+def make_fast_move(req: MoveRequest):
+    board = Board()
+    ok, msg = board.from_fen(req.fen)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    try:
+        move = from_uci_move(req.move)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="invalid move format")
+
+    generator = MoveGenerator(board)
+    generator.apply_uci(req.move)
+
+    return {
+        "fen": board.to_fen(),
+    }
+
+
 @router.post("/move", response_model=MoveResponse)
 def make_move(req: MoveRequest):
     board = Board()

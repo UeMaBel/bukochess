@@ -11,6 +11,7 @@ class Engine(ABC):
         self.depth = 0
         self.nodes = 0
         self.engine_name: str = ""
+        self.played_color: str = ""
 
     @abstractmethod
     def choose_move(self, board: BoardArray) -> str | None:

@@ -55,6 +55,7 @@ class AlphaBeta(Engine):
                 f"tt: {self.tt_hits}, quiesce {self.quiesce_calls}"
             )
             self.evaluation = value
+            self.played_color = "w" if board.active_color == WHITE else "b"
         return to_uci(best_move)
 
     def search_root(self, gen: MoveGenerator, depth: int, prev_best_move=None):

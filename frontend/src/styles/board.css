@@ -434,9 +434,11 @@
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
-  max-height: 300px;
+  height: 300px;
   overflow-y: auto;
   padding-right: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
 }
 
 .engine-message {

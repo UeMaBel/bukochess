@@ -14,6 +14,7 @@ export interface EngineMoveResponse {
   nps: number;
   pv: string[];
   engine: string;
+  played_color: string;
 }
 
 export async function getEngineMove(

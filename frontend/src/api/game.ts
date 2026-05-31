@@ -1,3 +1,21 @@
+export interface MoveResponseFast {
+  fen: string;
+}
+export async function makeMoveFast(fen: string, move: string): Promise<MoveResponseFast> {
+  const res = await fetch("/api/v1/game/fast-move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({fen, move}),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail);
+  }
+
+  return res.json();
+}
+
 export interface MoveResponse {
   fen: string;
   status: string;

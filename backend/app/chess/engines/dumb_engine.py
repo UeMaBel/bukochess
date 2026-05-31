@@ -3,6 +3,7 @@ from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardM
 from app.chess.engines.base import Engine
 from app.chess.utils import to_uci
 
+from app.chess.static import WHITE, BLACK
 from app.chess.utils import piece_flag_to_str
 
 
@@ -68,6 +69,8 @@ class DumbEngine(Engine):
                 elif score == best_score:
                     best_moves.append(m)
             self.evaluation = score
+
+        self.played_color = "w" if board.active_color == WHITE else "b"
         return to_uci(self._rng.choice(best_moves))
 
     def minimax(self, board: Board, depth: int, maximizing: bool) -> int:

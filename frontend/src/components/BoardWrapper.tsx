@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { importFEN } from "../api/position";
-import { makeMove, gameStatus } from "../api/game";
+import { makeMove, gameStatus, makeMoveFast } from "../api/game";
 import { getLegalMoves } from "../api/position";
 import { getEngineMove } from "../api/engine";
 import { useGameStore } from "../store/gameStore";
@@ -116,7 +116,7 @@ export const BoardWrapper: React.FC = () => {
       if (isViewingHistory) return;
       setSelectedSquare(null);
       setPendingPromotion(null);
-      const res = await makeMove(fen, uci);
+      const res = await makeMoveFast(fen, uci);
       setFen(res.fen);
       await updateGameState(res.fen, uci);
 
@@ -141,6 +141,7 @@ export const BoardWrapper: React.FC = () => {
           time_ms: res.time_ms,
           nps: res.nps,
           pv: res.pv,
+          played_color:res.played_color,
         });
 
         //ADD TO CHAT
@@ -291,7 +292,6 @@ export const BoardWrapper: React.FC = () => {
         </div>
 
         <div className="game-status-panel">
-
             <div>
               <h3>🥥 Status</h3>
 

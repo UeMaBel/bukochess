@@ -10,6 +10,7 @@ export interface EngineChatEntry {
   pv: string[];
   engine: string;
   timestamp: number;
+  color: "w" | "b";
 }
 
 interface Props {
@@ -22,7 +23,7 @@ export const EngineChat: React.FC<Props> = ({ entries }) => {
       {entries.map((e, i) => (
         <div key={i} className="engine-message">
           <div>
-            🤖 {e.engine} → {e.move}
+            {e.played_color === "w" ? "⚪🤖" : "⚫🤖"} {e.engine} → {e.move}
           </div>
 
           <div>

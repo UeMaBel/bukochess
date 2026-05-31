@@ -28,6 +28,7 @@ class EngineMoveResponse(BaseModel):
     nps: int
     pv: List[str]
     engine: str
+    played_color: str
 
 
 @router.post("/move", response_model=EngineMoveResponse)
@@ -67,4 +68,5 @@ def engine_move(req: EngineMoveRequest):
         nps=engine.nps,
         pv=engine.pv,
         engine=engine.engine_name,
+        played_color=engine.played_color
     )
