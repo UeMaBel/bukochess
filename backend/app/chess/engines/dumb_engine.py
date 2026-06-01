@@ -33,11 +33,11 @@ class DumbEngine(Engine):
         [0, 0, 0, 0, 0, 0, 0, 0],
     ]
 
-    def __init__(self, seed: int | None = None):
+    def __init__(self, depth: int, seed: int | None = None):
         super().__init__()
         self.engine_name = "Dumb Engine"
         self._rng = random.Random(seed)
-        self.depth = 3
+        self.depth = depth
         self.move_value = {}
 
     def choose_move(self, board: Board) -> str:

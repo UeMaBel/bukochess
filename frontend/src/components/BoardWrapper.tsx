@@ -41,6 +41,10 @@ export const BoardWrapper: React.FC = () => {
   const [promotionCoords, setPromotionCoords] = useState<{ top: number; left: number } | null>(null);
   const [isEngineThinking, setIsEngineThinking] = useState(false);
 
+  const [whiteDepth, setWhiteDepth] = useState(4);
+  const [blackDepth, setBlackDepth] = useState(4);
+  const [showEngineSettings, setShowEngineSettings] = useState(false);
+
   interface MoveEntry {
   move: string;
   fen: string;
@@ -172,7 +176,12 @@ export const BoardWrapper: React.FC = () => {
 
     setIsEngineThinking(true);
     try {
-      const res = await getEngineMove({ fen, engine: currentPlayer });
+      const currentDepth = activeColor === "w" ? whiteDepth : blackDepth;
+      const res = await getEngineMove({
+          fen,
+          engine: currentPlayer,
+          depth: currentDepth
+        });
 
       setEngineInfo({
           evaluation: res.evaluation,
@@ -275,10 +284,16 @@ export const BoardWrapper: React.FC = () => {
     <div className="game-container">
       <div className="engine-sidebar">
           <ControlPanel
-            onReset={resetBoard}
-            onFlip={flipBoard}
-            onEngineSettings={() => console.log("engine settings")}
-            onAnalysis={() => console.log("analysis")}
+              onReset={resetBoard}
+              onFlip={flipBoard}
+              onEngineSettings={() => setShowEngineSettings(v => !v)}
+
+              whiteDepth={whiteDepth}
+              blackDepth={blackDepth}
+              setWhiteDepth={setWhiteDepth}
+              setBlackDepth={setBlackDepth}
+
+              showEngineSettings={showEngineSettings}
           />
         <h3>🥥 Players</h3>
         <div className="engine-row">

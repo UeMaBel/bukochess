@@ -16,6 +16,7 @@ class EngineMoveRequest(BaseModel):
     fen: str
     engine: str = "random"
     seed: int | None = None
+    depth: int
 
 
 class EngineMoveResponse(BaseModel):
@@ -41,9 +42,9 @@ def engine_move(req: EngineMoveRequest):
     if req.engine == "random":
         engine = RandomEngine(seed=req.seed)
     elif req.engine == "dumb":
-        engine = DumbEngine(seed=req.seed)
+        engine = DumbEngine(depth=req.depth, seed=req.seed)
     elif req.engine == "alphabeta":
-        engine = AlphaBeta(seed=req.seed)
+        engine = AlphaBeta(depth=req.depth, seed=req.seed)
     else:
         raise BukochessException("Unknown engine")
     print(req.engine)

@@ -2,6 +2,7 @@ export interface EngineMoveRequest {
   fen: string;
   engine: string;
   seed?: number;
+  depth: number;
 }
 
 export interface EngineMoveResponse {
