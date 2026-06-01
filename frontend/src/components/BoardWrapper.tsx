@@ -9,6 +9,7 @@ import { BukoLoader } from "./BukoLoader";
 import { HistoryControls } from "./HistoryControls";
 import { MoveHistory } from "./MoveHistory";
 import { EngineChat } from "./EngineChat";
+import { ControlPanel } from "./ControlPanel";
 import "../styles/board.css";
 
 const PIECE_UNICODE: Record<string, string> = {
@@ -252,6 +253,12 @@ export const BoardWrapper: React.FC = () => {
   return (
     <div className="game-container">
       <div className="engine-sidebar">
+          <ControlPanel
+            onReset={() => console.log("reset")}
+            onFlip={() => console.log("flip")}
+            onEngineSettings={() => console.log("engine settings")}
+            onAnalysis={() => console.log("analysis")}
+          />
         <h3>🥥 Players</h3>
         <div className="engine-row">
           <EngineSelector playerColor="w" value={whitePlayer} onChange={setWhitePlayer} />
@@ -319,17 +326,18 @@ export const BoardWrapper: React.FC = () => {
                 <div className="status-text">{status}</div>
               )}
 
-              <HistoryControls
-                canGoBack={historyIndex > 0}
-                canGoForward={historyIndex < moveHistory.length - 1}
-                onBack={goBack}
-                onForward={goForward}
-              />
 
               <MoveHistory
                 moves={moveHistory}
                 currentIndex={historyIndex}
                 onSelect={jumpToHistory}
+              />
+
+              <HistoryControls
+                canGoBack={historyIndex > 0}
+                canGoForward={historyIndex < moveHistory.length - 1}
+                onBack={goBack}
+                onForward={goForward}
               />
             </div>
 

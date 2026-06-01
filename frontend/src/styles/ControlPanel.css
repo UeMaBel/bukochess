@@ -1,0 +1,24 @@
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.control-panel-button {
+  width: 100%;
+  padding: 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+
+  background: rgba(255, 255, 255, 0.05);
+  color: #ddd;
+
+  cursor: pointer;
+}
+
+.control-panel-button:hover {
+  background: rgba(255, 255, 255, 0.10);
+}

@@ -15,7 +15,6 @@ export const EngineSelector: React.FC<EngineSelectorProps> = ({ playerColor, val
         <option value="random">Random Engine</option>
         <option value="dumb">Dumb Engine</option>
         <option value="alphabeta">AlphaBeta Engine</option>
-        {/* add more engines later */}
       </select>
     </div>
   );

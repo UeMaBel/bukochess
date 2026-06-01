@@ -1,4 +1,5 @@
 import React from "react";
+import "../styles/EngineChat.css";
 
 export interface EngineChatEntry {
   move: string;

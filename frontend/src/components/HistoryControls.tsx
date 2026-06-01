@@ -1,4 +1,5 @@
 import React from "react";
+import "../styles/HistoryControls.css";
 
 interface HistoryControlsProps {
   canGoBack: boolean;
@@ -16,6 +17,7 @@ export const HistoryControls: React.FC<HistoryControlsProps> = ({
   return (
     <div className="history-controls">
       <button
+        className="history-control-button"
         onClick={onBack}
         disabled={!canGoBack}
       >
@@ -23,6 +25,7 @@ export const HistoryControls: React.FC<HistoryControlsProps> = ({
       </button>
 
       <button
+        className="history-control-button"
         onClick={onForward}
         disabled={!canGoForward}
       >
