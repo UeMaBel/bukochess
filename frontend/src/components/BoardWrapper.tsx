@@ -31,6 +31,11 @@ export const BoardWrapper: React.FC = () => {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [whitePlayer, setWhitePlayer] = useState<"human" | string>("human");
   const [blackPlayer, setBlackPlayer] = useState<"human" | string>("random");
+  const [isFlipped, setIsFlipped] = useState(false);
+  const flipBoard = () => {
+    setIsFlipped(prev => !prev);
+  };
+  const ranksToRender = isFlipped ? [...board].reverse() : board;
 
   const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
   const [promotionCoords, setPromotionCoords] = useState<{ top: number; left: number } | null>(null);
@@ -82,6 +87,22 @@ export const BoardWrapper: React.FC = () => {
   const goForward = () => {
     jumpToHistory(historyIndex + 1);
   };
+
+  const resetBoard = async () => {
+    setSelectedSquare(null);
+    setPendingPromotion(null);
+
+    setMoveHistory([
+      {
+        move: "start",
+        fen: START_FEN,
+      },
+    ]);
+
+    setHistoryIndex(0);
+    await updateGameState(START_FEN);
+    setEngineChat([]);
+    };
 
   // --- State Sync ---
   const updateGameState = useCallback(async (newFen: string, move?: string) => {
@@ -254,8 +275,8 @@ export const BoardWrapper: React.FC = () => {
     <div className="game-container">
       <div className="engine-sidebar">
           <ControlPanel
-            onReset={() => console.log("reset")}
-            onFlip={() => console.log("flip")}
+            onReset={resetBoard}
+            onFlip={flipBoard}
             onEngineSettings={() => console.log("engine settings")}
             onAnalysis={() => console.log("analysis")}
           />
@@ -275,10 +296,12 @@ export const BoardWrapper: React.FC = () => {
           <div className="rank-labels">{RANKS.map(r => <div key={r}>{r}</div>)}</div>
 
           <div className="chess-board" style={{ position: "relative" }}>
-              {board.map((rank, r) => (
+              {ranksToRender.map((rank, r) => (
                 <div key={r} className="chess-rank"> {/* Re-added the row wrapper */}
-                  {rank.map((sq, f) => {
-                    const name = FILES[f] + (8 - r);
+                  {(isFlipped ? [...rank].reverse() : rank).map((sq, f) => {
+                    const realRank = isFlipped ? r + 1 : 8 - r;
+                    const realFile = isFlipped ? FILES[7 - f] : FILES[f];
+                    const name = realFile + realRank;
                     const isKing = sq.toLowerCase() === 'k' && (activeColor === "w" ? sq === "K" : sq === "k");
                     const isWhitePiece = sq !== "." && sq === sq.toUpperCase();
                     const isBlackPiece = sq !== "." && sq === sq.toLowerCase();
@@ -303,8 +326,18 @@ export const BoardWrapper: React.FC = () => {
               {renderPromotionModal()}
             </div>
 
-          <div className="rank-labels">{RANKS.map(r => <div key={r}>{r}</div>)}</div>
-          <div /><div className="file-labels">{FILES.map(f => <div key={f}>{f}</div>)}</div><div />
+          <div className="rank-labels">
+              {(isFlipped ? [...RANKS].reverse() : RANKS).map(r => (
+                <div key={r}>{r}</div>
+              ))}
+          </div>
+          <div />
+          <div className="file-labels">
+              {(isFlipped ? [...FILES].reverse() : FILES).map(f => (
+                <div key={f}>{f}</div>
+              ))}
+          </div>
+          <div />
           <div className="fen-container-wide">
         <label>Current FEN Position</label>
         <textarea
