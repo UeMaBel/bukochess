@@ -48,8 +48,7 @@ class AlphaBeta(Engine):
             value, move = self.search_root(gen, depth, best_move)
             best_move = move
 
-            best_uci = to_uci(move) if move is not None else None
-            print(f"depth {depth}: best {best_uci} score {value}")
+            print(f"depth {depth}: best {to_uci(move)} score {value}")
             print(
                 f"nodes: {self.nodes}, cutoffs: {self.cutoffs}, "
                 f"fm_cutoffs: {self.first_move_cutoffs}, "
@@ -57,11 +56,7 @@ class AlphaBeta(Engine):
             )
             self.evaluation = value
             self.played_color = "w" if board.active_color == WHITE else "b"
-
-            if move is None:
-                break
-
-        return to_uci(best_move) if best_move is not None else None
+        return to_uci(best_move)
 
     def search_root(self, gen: MoveGenerator, depth: int, prev_best_move=None):
         board = gen.board
@@ -73,13 +68,6 @@ class AlphaBeta(Engine):
         best_move = None
 
         moves = gen.legal_moves()
-        if not moves:
-            if board.is_king_in_check:
-                losing = board.active_color == WHITE
-                value = -MATE_SCORE if losing else MATE_SCORE
-            else:
-                value = 0
-            return value, None
 
         scored_moves = []
         for m in moves:
@@ -87,8 +75,8 @@ class AlphaBeta(Engine):
             if m == prev_best_move:
                 score = 100000  # Search previous iteration's best move
             elif m[2] & FLAG_CAPTURE:
-                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[m[1]]] * 10) - PIECE_VALUE_TABLE[
-                    gen.board.board[m[0]]]
+                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[m[1]] & 0x07] * 10) - PIECE_VALUE_TABLE[
+                    gen.board.board[m[0]] & 0x07]
             scored_moves.append((score, m))
 
         scored_moves.sort(key=lambda x: x[0], reverse=True)
@@ -139,7 +127,7 @@ class AlphaBeta(Engine):
 
         self.nodes += 1
         if depth == 0:
-            return self.quiesce(gen, alpha, beta, ply)
+            return self.quiesce(gen, alpha, beta)
 
         moves = gen.legal_moves()
         if not moves:
@@ -161,8 +149,8 @@ class AlphaBeta(Engine):
             if m == best_move_from_tt:
                 score = 10000
             elif flag & FLAG_CAPTURE:
-                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[nxy]] * 10) - PIECE_VALUE_TABLE[
-                    gen.board.board[xy]]
+                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[nxy] & 0x07] * 10) - PIECE_VALUE_TABLE[
+                    gen.board.board[xy] & 0x07]
             # Check against the two killer slots for this ply
             elif m == self.killers[ply][0]:
                 score = 900
@@ -236,52 +224,9 @@ class AlphaBeta(Engine):
             self.tt.store(board.hash, depth, stored_score, flag, best_move)
         return value
 
-    def quiesce(self, gen: MoveGenerator, alpha, beta, ply: int):
-        """Search tactical continuations at the normal alpha-beta horizon.
-
-        A side in check may not stand pat, so all legal check evasions are
-        searched. Otherwise only captures/promotions are extended.
-        """
+    def quiesce(self, gen: MoveGenerator, alpha, beta):
         self.quiesce_calls += 1
         board = gen.board
-
-        # A checked king must make a legal evasion. Evaluating the current
-        # position ("stand pat") while in check would amount to passing.
-        if board.is_king_in_check:
-            moves = gen.legal_moves()
-            if not moves:
-                losing = board.active_color == WHITE
-                return (-MATE_SCORE + ply) if losing else (MATE_SCORE - ply)
-
-            if board.active_color == WHITE:
-                value = -float("inf")
-                for m in moves:
-                    gen.apply(m)
-                    score = self.quiesce(gen, alpha, beta, ply + 1)
-                    gen.undo(m)
-
-                    value = max(value, score)
-                    alpha = max(alpha, value)
-                    if alpha >= beta:
-                        return beta
-                return alpha
-
-            value = float("inf")
-            for m in moves:
-                gen.apply(m)
-                score = self.quiesce(gen, alpha, beta, ply + 1)
-                gen.undo(m)
-
-                value = min(value, score)
-                beta = min(beta, value)
-                if beta <= alpha:
-                    return alpha
-            return beta
-
-        captures = gen.legal_captures()
-        if not captures and not gen.legal_moves():
-            return 0
-
         stand_pat = self.evaluate_position(board)
 
         if board.active_color == WHITE:
@@ -289,19 +234,20 @@ class AlphaBeta(Engine):
                 return beta
             alpha = max(alpha, stand_pat)
 
-            if not captures:
-                return alpha
-
+            captures = gen.legal_captures()
             scored_captures = []
             for m in captures:
                 f, t, _ = m
-                score = (PIECE_VALUE_TABLE[board.board[t]] * 10) - PIECE_VALUE_TABLE[board.board[f]]
+                score = (PIECE_VALUE_TABLE[board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[board.board[f] & 7]
+
+                if stand_pat + PIECE_VALUE_TABLE[board.board[t] & 7] < alpha:
+                    continue
                 scored_captures.append((score, m))
             scored_captures.sort(key=lambda x: x[0], reverse=True)
 
             for _, m in scored_captures:
                 gen.apply(m)
-                score = self.quiesce(gen, alpha, beta, ply + 1)
+                score = self.quiesce(gen, alpha, beta)  # Pass False for Black
                 gen.undo(m)
 
                 if score >= beta:
@@ -309,30 +255,30 @@ class AlphaBeta(Engine):
                 alpha = max(alpha, score)
             return alpha
 
-        # Minimizing (Black)
-        if stand_pat <= alpha:
-            return alpha
-        beta = min(beta, stand_pat)
-
-        if not captures:
-            return beta
-
-        scored_captures = []
-        for m in captures:
-            f, t, _ = m
-            score = (PIECE_VALUE_TABLE[board.board[t]] * 10) - PIECE_VALUE_TABLE[board.board[f]]
-            scored_captures.append((score, m))
-        scored_captures.sort(key=lambda x: x[0], reverse=True)
-
-        for _, m in scored_captures:
-            gen.apply(m)
-            score = self.quiesce(gen, alpha, beta, ply + 1)
-            gen.undo(m)
-
-            if score <= alpha:
+        else:  # Minimizing (Black)
+            if stand_pat <= alpha:
                 return alpha
-            beta = min(beta, score)
-        return beta
+            beta = min(beta, stand_pat)
+
+            captures = gen.legal_captures()
+            scored_captures = []
+            for m in captures:
+                f, t, _ = m
+                score = (PIECE_VALUE_TABLE[board.board[t] & 7] * 10) - PIECE_VALUE_TABLE[board.board[f] & 7]
+                if stand_pat - PIECE_VALUE_TABLE[board.board[t] & 7] > beta:
+                    continue
+                scored_captures.append((score, m))
+            scored_captures.sort(key=lambda x: x[0], reverse=True)
+
+            for _, m in scored_captures:
+                gen.apply(m)
+                score = self.quiesce(gen, alpha, beta)  # Pass True for White
+                gen.undo(m)
+
+                if score <= alpha:
+                    return alpha
+                beta = min(beta, score)
+            return beta
 
     def score_mate(self, score, ply):
         if score > MATE_THRESHOLD: return score + ply

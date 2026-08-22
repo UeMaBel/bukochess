@@ -1,10 +1,10 @@
 from typing import Optional, Tuple, List, Dict
 from app.chess.static import PAWN_OFFSETS, KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_OFFSETS, ROOK_DIRS, BISHOP_DIRS, \
     QUEEN_DIRS
-from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
+from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, PIECE_INDEX
 from dataclasses import dataclass
 
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation, piece_str_to_flag
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation
 
 
 @dataclass
@@ -103,10 +103,10 @@ class MoveArray:
         if self.en_passant:
             board.board[captured_square[0]][captured_square[1]] = ""
         if captured_piece:
-            board.hash ^= Z_PIECE[piece_str_to_flag(captured_piece)][to_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][to_sq]
         # Move the piece and promotion
         board.board[from_x][from_y] = ""
-        board.hash ^= Z_PIECE[piece_str_to_flag(piece)][from_sq]
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
         board.board[to_x][to_y] = piece
 
         # Promotion
@@ -116,7 +116,7 @@ class MoveArray:
             promotion_piece = self.promotion.upper() if piece_color == "w" else self.promotion.lower()
             board.board[to_x][to_y] = promotion_piece
             moved_piece = promotion_piece
-        board.hash ^= Z_PIECE[piece_str_to_flag(moved_piece)][to_sq]
+        board.hash ^= Z_PIECE[PIECE_INDEX[moved_piece]][to_sq]
 
         # Castling
         if piece.lower() == "k" or piece.lower() == "r":
@@ -131,8 +131,8 @@ class MoveArray:
 
             rook_from_sq = from_x * 8 + 7
             rook_to_sq = from_x - 4
-            board.hash ^= Z_PIECE[piece_str_to_flag(castle_piece)][rook_from_sq]
-            board.hash ^= Z_PIECE[piece_str_to_flag(castle_piece)][rook_to_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_from_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_to_sq]
             castling_rook_from = rook_from
             castling_rook_to = rook_to
         elif self.castling.lower() == "q":  # queenside
@@ -145,8 +145,8 @@ class MoveArray:
             castling_rook_to = rook_to
             rook_from_sq = from_x * 8
             rook_to_sq = rook_from_sq + 3
-            board.hash ^= Z_PIECE[piece_str_to_flag(castle_piece)][rook_from_sq]
-            board.hash ^= Z_PIECE[piece_str_to_flag(castle_piece)][rook_to_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_from_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[castle_piece]][rook_to_sq]
         new_castling_mask = board.castling_rights_mask()
         board.hash ^= Z_CASTLING[old_castling_mask]
         board.hash ^= Z_CASTLING[new_castling_mask]
@@ -216,7 +216,7 @@ class MoveArray:
         to_sq = to_x * 8 + to_y
 
         # remove moved piece
-        board.hash ^= Z_PIECE[piece_str_to_flag(board.board[to_x][to_y])][to_sq]
+        board.hash ^= Z_PIECE[PIECE_INDEX[board.board[to_x][to_y]]][to_sq]
         board.board[to_x][to_y] = ""
         # Restore moved piece
         if not self.promotion:
@@ -224,14 +224,14 @@ class MoveArray:
         else:
             board.board[from_x][from_y] = "p" if undo.old_active_color == "b" else "P"
         piece = board.board[from_x][from_y]
-        board.hash ^= Z_PIECE[piece_str_to_flag(piece)][from_sq]
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
 
         # Restore captured piece
         cap_x, cap_y = undo.captured_square
         cap_sq = cap_x * 8 + cap_y
         board.board[cap_x][cap_y] = undo.captured_piece
         if undo.captured_piece:
-            board.hash ^= Z_PIECE[piece_str_to_flag(undo.captured_piece)][cap_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[undo.captured_piece]][cap_sq]
 
         # Undo castling rook move
         if undo.castling_rook_from and undo.castling_rook_to:
@@ -240,8 +240,8 @@ class MoveArray:
             board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]] = ""
             rook_from_sq = undo.castling_rook_from[0] * 8 + undo.castling_rook_from[1]
             rook_to_sq = undo.castling_rook_to[0] * 8 + undo.castling_rook_to[1]
-            board.hash ^= Z_PIECE[piece_str_to_flag(rook_piece)][rook_from_sq]
-            board.hash ^= Z_PIECE[piece_str_to_flag(rook_piece)][rook_to_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook_piece]][rook_from_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook_piece]][rook_to_sq]
 
         # Restore all other board state
         old_castling_mask = board.castling_rights_mask()

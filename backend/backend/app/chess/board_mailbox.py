@@ -2,9 +2,9 @@ from typing import List
 
 from app.chess.board_base import BoardBase
 from app.chess.static import *
-from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, \
+from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, PIECE_TO_INDEX, \
     ROOK_SLIDERS, BISHOP_SLIDERS, EMPTY
-from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE
+from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
 from app.chess.utils import rank_x, file_y, piece_flag_to_str, piece_str_to_flag
 
 
@@ -60,7 +60,10 @@ class BoardMailbox(BoardBase):
         for sq in range(64):
             piece = board[sq]
             if piece:
-                h ^= Z_PIECE[piece][sq]
+                ptype = piece & PIECE
+                color = piece & COLOR
+                idx = PIECE_TO_INDEX[ptype] + (0 if color == WHITE else 6)
+                h ^= Z_PIECE[idx][sq]
 
         # side to move
         if self.active_color == BLACK:

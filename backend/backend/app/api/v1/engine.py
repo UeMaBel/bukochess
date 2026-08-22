@@ -1,0 +1,73 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
+from app.chess.board_mailbox import BoardMailbox as Board
+from app.chess.engines.random_engine import RandomEngine
+from app.chess.engines.dumb_engine import DumbEngine
+from app.chess.engines.alphabeta import AlphaBeta
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+from app.core.exceptions import BukochessException
+from app.chess.utils import to_uci
+from typing import List
+
+router = APIRouter(tags=["engine"])
+
+
+class EngineMoveRequest(BaseModel):
+    fen: str
+    engine: str = "random"
+    seed: int | None = None
+    depth: int
+
+
+class EngineMoveResponse(BaseModel):
+    fen: str
+    move: str
+    status: str
+    evaluation: float
+    depth: int
+    nodes: int
+    nps: int
+    pv: List[str]
+    engine: str
+    played_color: str
+
+
+@router.post("/move", response_model=EngineMoveResponse)
+def engine_move(req: EngineMoveRequest):
+    board = Board()
+    try:
+        board.from_fen(req.fen)
+    except ValueError as e:
+        raise BukochessException(str(e))
+    if req.engine == "random":
+        engine = RandomEngine(seed=req.seed)
+    elif req.engine == "dumb":
+        engine = DumbEngine(depth=req.depth, seed=req.seed)
+    elif req.engine == "alphabeta":
+        engine = AlphaBeta(depth=req.depth, seed=req.seed)
+    else:
+        raise BukochessException("Unknown engine")
+    print(req.engine)
+
+    generator = MoveGenerator(board)
+    print("searching move")
+    move = engine.choose_move(board)
+    print(f"move ")
+    if move is None:
+        raise BukochessException("No legal moves")
+
+    generator.apply_uci(move)
+    status = board.get_game_state()
+
+    return EngineMoveResponse(
+        fen=board.to_fen(),
+        move=move,
+        status=status,
+        evaluation=engine.evaluation,
+        depth=engine.depth,
+        nodes=engine.nodes,
+        nps=engine.nps,
+        pv=engine.pv,
+        engine=engine.engine_name,
+        played_color=engine.played_color
+    )

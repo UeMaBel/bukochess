@@ -3,7 +3,7 @@ from typing import List
 from app.chess.board_base import BoardBase
 from app.chess.static import PAWN_OFFSETS, BISHOP_DIRS, QUEEN_DIRS, ROOK_DIRS, CASTLE_OFFSETS, KNIGHT_OFFSETS, \
     KING_OFFSETS
-from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE
+from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE, PIECE_INDEX
 from app.chess.utils import rank_x, file_y, sq, piece_flag_to_str, piece_str_to_flag
 
 
@@ -34,7 +34,7 @@ class BoardArray(BoardBase):
                 piece = self.board[x][y]
                 if piece:
                     sq = x * 8 + y
-                    h ^= Z_PIECE[piece_str_to_flag(piece)][sq]
+                    h ^= Z_PIECE[PIECE_INDEX[piece]][sq]
 
         if self.active_color == "b":
             h ^= Z_SIDE

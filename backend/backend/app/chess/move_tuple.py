@@ -1,11 +1,11 @@
 from typing import Optional, Tuple, List
 from app.chess.static import PAWN_OFFSETS, KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_OFFSETS, ROOK_DIRS, BISHOP_DIRS, \
     QUEEN_DIRS
-from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
+from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, PIECE_INDEX
 from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLAG_EN_PASSANT, FLAG_NONE, FLAG_PROMO_B, \
     FLAG_PROMO_N, FLAG_PROMO_Q, FLAG_PROMO_R, FLAG_PROMOTION
 
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation, rank_x, file_y, sq, piece_str_to_flag
+from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation, rank_x, file_y, sq
 
 
 class MoveTupleGenerator:
@@ -112,17 +112,17 @@ class MoveTupleGenerator:
             cx, cy = captured_square
             captured_piece = board.board[cx][cy]
             board.board[cx][cy] = ""
-            board.hash ^= Z_PIECE[piece_str_to_flag(captured_piece)][sq(cx, cy)]
+            board.hash ^= Z_PIECE[PIECE_INDEX[captured_piece]][sq(cx, cy)]
             board.halfmove_clock = 0
         else:
             captured_square = (tx, ty)
 
         # --- MOVE PIECE ---
         board.board[fx][fy] = ""
-        board.hash ^= Z_PIECE[piece_str_to_flag(piece)][from_sq]
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][from_sq]
 
         board.board[tx][ty] = piece
-        board.hash ^= Z_PIECE[piece_str_to_flag(piece)][to_sq]
+        board.hash ^= Z_PIECE[PIECE_INDEX[piece]][to_sq]
 
         # save new king state
         if piece == "k":
@@ -132,7 +132,7 @@ class MoveTupleGenerator:
 
         # --- PROMOTION ---
         if flags & FLAG_PROMOTION:
-            board.hash ^= Z_PIECE[piece_str_to_flag(piece)][to_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[piece]][to_sq]
 
             piece_color = "w" if piece.isupper() else "b"
             if flags & FLAG_PROMO_N:
@@ -145,7 +145,7 @@ class MoveTupleGenerator:
                 promotion_piece = "q"
             promotion_piece = promotion_piece if piece_color == "b" else promotion_piece.upper()
             board.board[tx][ty] = promotion_piece
-            board.hash ^= Z_PIECE[piece_str_to_flag(promotion_piece)][to_sq]
+            board.hash ^= Z_PIECE[PIECE_INDEX[promotion_piece]][to_sq]
 
         # --- CASTLING ---
         rook_from = None
@@ -164,8 +164,8 @@ class MoveTupleGenerator:
             board.board[rf[0]][rf[1]] = ""
             board.board[rt[0]][rt[1]] = rook
 
-            board.hash ^= Z_PIECE[piece_str_to_flag(rook)][sq(*rf)]
-            board.hash ^= Z_PIECE[piece_str_to_flag(rook)][sq(*rt)]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook]][sq(*rf)]
+            board.hash ^= Z_PIECE[PIECE_INDEX[rook]][sq(*rt)]
 
         # --- CASTLING RIGHTS ---
         old_mask = board.castling_rights_mask()
