@@ -1,14 +1,16 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { importFEN } from "../api/position";
-import { makeMove, gameStatus, makeMoveFast } from "../api/game";
+import { gameStatus, makeMoveFast } from "../api/game";
 import { getLegalMoves } from "../api/position";
 import { getEngineMove } from "../api/engine";
-import { useGameStore } from "../store/gameStore";
+import type { EngineId, EngineMoveRequest } from "../api/engine";
 import { EngineSelector } from "./EngineSelector";
+import type { PlayerSelection } from "./EngineSelector";
 import { BukoLoader } from "./BukoLoader";
 import { HistoryControls } from "./HistoryControls";
 import { MoveHistory } from "./MoveHistory";
 import { EngineChat } from "./EngineChat";
+import type { EngineChatEntry } from "./EngineChat";
 import { ControlPanel } from "./ControlPanel";
 import "../styles/board.css";
 
@@ -21,6 +23,21 @@ const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+function buildEngineMoveRequest(
+  fen: string,
+  engine: EngineId,
+  depth: number
+): EngineMoveRequest {
+  switch (engine) {
+    case "random":
+      return { fen, engine, metadata: {} };
+    case "dumb":
+      return { fen, engine, metadata: { depth } };
+    case "alphabeta":
+      return { fen, engine, metadata: { depth } };
+  }
+}
+
 export const BoardWrapper: React.FC = () => {
   const [fen, setFen] = useState(START_FEN);
   const [board, setBoard] = useState<string[][]>([]);
@@ -29,8 +46,8 @@ export const BoardWrapper: React.FC = () => {
   const [activeColor, setActiveColor] = useState<"w" | "b">("w");
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-  const [whitePlayer, setWhitePlayer] = useState<"human" | string>("human");
-  const [blackPlayer, setBlackPlayer] = useState<"human" | string>("random");
+  const [whitePlayer, setWhitePlayer] = useState<PlayerSelection>("human");
+  const [blackPlayer, setBlackPlayer] = useState<PlayerSelection>("random");
   const [isFlipped, setIsFlipped] = useState(false);
   const flipBoard = () => {
     setIsFlipped(prev => !prev);
@@ -50,20 +67,7 @@ export const BoardWrapper: React.FC = () => {
   fen: string;
   }
 
-  interface EngineChatEntry {
-    fen: string;
-    move: string;
-    evaluation: number;
-    depth: number;
-    nodes: number;
-    nps: number;
-    pv: string[];
-    engine: string;
-    timestamp: number;
-  }
-
   const [engineChat, setEngineChat] = useState<EngineChatEntry[]>([]);
-  const [engineInfo, setEngineInfo] = useState<EngineInfo | null>(null);
 
   const [moveHistory, setMoveHistory] = useState<MoveEntry[]>([
     {
@@ -143,24 +147,17 @@ export const BoardWrapper: React.FC = () => {
       setSelectedSquare(null);
       setPendingPromotion(null);
       const res = await makeMoveFast(fen, uci);
-      setEngineInfo({
-          evaluation: 0,
-          depth: 0,
-          nodes: 0,
-          time_ms: 0,
-          nps: 0,
-          pv: 0,
-          played_color:res.played_color,
-        });
-
-        //ADD TO CHAT
-        setEngineChat(prev => [
-          {
-            ...res,
-            timestamp: Date.now(),
-          },
-          ...prev,
-        ]);
+      // ADD TO CHAT
+      setEngineChat(prev => [
+        {
+          fen: res.fen,
+          move: res.move,
+          engine: "Human",
+          played_color: res.played_color === "w" ? "w" : "b",
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ]);
       setFen(res.fen);
       await updateGameState(res.fen, uci);
 
@@ -177,30 +174,17 @@ export const BoardWrapper: React.FC = () => {
     setIsEngineThinking(true);
     try {
       const currentDepth = activeColor === "w" ? whiteDepth : blackDepth;
-      const res = await getEngineMove({
-          fen,
-          engine: currentPlayer,
-          depth: currentDepth
-        });
+      const request = buildEngineMoveRequest(fen, currentPlayer, currentDepth);
+      const res = await getEngineMove(request);
 
-      setEngineInfo({
-          evaluation: res.evaluation,
-          depth: res.depth,
-          nodes: res.nodes,
-          time_ms: res.time_ms,
-          nps: res.nps,
-          pv: res.pv,
-          played_color:res.played_color,
-        });
-
-        //ADD TO CHAT
-        setEngineChat(prev => [
-          {
-            ...res,
-            timestamp: Date.now(),
-          },
-          ...prev,
-        ]);
+      // ADD TO CHAT
+      setEngineChat(prev => [
+        {
+          ...res,
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ]);
 
 
       await updateGameState(res.fen, res.move);
@@ -209,7 +193,7 @@ export const BoardWrapper: React.FC = () => {
     } finally {
         setIsEngineThinking(false);}
 
-  }, [fen, activeColor, whitePlayer, blackPlayer, status, updateGameState]);
+  }, [fen, activeColor, whitePlayer, blackPlayer, whiteDepth, blackDepth, status, updateGameState, isViewingHistory]);
 
   useEffect(() => {
     const timer = setTimeout(onEngineMove, 600);

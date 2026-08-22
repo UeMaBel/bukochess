@@ -1,22 +1,73 @@
-export interface EngineMoveRequest {
-  fen: string;
-  engine: string;
+export type EngineId = "random" | "dumb" | "alphabeta";
+
+export interface RandomEngineSettings {
   seed?: number;
-  depth: number;
 }
 
-export interface EngineMoveResponse {
-  fen: string;
-  move: string;
-  status: string;
-  evaluation: number;
+export interface DumbEngineSettings {
   depth: number;
-  nodes: number;
-  nps: number;
-  pv: string[];
-  engine: string;
-  played_color: string;
+  seed?: number;
 }
+
+export interface AlphaBetaEngineSettings {
+  depth: number;
+  seed?: number;
+}
+
+export interface EngineRequestMetadataByEngine {
+  random: RandomEngineSettings;
+  dumb: DumbEngineSettings;
+  alphabeta: AlphaBetaEngineSettings;
+}
+
+export interface BaseEngineResponseMetadata {
+  name: string;
+}
+
+export interface RandomEngineResponseMetadata extends BaseEngineResponseMetadata {
+  seed?: number;
+}
+
+export interface DumbEngineResponseMetadata extends BaseEngineResponseMetadata {
+  depth: number;
+  evaluation: number;
+  seed?: number;
+}
+
+export interface AlphaBetaEngineResponseMetadata extends BaseEngineResponseMetadata {
+  depth: number;
+  evaluation: number;
+  nodes: number;
+  cutoffs: number;
+  tt_hits: number;
+  quiesce_calls: number;
+  seed?: number;
+}
+
+export interface EngineResponseMetadataByEngine {
+  random: RandomEngineResponseMetadata;
+  dumb: DumbEngineResponseMetadata;
+  alphabeta: AlphaBetaEngineResponseMetadata;
+}
+
+export type EngineMoveRequest = {
+  [E in EngineId]: {
+    fen: string;
+    engine: E;
+    metadata: EngineRequestMetadataByEngine[E];
+  };
+}[EngineId];
+
+export type EngineMoveResponse = {
+  [E in EngineId]: {
+    fen: string;
+    move: string;
+    status: string;
+    engine: E;
+    played_color: "w" | "b";
+    metadata: EngineResponseMetadataByEngine[E];
+  };
+}[EngineId];
 
 export async function getEngineMove(
   req: EngineMoveRequest
@@ -26,7 +77,6 @@ export async function getEngineMove(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
   });
-    console.log(req.engine)
 
   if (!res.ok) {
     const err = await res.json();

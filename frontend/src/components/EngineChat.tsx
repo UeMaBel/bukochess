@@ -1,18 +1,17 @@
 import React from "react";
+import type { EngineMoveResponse } from "../api/engine";
 import "../styles/EngineChat.css";
 
-export interface EngineChatEntry {
-  move: string;
+interface HumanChatEntry {
   fen: string;
-  evaluation: number;
-  depth: number;
-  nodes: number;
-  nps: number;
-  pv: string[];
-  engine: string;
-  timestamp: number;
-  color: "w" | "b";
+  move: string;
+  engine: "Human";
+  played_color: "w" | "b";
 }
+
+export type EngineChatEntry = (EngineMoveResponse | HumanChatEntry) & {
+  timestamp: number;
+};
 
 interface Props {
   entries: EngineChatEntry[];
@@ -21,26 +20,39 @@ interface Props {
 export const EngineChat: React.FC<Props> = ({ entries }) => {
   return (
     <div className="engine-chat">
-      {entries.map((e, i) => (
+      {entries.map((entry, i) => (
         <div key={i} className="engine-message">
           <div>
-              {e.engine === "Human"
-              ? (e.played_color === "w" ? "⚪👤" : "⚫👤")
-              : (e.played_color === "w" ? "⚪🤖" : "⚫🤖")}
+            {entry.engine === "Human"
+              ? entry.played_color === "w"
+                ? "⚪👤"
+                : "⚫👤"
+              : entry.played_color === "w"
+                ? "⚪🤖"
+                : "⚫🤖"}
             {" "}
-            {e.engine} → {e.move}
+            {entry.engine === "Human" ? "Human" : entry.metadata.name} → {entry.move}
           </div>
-            {e.engine !== "Human" && (
-                <>
-                  <div>
-                    Eval: {e.evaluation.toFixed(2)} | Depth: {e.depth}
-                  </div>
 
-                  <div>
-                    PV: {e.pv.join(" ")}
-                  </div>
-                </>
-              )}
+          {entry.engine === "dumb" && (
+            <div>
+              Eval: {entry.metadata.evaluation.toFixed(2)} | Depth: {entry.metadata.depth}
+            </div>
+          )}
+
+          {entry.engine === "alphabeta" && (
+            <>
+              <div>
+                Eval: {entry.metadata.evaluation.toFixed(2)} | Depth: {entry.metadata.depth}
+              </div>
+              <div>
+                Nodes: {entry.metadata.nodes.toLocaleString()} | Cutoffs: {entry.metadata.cutoffs.toLocaleString()}
+              </div>
+              <div>
+                TT hits: {entry.metadata.tt_hits.toLocaleString()} | Q-search: {entry.metadata.quiesce_calls.toLocaleString()}
+              </div>
+            </>
+          )}
         </div>
       ))}
     </div>
