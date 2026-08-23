@@ -30,7 +30,8 @@ class LLMEngine(Engine):
         if not legal_moves:
             return None
 
-        decision = self.provider.choose_move(fen, legal_moves)
+        provider_result = self.provider.choose_move(fen, legal_moves)
+        decision = provider_result.decision
 
         if decision.move not in legal_moves:
             raise BukochessException(
@@ -41,7 +42,9 @@ class LLMEngine(Engine):
             move=decision.move,
             played_color="w" if board.active_color == WHITE else "b",
             metadata={
-                "explanation": decision.explanation
+                **self.settings.model_dump(),
+                **decision.metadata.model_dump(),
+                **provider_result.metadata.model_dump(),
             }
         )
         return result
