@@ -5,6 +5,7 @@ from app.chess.utils import to_uci
 
 from app.chess.static import WHITE, BLACK
 from app.chess.utils import piece_flag_to_str
+from app.chess.engines.models import EngineResult
 
 
 class DumbEngine(Engine):
@@ -37,10 +38,11 @@ class DumbEngine(Engine):
         super().__init__()
         self.engine_name = "Dumb Engine"
         self._rng = random.Random(seed)
+        self.seed = seed
         self.depth = depth
         self.move_value = {}
 
-    def choose_move(self, board: Board) -> str:
+    def choose_move(self, board: Board) -> EngineResult:
         gen = MoveGenerator(board)
         moves = gen.legal_moves()
 
@@ -71,7 +73,16 @@ class DumbEngine(Engine):
             self.evaluation = score
 
         self.played_color = "w" if board.active_color == WHITE else "b"
-        return to_uci(self._rng.choice(best_moves))
+        result = EngineResult(
+            engine_name=self.engine_name,
+            move=to_uci(self._rng.choice(best_moves)),
+            played_color=self.played_color,
+            metadata={
+                "seed": self.seed,
+                "depth": self.depth
+            }
+        )
+        return result
 
     def minimax(self, board: Board, depth: int, maximizing: bool) -> int:
         if depth == 0:

@@ -6,6 +6,7 @@ from app.chess.utils import to_uci
 from app.chess.static import WHITE, BLACK
 from app.chess.move_flags import FLAG_CAPTURE
 from app.chess.static import PIECE_VALUE_TABLE
+from app.chess.engines.models import EngineResult
 
 MATE_SCORE = 100000
 MATE_THRESHOLD = 90000
@@ -18,6 +19,7 @@ class AlphaBeta(Engine):
     def __init__(self, depth: int | None = None, seed: int | None = None):
         super().__init__()
         self._rng = random.Random(seed)
+        self.seed = seed
         self.engine_name = "Alpha Beta Engine"
         self.move_value = {}
         if depth:
@@ -32,7 +34,7 @@ class AlphaBeta(Engine):
         self.quiesce_calls = 0
         self.killers = [[None, None] for _ in range(MAX_DEPTH)]
 
-    def choose_move(self, board: Board):
+    def choose_move(self, board: Board) -> EngineResult:
         print(f"searching move with alphabeta. max deepness = {self.depth}")
 
         gen = MoveGenerator(board)
@@ -56,12 +58,20 @@ class AlphaBeta(Engine):
                 f"tt: {self.tt_hits}, quiesce {self.quiesce_calls}"
             )
             self.evaluation = value
-            self.played_color = "w" if board.active_color == WHITE else "b"
 
             if move is None:
                 break
 
-        return to_uci(best_move) if best_move is not None else None
+        result = EngineResult(
+            move=to_uci(best_move) if best_move is not None else None,
+            engine_name=self.engine_name,
+            played_color="w" if board.active_color == WHITE else "b",
+            metadata={
+                "depth": self.depth,
+                "seed": self.seed
+            }
+        )
+        return result
 
     def search_root(self, gen: MoveGenerator, depth: int, prev_best_move=None):
         board = gen.board

@@ -4,6 +4,7 @@ from app.chess.move_mailbox import MoveMailBoxGenerator as Generator
 from app.chess.engines.base import Engine
 from app.chess.utils import to_uci
 from app.chess.static import WHITE, BLACK
+from app.chess.engines.models import EngineResult
 
 
 class RandomEngine(Engine):
@@ -13,7 +14,7 @@ class RandomEngine(Engine):
         self.engine_name = "Random Engine"
         self._rng = random.Random(seed)
 
-    def choose_move(self, board: Board) -> str:
+    def choose_move(self, board: Board) -> EngineResult:
         generator = Generator(board)
         moves = generator.legal_moves()
 

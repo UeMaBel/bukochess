@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from app.chess.board_array import BoardArray
 from app.chess.move_array_deprecated import MoveArray
+from app.chess.engines.models import EngineResult
 
 
 class Engine(ABC):
@@ -14,7 +15,7 @@ class Engine(ABC):
         self.played_color: str = ""
 
     @abstractmethod
-    def choose_move(self, board: BoardArray) -> str | None:
+    def choose_move(self, board: BoardArray) -> EngineResult | None:
         """
         Returns a move for the given board.
         Return None if no legal moves exist.
