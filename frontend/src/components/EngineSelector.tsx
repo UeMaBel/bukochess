@@ -25,6 +25,7 @@ export const EngineSelector: React.FC<EngineSelectorProps> = ({
         <option value="random">Random Engine</option>
         <option value="dumb">Dumb Engine</option>
         <option value="alphabeta">AlphaBeta Engine</option>
+        <option value="llm">AI/LLM</option>
       </select>
     </div>
   );

@@ -1,4 +1,5 @@
-export type EngineId = "random" | "dumb" | "alphabeta";
+import type { AIPlayerSettings } from "./aiSettings";
+export type EngineId = "random" | "dumb" | "alphabeta" | "llm";
 
 export interface RandomEngineSettings {
   seed?: number;
@@ -14,10 +15,13 @@ export interface AlphaBetaEngineSettings {
   seed?: number;
 }
 
+export type LLMEngineSettings = AIPlayerSettings;
+
 export interface EngineRequestMetadataByEngine {
   random: RandomEngineSettings;
   dumb: DumbEngineSettings;
   alphabeta: AlphaBetaEngineSettings;
+  llm: LLMEngineSettings;
 }
 
 export interface BaseEngineResponseMetadata {
@@ -70,7 +74,7 @@ export type EngineMoveResponse = {
 }[EngineId];
 
 export async function getEngineMove(
-  req: EngineMoveRequest
+  req: EngineMoveRequest,
 ): Promise<EngineMoveResponse> {
   const res = await fetch("/api/v1/engine/move", {
     method: "POST",

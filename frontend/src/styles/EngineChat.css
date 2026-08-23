@@ -4,7 +4,9 @@
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
-  height: 300px;
+  flex: 1 1 auto;
+  min-height: 90px;
+  height: auto;
   overflow-y: auto;
   padding-right: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);

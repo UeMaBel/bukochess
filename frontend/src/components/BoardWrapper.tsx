@@ -12,11 +12,23 @@ import { MoveHistory } from "./MoveHistory";
 import { EngineChat } from "./EngineChat";
 import type { EngineChatEntry } from "./EngineChat";
 import { ControlPanel } from "./ControlPanel";
+import { DEFAULT_AI_SETTINGS } from "../api/aiSettings";
+import type { AISettings, AIPlayerSettings } from "../api/aiSettings";
 import "../styles/board.css";
 
 const PIECE_UNICODE: Record<string, string> = {
-  p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
-  P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔",
+  p: "♟",
+  r: "♜",
+  n: "♞",
+  b: "♝",
+  q: "♛",
+  k: "♚",
+  P: "♙",
+  R: "♖",
+  N: "♘",
+  B: "♗",
+  Q: "♕",
+  K: "♔",
 };
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -26,7 +38,8 @@ const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 function buildEngineMoveRequest(
   fen: string,
   engine: EngineId,
-  depth: number
+  depth: number,
+  aiSettings: AIPlayerSettings,
 ): EngineMoveRequest {
   switch (engine) {
     case "random":
@@ -35,6 +48,8 @@ function buildEngineMoveRequest(
       return { fen, engine, metadata: { depth } };
     case "alphabeta":
       return { fen, engine, metadata: { depth } };
+    case "llm":
+      return { fen, engine, metadata: { ...aiSettings } };
   }
 }
 
@@ -50,21 +65,29 @@ export const BoardWrapper: React.FC = () => {
   const [blackPlayer, setBlackPlayer] = useState<PlayerSelection>("random");
   const [isFlipped, setIsFlipped] = useState(false);
   const flipBoard = () => {
-    setIsFlipped(prev => !prev);
+    setIsFlipped((prev) => !prev);
   };
   const ranksToRender = isFlipped ? [...board].reverse() : board;
 
-  const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
-  const [promotionCoords, setPromotionCoords] = useState<{ top: number; left: number } | null>(null);
+  const [pendingPromotion, setPendingPromotion] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+  const [promotionCoords, setPromotionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [isEngineThinking, setIsEngineThinking] = useState(false);
 
   const [whiteDepth, setWhiteDepth] = useState(4);
   const [blackDepth, setBlackDepth] = useState(4);
   const [showEngineSettings, setShowEngineSettings] = useState(false);
+  const [showAISettings, setShowAISettings] = useState(false);
+  const [aiSettings, setAISettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
 
   interface MoveEntry {
-  move: string;
-  fen: string;
+    move: string;
+    fen: string;
   }
 
   const [engineChat, setEngineChat] = useState<EngineChatEntry[]>([]);
@@ -78,15 +101,14 @@ export const BoardWrapper: React.FC = () => {
 
   const [historyIndex, setHistoryIndex] = useState<number>(0);
 
-  const isViewingHistory =
-    historyIndex < moveHistory.length -1;
+  const isViewingHistory = historyIndex < moveHistory.length - 1;
 
   const jumpToHistory = async (index: number) => {
-      if (index < 0 || index >= moveHistory.length) return;
+    if (index < 0 || index >= moveHistory.length) return;
 
-      setHistoryIndex(index);
+    setHistoryIndex(index);
 
-      await updateGameState(moveHistory[index].fen);
+    await updateGameState(moveHistory[index].fen);
   };
   const goBack = () => {
     jumpToHistory(historyIndex - 1);
@@ -110,7 +132,7 @@ export const BoardWrapper: React.FC = () => {
     setHistoryIndex(0);
     await updateGameState(START_FEN);
     setEngineChat([]);
-    };
+  };
 
   // --- State Sync ---
   const updateGameState = useCallback(async (newFen: string, move?: string) => {
@@ -118,7 +140,7 @@ export const BoardWrapper: React.FC = () => {
       const [boardRes, statusRes, movesRes] = await Promise.all([
         importFEN(newFen),
         gameStatus({ fen: newFen }),
-        getLegalMoves({ fen: newFen })
+        getLegalMoves({ fen: newFen }),
       ]);
       setFen(newFen);
       setBoard(boardRes.board);
@@ -127,18 +149,17 @@ export const BoardWrapper: React.FC = () => {
       setStatus(statusRes.status);
       setLegalMoves(movesRes.moves);
       if (move) {
-          setMoveHistory(prev => [
-            ...prev,
-            { move, fen: newFen }
-          ]);
-          setHistoryIndex(prev => prev + 1);
+        setMoveHistory((prev) => [...prev, { move, fen: newFen }]);
+        setHistoryIndex((prev) => prev + 1);
       }
     } catch (e) {
       console.error("Game state sync failed:", e);
     }
   }, []);
 
-  useEffect(() => { updateGameState(START_FEN); }, [updateGameState]);
+  useEffect(() => {
+    updateGameState(START_FEN);
+  }, [updateGameState]);
 
   // --- Move Handlers ---
   const handleMoveExecution = async (uci: string) => {
@@ -148,7 +169,7 @@ export const BoardWrapper: React.FC = () => {
       setPendingPromotion(null);
       const res = await makeMoveFast(fen, uci);
       // ADD TO CHAT
-      setEngineChat(prev => [
+      setEngineChat((prev) => [
         {
           fen: res.fen,
           move: res.move,
@@ -160,7 +181,6 @@ export const BoardWrapper: React.FC = () => {
       ]);
       setFen(res.fen);
       await updateGameState(res.fen, uci);
-
     } catch (e: any) {
       console.error("Move execution failed:", e.message);
     }
@@ -169,16 +189,24 @@ export const BoardWrapper: React.FC = () => {
   const onEngineMove = useCallback(async () => {
     if (isViewingHistory) return;
     const currentPlayer = activeColor === "w" ? whitePlayer : blackPlayer;
-    if (currentPlayer === "human" || status.toLowerCase().includes("mate")) return;
+    if (currentPlayer === "human" || status.toLowerCase().includes("mate"))
+      return;
 
     setIsEngineThinking(true);
     try {
       const currentDepth = activeColor === "w" ? whiteDepth : blackDepth;
-      const request = buildEngineMoveRequest(fen, currentPlayer, currentDepth);
+      const currentAiSettings =
+        activeColor === "w" ? aiSettings.white : aiSettings.black;
+      const request = buildEngineMoveRequest(
+        fen,
+        currentPlayer,
+        currentDepth,
+        currentAiSettings,
+      );
       const res = await getEngineMove(request);
 
       // ADD TO CHAT
-      setEngineChat(prev => [
+      setEngineChat((prev) => [
         {
           ...res,
           timestamp: Date.now(),
@@ -186,14 +214,23 @@ export const BoardWrapper: React.FC = () => {
         ...prev,
       ]);
 
-
       await updateGameState(res.fen, res.move);
     } catch (e: any) {
       console.error("Engine failed:", e.message);
     } finally {
-        setIsEngineThinking(false);}
-
-  }, [fen, activeColor, whitePlayer, blackPlayer, whiteDepth, blackDepth, status, updateGameState, isViewingHistory]);
+      setIsEngineThinking(false);
+    }
+  }, [
+    fen,
+    activeColor,
+    whitePlayer,
+    blackPlayer,
+    whiteDepth,
+    blackDepth,
+    status,
+    updateGameState,
+    isViewingHistory,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(onEngineMove, 600);
@@ -208,37 +245,41 @@ export const BoardWrapper: React.FC = () => {
     }
 
     if (!selectedSquare) {
-      if (legalMoves.some(m => m.startsWith(sq))) setSelectedSquare(sq);
+      if (legalMoves.some((m) => m.startsWith(sq))) setSelectedSquare(sq);
       return;
     }
 
     const movePrefix = selectedSquare + sq;
-    const pMoves = legalMoves.filter(m => m.startsWith(movePrefix) && m.length === 5);
+    const pMoves = legalMoves.filter(
+      (m) => m.startsWith(movePrefix) && m.length === 5,
+    );
 
     if (pMoves.length > 0) {
-  const rect = e.currentTarget.getBoundingClientRect();
-  const boardRect = e.currentTarget.closest(".chess-board")?.getBoundingClientRect();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const boardRect = e.currentTarget
+        .closest(".chess-board")
+        ?.getBoundingClientRect();
 
-  if (boardRect) {
-    const squareSize = rect.height;
-    const topOffset = rect.top - boardRect.top;
+      if (boardRect) {
+        const squareSize = rect.height;
+        const topOffset = rect.top - boardRect.top;
 
-    setPromotionCoords({
-      // If White: starts at top (0) and goes down.
-      // If Black: starts at bottom (7 squares down), we subtract 3 square-heights
-      // so the 4-button menu spans from square 5 to square 8.
-      top: activeColor === 'w' ? topOffset : topOffset - (squareSize * 3),
-      left: rect.left - boardRect.left,
-    });
-  }
-  setPendingPromotion({ from: selectedSquare, to: sq });
-  return;
-}
+        setPromotionCoords({
+          // If White: starts at top (0) and goes down.
+          // If Black: starts at bottom (7 squares down), we subtract 3 square-heights
+          // so the 4-button menu spans from square 5 to square 8.
+          top: activeColor === "w" ? topOffset : topOffset - squareSize * 3,
+          left: rect.left - boardRect.left,
+        });
+      }
+      setPendingPromotion({ from: selectedSquare, to: sq });
+      return;
+    }
 
     if (legalMoves.includes(movePrefix)) {
       handleMoveExecution(movePrefix);
     } else {
-      setSelectedSquare(legalMoves.some(m => m.startsWith(sq)) ? sq : null);
+      setSelectedSquare(legalMoves.some((m) => m.startsWith(sq)) ? sq : null);
     }
   };
 
@@ -246,18 +287,26 @@ export const BoardWrapper: React.FC = () => {
   const renderPromotionModal = () => {
     if (!pendingPromotion || !promotionCoords) return null;
     return (
-      <div className="promotion-overlay-floating" style={{
-        top: promotionCoords.top,
-        left: promotionCoords.left,
-        flexDirection: activeColor === 'w' ? 'column' : 'column-reverse'
-      }}>
-        {['q', 'r', 'b', 'n'].map(p => (
+      <div
+        className="promotion-overlay-floating"
+        style={{
+          top: promotionCoords.top,
+          left: promotionCoords.left,
+          flexDirection: activeColor === "w" ? "column" : "column-reverse",
+        }}
+      >
+        {["q", "r", "b", "n"].map((p) => (
           <button
             key={p}
-            className={`promotion-btn ${activeColor === 'w' ? 'piece-white' : 'piece-black'}`}
-            onClick={(e) => { e.stopPropagation(); handleMoveExecution(`${pendingPromotion.from}${pendingPromotion.to}${p}`); }}
+            className={`promotion-btn ${activeColor === "w" ? "piece-white" : "piece-black"}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoveExecution(
+                `${pendingPromotion.from}${pendingPromotion.to}${p}`,
+              );
+            }}
           >
-            {PIECE_UNICODE[activeColor === 'w' ? p.toUpperCase() : p]}
+            {PIECE_UNICODE[activeColor === "w" ? p.toUpperCase() : p]}
           </button>
         ))}
       </div>
@@ -267,119 +316,143 @@ export const BoardWrapper: React.FC = () => {
   return (
     <div className="game-container">
       <div className="engine-sidebar">
-          <ControlPanel
-              onReset={resetBoard}
-              onFlip={flipBoard}
-              onEngineSettings={() => setShowEngineSettings(v => !v)}
-
-              whiteDepth={whiteDepth}
-              blackDepth={blackDepth}
-              setWhiteDepth={setWhiteDepth}
-              setBlackDepth={setBlackDepth}
-
-              showEngineSettings={showEngineSettings}
-          />
+        <ControlPanel
+          onReset={resetBoard}
+          onFlip={flipBoard}
+          onEngineSettings={() => setShowEngineSettings((v) => !v)}
+          onAISettings={() => setShowAISettings((v) => !v)}
+          whiteDepth={whiteDepth}
+          blackDepth={blackDepth}
+          setWhiteDepth={setWhiteDepth}
+          setBlackDepth={setBlackDepth}
+          aiSettings={aiSettings}
+          setAISettings={setAISettings}
+          showEngineSettings={showEngineSettings}
+          showAISettings={showAISettings}
+        />
         <h3>🥥 Players</h3>
         <div className="engine-row">
-          <EngineSelector playerColor="w" value={whitePlayer} onChange={setWhitePlayer} />
+          <EngineSelector
+            playerColor="w"
+            value={whitePlayer}
+            onChange={setWhitePlayer}
+          />
         </div>
         <div className="engine-row">
-          <EngineSelector playerColor="b" value={blackPlayer} onChange={setBlackPlayer} />
+          <EngineSelector
+            playerColor="b"
+            value={blackPlayer}
+            onChange={setBlackPlayer}
+          />
         </div>
         <EngineChat entries={engineChat} />
       </div>
 
       <div style={{ display: "flex", gap: 20, position: "relative" }}>
         <div className="board-wrapper">
-          <div /><div className="file-labels">{FILES.map(f => <div key={f}>{f}</div>)}</div><div />
-          <div className="rank-labels">{RANKS.map(r => <div key={r}>{r}</div>)}</div>
+          <div />
+          <div className="file-labels">
+            {FILES.map((f) => (
+              <div key={f}>{f}</div>
+            ))}
+          </div>
+          <div />
+          <div className="rank-labels">
+            {RANKS.map((r) => (
+              <div key={r}>{r}</div>
+            ))}
+          </div>
 
           <div className="chess-board" style={{ position: "relative" }}>
-              {ranksToRender.map((rank, r) => (
-                <div key={r} className="chess-rank"> {/* Re-added the row wrapper */}
-                  {(isFlipped ? [...rank].reverse() : rank).map((sq, f) => {
-                    const realRank = isFlipped ? r + 1 : 8 - r;
-                    const realFile = isFlipped ? FILES[7 - f] : FILES[f];
-                    const name = realFile + realRank;
-                    const isKing = sq.toLowerCase() === 'k' && (activeColor === "w" ? sq === "K" : sq === "k");
-                    const isWhitePiece = sq !== "." && sq === sq.toUpperCase();
-                    const isBlackPiece = sq !== "." && sq === sq.toLowerCase();
+            {ranksToRender.map((rank, r) => (
+              <div key={r} className="chess-rank">
+                {" "}
+                {/* Re-added the row wrapper */}
+                {(isFlipped ? [...rank].reverse() : rank).map((sq, f) => {
+                  const realRank = isFlipped ? r + 1 : 8 - r;
+                  const realFile = isFlipped ? FILES[7 - f] : FILES[f];
+                  const name = realFile + realRank;
+                  const isKing =
+                    sq.toLowerCase() === "k" &&
+                    (activeColor === "w" ? sq === "K" : sq === "k");
+                  const isWhitePiece = sq !== "." && sq === sq.toUpperCase();
+                  const isBlackPiece = sq !== "." && sq === sq.toLowerCase();
 
-                    return (
-                      <div
-                        key={name}
-                        className={`chess-square ${(r + f) % 2 === 0 ? "light" : "dark"}
-                          ${selectedSquare && legalMoves.some(m => m.startsWith(selectedSquare + name)) ? "legal-target" : ""}
+                  return (
+                    <div
+                      key={name}
+                      className={`chess-square ${(r + f) % 2 === 0 ? "light" : "dark"}
+                          ${selectedSquare && legalMoves.some((m) => m.startsWith(selectedSquare + name)) ? "legal-target" : ""}
                           ${selectedSquare === name ? "selected" : ""}
                           ${isWhitePiece ? "piece-white" : ""}
                           ${isBlackPiece ? "piece-black" : ""}
                           ${inCheck && isKing ? "check" : ""}`}
-                        onClick={(e) => onSquareClick(name, e)}
-                      >
-                        {sq !== "." ? PIECE_UNICODE[sq] : ""}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-              {renderPromotionModal()}
-            </div>
+                      onClick={(e) => onSquareClick(name, e)}
+                    >
+                      {sq !== "." ? PIECE_UNICODE[sq] : ""}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            {renderPromotionModal()}
+          </div>
 
           <div className="rank-labels">
-              {(isFlipped ? [...RANKS].reverse() : RANKS).map(r => (
-                <div key={r}>{r}</div>
-              ))}
+            {(isFlipped ? [...RANKS].reverse() : RANKS).map((r) => (
+              <div key={r}>{r}</div>
+            ))}
           </div>
           <div />
           <div className="file-labels">
-              {(isFlipped ? [...FILES].reverse() : FILES).map(f => (
-                <div key={f}>{f}</div>
-              ))}
+            {(isFlipped ? [...FILES].reverse() : FILES).map((f) => (
+              <div key={f}>{f}</div>
+            ))}
           </div>
           <div />
           <div className="fen-container-wide">
-        <label>Current FEN Position</label>
-        <textarea
-          value={fen}
-          rows={2}
-          readOnly
-          onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-        />
-      </div>
+            <label>Current FEN Position</label>
+            <textarea
+              value={fen}
+              rows={2}
+              readOnly
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+            />
+          </div>
         </div>
 
         <div className="game-status-panel">
-            <div>
-              <h3>🥥 Status</h3>
+          <div>
+            <h3>🥥 Status</h3>
 
-              {isEngineThinking ? (
-                <BukoLoader />
-              ) : (
-                <div className="status-text">{status}</div>
-              )}
+            {isEngineThinking ? (
+              <BukoLoader />
+            ) : (
+              <div className="status-text">{status}</div>
+            )}
 
+            <MoveHistory
+              moves={moveHistory}
+              currentIndex={historyIndex}
+              onSelect={jumpToHistory}
+            />
 
-              <MoveHistory
-                moves={moveHistory}
-                currentIndex={historyIndex}
-                onSelect={jumpToHistory}
-              />
+            <HistoryControls
+              canGoBack={historyIndex > 0}
+              canGoForward={historyIndex < moveHistory.length - 1}
+              onBack={goBack}
+              onForward={goForward}
+            />
+          </div>
 
-              <HistoryControls
-                canGoBack={historyIndex > 0}
-                canGoForward={historyIndex < moveHistory.length - 1}
-                onBack={goBack}
-                onForward={goForward}
-              />
-            </div>
-
-
-          <div className={`check-text ${inCheck ? "visible" : ""}`} style={{ color: "red", fontWeight: "bold" }}>
+          <div
+            className={`check-text ${inCheck ? "visible" : ""}`}
+            style={{ color: "red", fontWeight: "bold" }}
+          >
             {inCheck ? "CHECK!" : ""}
           </div>
         </div>
       </div>
     </div>
-
   );
 };
