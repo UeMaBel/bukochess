@@ -1,6 +1,12 @@
 import type { AIPlayerSettings } from "./aiSettings";
+
+
 export type EngineId = "random" | "dumb" | "alphabeta" | "llm";
-export type EngineResponseId = "random" | "dumb" | "alphabeta" | "LLM";
+export type EngineResponseName =
+  | "Random Engine"
+  | "Dumb Engine"
+  | "Alpha Beta Engine"
+  | "LLM";
 
 export interface RandomEngineSettings {
   seed?: number;
@@ -12,7 +18,7 @@ export interface DumbEngineSettings {
 }
 
 export interface AlphaBetaEngineSettings {
-  depth: number;
+  depth?: number;
   seed?: number;
 }
 
@@ -25,9 +31,44 @@ export interface EngineRequestMetadataByEngine {
   llm: LLMEngineSettings;
 }
 
-export interface BaseEngineResponseMetadata {
-  name?: string;
-  error?: EngineError;
+export type EngineMoveRequest = {
+  [Engine in EngineId]: {
+    fen: string;
+    engine: Engine;
+    metadata: EngineRequestMetadataByEngine[Engine];
+  };
+}[EngineId];
+
+interface BaseEngineMoveResponse {
+  fen: string;
+  status: string;
+  played_color: "w" | "b";
+}
+
+export interface RandomEngineResponse extends BaseEngineMoveResponse {
+  engine: "Random Engine";
+  move: string;
+  metadata: {
+    seed: number | null;
+  };
+}
+
+export interface DumbEngineResponse extends BaseEngineMoveResponse {
+  engine: "Dumb Engine";
+  move: string;
+  metadata: {
+    depth: number;
+    seed: number | null;
+  };
+}
+
+export interface AlphaBetaEngineResponse extends BaseEngineMoveResponse {
+  engine: "Alpha Beta Engine";
+  move: string;
+  metadata: {
+    depth: number;
+    seed: number | null;
+  };
 }
 
 export interface EngineError {
@@ -36,77 +77,59 @@ export interface EngineError {
   retryable: boolean;
 }
 
-export interface RandomEngineResponseMetadata extends BaseEngineResponseMetadata {
-  seed?: number;
-}
-
-export interface DumbEngineResponseMetadata extends BaseEngineResponseMetadata {
-  depth: number;
-  evaluation: number;
-  seed?: number;
-}
-
-export interface AlphaBetaEngineResponseMetadata extends BaseEngineResponseMetadata {
-  depth: number;
-  evaluation: number;
-  nodes: number;
-  cutoffs: number;
-  tt_hits: number;
-  quiesce_calls: number;
-  seed?: number;
-}
-export interface LLMEngineResponseMetadata extends BaseEngineResponseMetadata {
+interface BaseLLMMetadata {
   provider: string;
   model: string;
-  reasoningEffort: string;
+  reasoning_effort: "none" | "low" | "medium" | "high";
   temperature: number;
   max_output_tokens: number;
-  explanation: string;
-  confidence: number;
-  input_tokens: number;
-  output_tokens: number;
-  latency_ms: number;
 }
 
-export interface EngineResponseMetadataByEngine {
-  random: RandomEngineResponseMetadata;
-  dumb: DumbEngineResponseMetadata;
-  alphabeta: AlphaBetaEngineResponseMetadata;
-  LLM: LLMEngineResponseMetadata;
+export interface LLMSuccessResponse extends BaseEngineMoveResponse {
+  engine: "LLM";
+  move: string;
+  metadata: BaseLLMMetadata & {
+    explanation: string | null;
+    confidence: number | null;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    latency_ms: number | null;
+  };
 }
 
-export type EngineMoveRequest = {
-  [E in EngineId]: {
-    fen: string;
-    engine: E;
-    metadata: EngineRequestMetadataByEngine[E];
+export interface LLMErrorResponse extends BaseEngineMoveResponse {
+  engine: "LLM";
+  move: null;
+  metadata: BaseLLMMetadata & {
+    explanation: boolean;
+    error: EngineError;
   };
-}[EngineId];
+}
 
-export type EngineMoveResponse = {
-  [E in EngineResponseId]: {
-    fen: string;
-    move: string | null;
-    status: string;
-    engine: E;
-    played_color: "w" | "b";
-    metadata: EngineResponseMetadataByEngine[E];
-  };
-}[EngineResponseId];
+export type EngineMoveResponse =
+  | RandomEngineResponse
+  | DumbEngineResponse
+  | AlphaBetaEngineResponse
+  | LLMSuccessResponse
+  | LLMErrorResponse;
+
+async function throwApiError(response: Response): Promise<never> {
+  const error: { detail?: string } = await response.json();
+  throw new Error(error.detail ?? "Engine move failed");
+}
 
 export async function getEngineMove(
-  req: EngineMoveRequest,
+  request: EngineMoveRequest,
 ): Promise<EngineMoveResponse> {
-  const res = await fetch("/api/v1/engine/move", {
+  const response = await fetch("/api/v1/engine/move", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
+    body: JSON.stringify(request),
   });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail ?? "engine error");
+  if (!response.ok) {
+    return throwApiError(response);
   }
 
-  return res.json();
+  return response.json();
 }

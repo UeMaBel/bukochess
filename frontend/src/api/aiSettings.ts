@@ -2,7 +2,7 @@ export type AIProvider = "openai" | "anthropic";
 
 export type AIReasoningEffort = "low" | "medium" | "high";
 export type AITemperature = 0 | 0.2 | 0.5 | 0.8 | 1;
-export type AIMaxOutputTokens = 32 | 64 | 128 | 256 | 8192;
+export type AIMaxOutputTokens = 32 | 64 | 128 | 256 | 512 | 8192;
 export type AIColor = "white" | "black";
 
 export interface AIModelOption {
