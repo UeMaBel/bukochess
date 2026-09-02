@@ -7,6 +7,7 @@ from app.ai.providers.local import LocalProvider
 from app.chess.utils import to_uci
 from app.ai.models import LLMError
 from app.core.exceptions import LLMProviderException
+from app.core.config import settings as app_settings
 from app.chess.engines.models import EngineResult
 from app.chess.static import WHITE, BLACK
 
@@ -15,7 +16,12 @@ class LLMEngine(Engine):
     def __init__(self, settings: LLMSettings):
         super().__init__()
         self.settings = settings
-        self.provider = self._create_provider()
+        self.configuration_error = self._configuration_error()
+        self.provider = (
+            None
+            if self.configuration_error is not None
+            else self._create_provider()
+        )
         self.engine_name = "LLM"
 
     def choose_move(self, board: Board) -> EngineResult:
@@ -31,7 +37,11 @@ class LLMEngine(Engine):
         if not legal_moves:
             return None
 
+        if self.configuration_error is not None:
+            return self._error_result(board, self.configuration_error)
+
         try:
+            assert self.provider is not None
             provider_result = self.provider.choose_move(fen, legal_moves)
         except LLMProviderException as exc:
             return self._error_result(board, exc)
@@ -94,3 +104,15 @@ class LLMEngine(Engine):
                 raise ValueError(
                     f"Unsupported LLM provider: {self.settings.provider}"
                 )
+
+    def _configuration_error(self) -> LLMProviderException | None:
+        if (
+            self.settings.provider == "openai"
+            and not app_settings.openai_api_key.get_secret_value().strip()
+        ):
+            return LLMProviderException(
+                "missing_api_key",
+                "OpenAI is not configured. Add OPENAI_API_KEY to the environment.",
+                retryable=False,
+            )
+        return None

@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from app.ai.models import (
     LLMDecision,
@@ -13,6 +14,7 @@ from app.chess.board_mailbox import BoardMailbox
 from app.chess.engines.llm_engine import LLMEngine
 from app.chess.move_mailbox import MoveMailBoxGenerator
 from app.core.exceptions import LLMProviderException
+from app.core.config import settings as app_settings
 
 
 ENGINE_MOVE_URL = "/api/v1/engine/move"
@@ -150,6 +152,34 @@ def test_unexpected_llm_provider_error_is_safe_for_both_colors(
         "retryable": False,
     }
     assert "secret provider details" not in response.text
+
+
+def test_missing_openai_key_is_returned_without_constructing_provider_for_both_colors(
+    client: TestClient,
+    engine_position: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    color, fen = engine_position
+    monkeypatch.setattr(app_settings, "openai_api_key", SecretStr(""))
+
+    with patch.object(LLMEngine, "_create_provider") as create_provider:
+        response = _request_llm_move(client, fen)
+
+    create_provider.assert_not_called()
+    assert response.status_code == 200
+    body = response.json()
+    assert body["fen"] == fen
+    assert body["move"] is None
+    assert body["engine"] == "LLM"
+    assert body["played_color"] == color
+    assert body["metadata"]["error"] == {
+        "code": "missing_api_key",
+        "message": (
+            "OpenAI is not configured. "
+            "Add OPENAI_API_KEY to the environment."
+        ),
+        "retryable": False,
+    }
 
 
 def test_illegal_llm_move_is_returned_as_metadata_for_both_colors(

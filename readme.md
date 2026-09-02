@@ -33,6 +33,25 @@ The repository is organized as a monorepo to demonstrate full-stack/end-to-end r
 
 ## 🕹️ Getting Started
 
+### Docker
+
+Docker starts the production frontend and backend as two containers. Redis is
+not required because the frontend communicates with the backend over HTTP.
+
+Copy `.env.example` to `.env`, optionally add an OpenAI API key, then run:
+
+```bash
+docker compose up --build
+```
+
+Frontend: http://localhost:8080
+
+Backend API: http://localhost:8000
+
+Swagger documentation: http://localhost:8000/docs
+
+The random, dumb, and alpha-beta engines work without an OpenAI API key.
+
 ### 1. Backend & API
 The backend provides a RESTful interface and auto-generated Swagger documentation.
 
