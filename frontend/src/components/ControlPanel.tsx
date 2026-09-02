@@ -69,7 +69,7 @@ const AIPlayerSettingsPanel: React.FC<AIPlayerSettingsPanelProps> = ({
           value={settings.provider}
           onChange={(e) => onProviderChange(e.target.value as AIProvider)}
         >
-          <option value="openai">OpenAI — NOTIMPLEMENTED</option>
+          <option value="openai">OpenAI</option>
           <option value="anthropic">Anthropic — NOTIMPLEMENTED</option>
         </select>
       </div>

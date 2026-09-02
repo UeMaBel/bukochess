@@ -29,17 +29,17 @@ export const AI_MODELS: Record<AIProvider, AIModelOption[]> = {
   openai: [
     {
       id: "gpt-5.6-luna",
-      name: "GPT-5.6 Luna — Cheapest — NOTIMPLEMENTED",
+      name: "GPT-5.6 Luna — Cheapest",
       tier: "Cheapest",
     },
     {
       id: "gpt-5.6-terra",
-      name: "GPT-5.6 Terra — Balanced — NOTIMPLEMENTED",
+      name: "GPT-5.6 Terra — Balanced",
       tier: "Balanced",
     },
     {
       id: "gpt-5.6-sol",
-      name: "GPT-5.6 Sol — Best — NOTIMPLEMENTED",
+      name: "GPT-5.6 Sol — Best",
       tier: "Best",
     },
   ],
