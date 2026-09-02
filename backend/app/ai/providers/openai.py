@@ -18,7 +18,11 @@ from app.ai.models import (
     LLMProviderResult,
 )
 from app.ai.settings import LLMSettings
-from app.core.exceptions import BukochessException, LLMProviderException
+from app.core.exceptions import (
+    BukochessException,
+    LLMMaxOutputTokensException,
+    LLMProviderException,
+)
 
 
 class OpenAIMove(BaseModel):
@@ -87,11 +91,7 @@ class OpenAIProvider:
             ) from exc
 
         except LengthFinishReasonError as exc:
-            raise LLMProviderException(
-                "max_output_tokens",
-                "OpenAI reached the maximum output-token limit before returning a move.",
-                retryable=True,
-            ) from exc
+            raise LLMMaxOutputTokensException("OpenAI") from exc
 
         except APIConnectionError as exc:
             raise LLMProviderException(
@@ -121,6 +121,13 @@ class OpenAIProvider:
         parsed = response.output_parsed
 
         if parsed is None:
+            incomplete_details = getattr(response, "incomplete_details", None)
+            if (
+                getattr(response, "status", None) == "incomplete"
+                and getattr(incomplete_details, "reason", None) == "max_output_tokens"
+            ):
+                raise LLMMaxOutputTokensException("OpenAI")
+
             raise LLMProviderException(
                 "invalid_response",
                 "OpenAI returned no structured chess decision.",

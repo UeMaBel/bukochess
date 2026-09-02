@@ -20,3 +20,14 @@ class LLMProviderException(Exception):
         self.message = message
         self.retryable = retryable
         super().__init__(message)
+
+
+class LLMMaxOutputTokensException(LLMProviderException):
+    """Raised when an LLM stops before returning a move due to its token limit."""
+
+    def __init__(self, provider: str):
+        super().__init__(
+            "max_output_tokens",
+            f"{provider} reached the maximum output-token limit before returning a move.",
+            retryable=True,
+        )
