@@ -52,6 +52,30 @@ From the backend folder, run:
     pytest -v 
 ```
 
+### Frontend tests
+
+Frontend API tests use mocked HTTP requests, so the backend does not need to be running.
+
+From the frontend folder, install dependencies and run the API tests:
+
+```bash
+cd frontend
+npm install
+npm run test:api
+```
+
+Run the API tests in watch mode while developing:
+
+```bash
+npm run test:api:watch
+```
+
+Run all configured frontend tests once:
+
+```bash
+npm test
+```
+
 ## CLI UI
 
 The CLI is a separate Client that talks to the backend via HTTP.
