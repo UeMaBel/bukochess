@@ -46,7 +46,28 @@ def test_alphabeta_move_response_contract_for_both_colors(
     assert body["move"] in legal_moves
     assert body["engine"] == "Alpha Beta Engine"
     assert body["played_color"] == color
-    assert body["metadata"] == {"depth": 1, "seed": 17}
+    assert body["metadata"]["depth"] == 1
+    assert body["metadata"]["seed"] == 17
+    assert isinstance(body["metadata"]["evaluation"], int | float)
+    for key in (
+        "nodes",
+        "cutoffs",
+        "first_move_cutoffs",
+        "tt_hits",
+        "quiesce_calls",
+    ):
+        assert isinstance(body["metadata"][key], int)
+        assert body["metadata"][key] >= 0
+    assert set(body["metadata"]) == {
+        "depth",
+        "seed",
+        "evaluation",
+        "nodes",
+        "cutoffs",
+        "first_move_cutoffs",
+        "tt_hits",
+        "quiesce_calls",
+    }
     assert body["status"] == "ok"
 
     MoveMailBoxGenerator(board).apply_uci(body["move"])
@@ -80,7 +101,18 @@ def test_alphabeta_move_uses_default_depth_for_both_colors(
     body = response.json()
     assert body["played_color"] == color
     assert body["move"] is not None
-    assert body["metadata"] == {"depth": 4, "seed": None}
+    assert body["metadata"]["depth"] == 4
+    assert body["metadata"]["seed"] is None
+    assert set(body["metadata"]) == {
+        "depth",
+        "seed",
+        "evaluation",
+        "nodes",
+        "cutoffs",
+        "first_move_cutoffs",
+        "tt_hits",
+        "quiesce_calls",
+    }
 
 
 def test_alphabeta_move_returns_domain_error_when_no_move_exists_for_both_colors(

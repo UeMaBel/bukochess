@@ -32,28 +32,32 @@ export const EngineChat: React.FC<Props> = ({ entries, onRetry }) => {
               : entry.played_color === "w"
                 ? "⚪🤖"
                 : "⚫🤖"}{" "}
-            {entry.engine === "Human"
-              ? "Human"
-              : entry.metadata.name ?? entry.engine}{" "}
-            {entry.move && <>→ {entry.move}</>}
+            {entry.engine} {entry.move && <>→ {entry.move}</>}
           </div>
 
-          {entry.engine === "dumb" && (
+          {entry.engine === "Random Engine" && (
+            <div>Seed: {entry.metadata.seed ?? "none"}</div>
+          )}
+
+          {entry.engine === "Dumb Engine" && (
             <div>
-              Eval: {entry.metadata.evaluation.toFixed(2)} | Depth:{" "}
-              {entry.metadata.depth}
+              Depth: {entry.metadata.depth} | Seed: {entry.metadata.seed ?? "none"}
             </div>
           )}
 
-          {entry.engine === "alphabeta" && (
+          {entry.engine === "Alpha Beta Engine" && (
             <>
               <div>
                 Eval: {entry.metadata.evaluation.toFixed(2)} | Depth:{" "}
-                {entry.metadata.depth}
+                {entry.metadata.depth} | Seed: {entry.metadata.seed ?? "none"}
               </div>
               <div>
                 Nodes: {entry.metadata.nodes.toLocaleString()} | Cutoffs:{" "}
                 {entry.metadata.cutoffs.toLocaleString()}
+              </div>
+              <div>
+                First-move cutoffs:{" "}
+                {entry.metadata.first_move_cutoffs.toLocaleString()}
               </div>
               <div>
                 TT hits: {entry.metadata.tt_hits.toLocaleString()} | Q-search:{" "}
@@ -63,10 +67,10 @@ export const EngineChat: React.FC<Props> = ({ entries, onRetry }) => {
           )}
 
           {entry.engine === "LLM" &&
-            (entry.metadata.error ? (
+            ("error" in entry.metadata ? (
               <div className="engine-error">
                 <div>{entry.metadata.error.message}</div>
-                {entry.retryRequest && (
+                {entry.metadata.error.retryable && entry.retryRequest && (
                   <button
                     type="button"
                     className="engine-retry"

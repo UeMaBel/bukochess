@@ -71,7 +71,13 @@ class AlphaBeta(Engine):
             played_color="w" if board.active_color == WHITE else "b",
             metadata={
                 "depth": self.depth,
-                "seed": self.seed
+                "seed": self.seed,
+                "evaluation": self.evaluation,
+                "nodes": self.nodes,
+                "cutoffs": self.cutoffs,
+                "first_move_cutoffs": self.first_move_cutoffs,
+                "tt_hits": self.tt_hits,
+                "quiesce_calls": self.quiesce_calls,
             }
         )
         return result

@@ -68,6 +68,12 @@ export interface AlphaBetaEngineResponse extends BaseEngineMoveResponse {
   metadata: {
     depth: number;
     seed: number | null;
+    evaluation: number;
+    nodes: number;
+    cutoffs: number;
+    first_move_cutoffs: number;
+    tt_hits: number;
+    quiesce_calls: number;
   };
 }
 
