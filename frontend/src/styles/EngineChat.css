@@ -21,3 +21,24 @@
   color: #ddd;
   font-family: monospace;
 }
+
+.engine-error {
+  color: #ffb4b4;
+  margin-top: 4px;
+}
+
+.engine-retry {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: #8fc7ff;
+  cursor: pointer;
+  font: inherit;
+  margin-top: 4px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.engine-retry:hover {
+  color: #c5e2ff;
+}

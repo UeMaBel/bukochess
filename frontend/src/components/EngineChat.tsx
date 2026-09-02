@@ -1,5 +1,5 @@
 import React from "react";
-import type { EngineMoveResponse } from "../api/engine";
+import type { EngineMoveRequest, EngineMoveResponse } from "../api/engine";
 import "../styles/EngineChat.css";
 
 interface HumanChatEntry {
@@ -11,13 +11,15 @@ interface HumanChatEntry {
 
 export type EngineChatEntry = (EngineMoveResponse | HumanChatEntry) & {
   timestamp: number;
+  retryRequest?: EngineMoveRequest;
 };
 
 interface Props {
   entries: EngineChatEntry[];
+  onRetry: (request: EngineMoveRequest) => void;
 }
 
-export const EngineChat: React.FC<Props> = ({ entries }) => {
+export const EngineChat: React.FC<Props> = ({ entries, onRetry }) => {
   return (
     <div className="engine-chat">
       {entries.map((entry, i) => (
@@ -30,8 +32,10 @@ export const EngineChat: React.FC<Props> = ({ entries }) => {
               : entry.played_color === "w"
                 ? "⚪🤖"
                 : "⚫🤖"}{" "}
-            {entry.engine === "Human" ? "Human" : entry.metadata.name} →{" "}
-            {entry.move}
+            {entry.engine === "Human"
+              ? "Human"
+              : entry.metadata.name ?? entry.engine}{" "}
+            {entry.move && <>→ {entry.move}</>}
           </div>
 
           {entry.engine === "dumb" && (
@@ -57,11 +61,24 @@ export const EngineChat: React.FC<Props> = ({ entries }) => {
               </div>
             </>
           )}
-          {entry.engine === "LLM" && (
-            <>
+
+          {entry.engine === "LLM" &&
+            (entry.metadata.error ? (
+              <div className="engine-error">
+                <div>{entry.metadata.error.message}</div>
+                {entry.retryRequest && (
+                  <button
+                    type="button"
+                    className="engine-retry"
+                    onClick={() => onRetry(entry.retryRequest!)}
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            ) : (
               <div>{entry.metadata.explanation}</div>
-            </>
-          )}
+            ))}
         </div>
       ))}
     </div>

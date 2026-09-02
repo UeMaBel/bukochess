@@ -1,5 +1,6 @@
 import type { AIPlayerSettings } from "./aiSettings";
-export type EngineId = "random" | "dumb" | "alphabeta" | "LLM";
+export type EngineId = "random" | "dumb" | "alphabeta" | "llm";
+export type EngineResponseId = "random" | "dumb" | "alphabeta" | "LLM";
 
 export interface RandomEngineSettings {
   seed?: number;
@@ -25,7 +26,14 @@ export interface EngineRequestMetadataByEngine {
 }
 
 export interface BaseEngineResponseMetadata {
-  name: string;
+  name?: string;
+  error?: EngineError;
+}
+
+export interface EngineError {
+  code: string;
+  message: string;
+  retryable: boolean;
 }
 
 export interface RandomEngineResponseMetadata extends BaseEngineResponseMetadata {
@@ -76,15 +84,15 @@ export type EngineMoveRequest = {
 }[EngineId];
 
 export type EngineMoveResponse = {
-  [E in EngineId]: {
+  [E in EngineResponseId]: {
     fen: string;
-    move: string;
+    move: string | null;
     status: string;
     engine: E;
     played_color: "w" | "b";
     metadata: EngineResponseMetadataByEngine[E];
   };
-}[EngineId];
+}[EngineResponseId];
 
 export async function getEngineMove(
   req: EngineMoveRequest,

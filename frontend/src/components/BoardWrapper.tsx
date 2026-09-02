@@ -181,10 +181,39 @@ export const BoardWrapper: React.FC = () => {
       ]);
       setFen(res.fen);
       await updateGameState(res.fen, uci);
-    } catch (e: any) {
-      console.error("Move execution failed:", e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown move error";
+      console.error("Move execution failed:", message);
     }
   };
+
+  const executeEngineRequest = useCallback(
+    async (request: EngineMoveRequest) => {
+      setIsEngineThinking(true);
+      try {
+        const res = await getEngineMove(request);
+
+        setEngineChat((prev) => [
+          {
+            ...res,
+            timestamp: Date.now(),
+            retryRequest: res.move === null ? request : undefined,
+          },
+          ...prev,
+        ]);
+
+        if (res.move !== null) {
+          await updateGameState(res.fen, res.move);
+        }
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Unknown engine error";
+        console.error("Engine failed:", message);
+      } finally {
+        setIsEngineThinking(false);
+      }
+    },
+    [updateGameState],
+  );
 
   const onEngineMove = useCallback(async () => {
     if (isViewingHistory) return;
@@ -192,34 +221,16 @@ export const BoardWrapper: React.FC = () => {
     if (currentPlayer === "human" || status.toLowerCase().includes("mate"))
       return;
 
-    setIsEngineThinking(true);
-    try {
-      const currentDepth = activeColor === "w" ? whiteDepth : blackDepth;
-      const currentAiSettings =
-        activeColor === "w" ? aiSettings.white : aiSettings.black;
-      const request = buildEngineMoveRequest(
-        fen,
-        currentPlayer,
-        currentDepth,
-        currentAiSettings,
-      );
-      const res = await getEngineMove(request);
-
-      // ADD TO CHAT
-      setEngineChat((prev) => [
-        {
-          ...res,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ]);
-
-      await updateGameState(res.fen, res.move);
-    } catch (e: any) {
-      console.error("Engine failed:", e.message);
-    } finally {
-      setIsEngineThinking(false);
-    }
+    const currentDepth = activeColor === "w" ? whiteDepth : blackDepth;
+    const currentAiSettings =
+      activeColor === "w" ? aiSettings.white : aiSettings.black;
+    const request = buildEngineMoveRequest(
+      fen,
+      currentPlayer,
+      currentDepth,
+      currentAiSettings,
+    );
+    await executeEngineRequest(request);
   }, [
     fen,
     activeColor,
@@ -228,7 +239,8 @@ export const BoardWrapper: React.FC = () => {
     whiteDepth,
     blackDepth,
     status,
-    updateGameState,
+    aiSettings,
+    executeEngineRequest,
     isViewingHistory,
   ]);
 
@@ -345,7 +357,12 @@ export const BoardWrapper: React.FC = () => {
             onChange={setBlackPlayer}
           />
         </div>
-        <EngineChat entries={engineChat} />
+        <EngineChat
+          entries={engineChat}
+          onRetry={(request) => {
+            if (!isViewingHistory) void executeEngineRequest(request);
+          }}
+        />
       </div>
 
       <div style={{ display: "flex", gap: 20, position: "relative" }}>
