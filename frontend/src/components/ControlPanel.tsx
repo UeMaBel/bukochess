@@ -149,6 +149,8 @@ const AIPlayerSettingsPanel: React.FC<AIPlayerSettingsPanelProps> = ({
             <option value={64}>64</option>
             <option value={128}>128</option>
             <option value={256}>256</option>
+            <option value={512}>512</option>
+            <option value={8192}>8192</option>
           </select>
         </div>
       </div>

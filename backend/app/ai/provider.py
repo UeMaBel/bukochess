@@ -9,4 +9,4 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def choose_move(self, fen: str, legal_moves: list[str]) -> LLMProviderResult:
-        raise NotImplementedError
+        pass

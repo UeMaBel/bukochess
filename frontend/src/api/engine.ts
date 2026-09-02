@@ -1,5 +1,5 @@
 import type { AIPlayerSettings } from "./aiSettings";
-export type EngineId = "random" | "dumb" | "alphabeta" | "llm";
+export type EngineId = "random" | "dumb" | "alphabeta" | "LLM";
 
 export interface RandomEngineSettings {
   seed?: number;
@@ -47,11 +47,24 @@ export interface AlphaBetaEngineResponseMetadata extends BaseEngineResponseMetad
   quiesce_calls: number;
   seed?: number;
 }
+export interface LLMEngineResponseMetadata extends BaseEngineResponseMetadata {
+  provider: string;
+  model: string;
+  reasoningEffort: string;
+  temperature: number;
+  max_output_tokens: number;
+  explanation: string;
+  confidence: number;
+  input_tokens: number;
+  output_tokens: number;
+  latency_ms: number;
+}
 
 export interface EngineResponseMetadataByEngine {
   random: RandomEngineResponseMetadata;
   dumb: DumbEngineResponseMetadata;
   alphabeta: AlphaBetaEngineResponseMetadata;
+  LLM: LLMEngineResponseMetadata;
 }
 
 export type EngineMoveRequest = {

@@ -153,45 +153,6 @@ def _create_engine(req: EngineMoveRequest):
     return engine, settings
 
 
-def _response_metadata(
-        engine_id: str,
-        engine,
-        settings: dict[str, Any],
-) -> dict[str, Any]:
-    """
-    Echo the resolved engine settings and append only metadata that is useful
-    for that engine.
-
-    Later an LLM engine can add e.g. provider/model to the settings and
-    latency/tokens/confidence/explanation to the result without changing the
-    response model.
-    """
-    metadata: dict[str, Any] = {
-        **settings,
-        "name": engine.engine_name,
-    }
-
-    if engine_id == "dumb":
-        metadata.update(
-            evaluation=engine.evaluation,
-            depth=engine.depth,
-        )
-
-    elif engine_id == "alphabeta":
-        metadata.update(
-            evaluation=engine.evaluation,
-            depth=engine.depth,
-            nodes=engine.nodes,
-            cutoffs=engine.cutoffs,
-            tt_hits=engine.tt_hits,
-            quiesce_calls=engine.quiesce_calls,
-        )
-    elif engine_id == "llm":
-        print("hallo welt2")
-
-    return metadata
-
-
 @router.post("/move", response_model=EngineMoveResponse)
 def engine_move(req: EngineMoveRequest):
     board = Board()
@@ -203,18 +164,21 @@ def engine_move(req: EngineMoveRequest):
 
     engine, settings = _create_engine(req)
 
-    move = engine.choose_move(board)
+    engine_result = engine.choose_move(board)
+    move = engine_result.move
     if move is None:
         raise BukochessException("No legal moves")
 
     generator = MoveGenerator(board)
     generator.apply_uci(move)
 
-    return EngineMoveResponse(
+    result = EngineMoveResponse(
         fen=board.to_fen(),
         move=move,
         status=board.get_game_state(),
-        engine=req.engine,
+        engine=engine_result.engine_name,
         played_color=engine.played_color,
-        metadata=_response_metadata(req.engine, engine, settings),
+        metadata=engine_result.metadata,
     )
+
+    return result
