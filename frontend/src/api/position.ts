@@ -25,24 +25,27 @@ export async function importFEN(fen: string): Promise<BoardResponse> {
 
 export interface LegalMovesRequest {
   fen: string;
-  square: string;
+  square?: string;
 }
 export interface LegalMovesResponse {
-  legal_moves: string[];
+  moves: string[];
 }
 
-export async function getLegalMoves(req: LegalMovesRequest
+export async function getLegalMoves(
+  request: LegalMovesRequest,
 ): Promise<LegalMovesResponse> {
-    req.square="";
   const res = await fetch("/api/v1/position/legal-moves", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify( req ),
+    body: JSON.stringify({
+      fen: request.fen,
+      square: request.square ?? "",
+    }),
   });
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail ?? "status error");
+    const error: { detail?: string } = await res.json();
+    throw new Error(error.detail ?? "Legal moves request failed");
   }
 
   return res.json();

@@ -1,4 +1,3 @@
-import React from "react";
 import "../styles/BukoLoader.css";
 
 export const BukoLoader = () => {
