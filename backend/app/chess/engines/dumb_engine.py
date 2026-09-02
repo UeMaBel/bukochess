@@ -49,7 +49,7 @@ class DumbEngine(Engine):
         if not moves:
             return None
 
-        maximizing = board.active_color == "w"
+        maximizing = board.active_color == WHITE
         best_score = -float("inf") if maximizing else float("inf")
         best_moves = []
 
