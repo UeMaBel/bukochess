@@ -62,6 +62,9 @@ class AlphaBeta(Engine):
             if move is None:
                 break
 
+        if best_move is None:
+            return None
+
         result = EngineResult(
             move=to_uci(best_move) if best_move is not None else None,
             engine_name=self.engine_name,

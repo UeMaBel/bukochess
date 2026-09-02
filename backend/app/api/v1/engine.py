@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.engines.alphabeta import AlphaBeta
@@ -40,6 +40,19 @@ def _optional_int(metadata: dict[str, Any], key: str) -> int | None:
         raise BukochessException(f"metadata.{key} must be an integer")
 
     return value
+
+
+def _reject_unknown_metadata(
+        metadata: dict[str, Any],
+        allowed: set[str],
+        engine: str,
+) -> None:
+    unknown = sorted(set(metadata) - allowed)
+    if unknown:
+        fields = ", ".join(unknown)
+        raise BukochessException(
+            f"Unknown metadata field(s) for {engine}: {fields}"
+        )
 
 
 def _positive_int(
@@ -109,11 +122,13 @@ def _create_engine(req: EngineMoveRequest):
     request model.
     """
     if req.engine == "random":
+        _reject_unknown_metadata(req.metadata, {"seed"}, req.engine)
         seed = _optional_int(req.metadata, "seed")
         engine = RandomEngine(seed=seed)
         settings = {"seed": seed}
 
     elif req.engine == "dumb":
+        _reject_unknown_metadata(req.metadata, {"depth", "seed"}, req.engine)
         depth = _positive_int(req.metadata, "depth")
         seed = _optional_int(req.metadata, "seed")
         engine = DumbEngine(depth=depth, seed=seed)
@@ -123,6 +138,7 @@ def _create_engine(req: EngineMoveRequest):
         }
 
     elif req.engine == "alphabeta":
+        _reject_unknown_metadata(req.metadata, {"depth", "seed"}, req.engine)
         # AlphaBeta already has depth=4 as its own default, so the API can
         # expose the same default rather than making depth globally required.
         depth = _positive_int(req.metadata, "depth", default=4)
@@ -133,7 +149,28 @@ def _create_engine(req: EngineMoveRequest):
             "seed": seed,
         }
     elif req.engine == "llm":
-        llm_settings = LLMSettings.model_validate(req.metadata)
+        _reject_unknown_metadata(
+            req.metadata,
+            {
+                "provider",
+                "model",
+                "reasoningEffort",
+                "reasoning_effort",
+                "temperature",
+                "maxOutputTokens",
+                "max_output_tokens",
+                "explanation",
+            },
+            req.engine,
+        )
+        try:
+            llm_settings = LLMSettings.model_validate(req.metadata)
+        except ValidationError as exc:
+            error = exc.errors()[0]
+            field = ".".join(str(part) for part in error["loc"])
+            raise BukochessException(
+                f"metadata.{field}: {error['msg']}"
+            ) from exc
         engine = LLMEngine(llm_settings)
 
         settings = llm_settings.model_dump(

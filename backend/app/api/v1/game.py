@@ -2,11 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core.logger import get_logger
-from app.core.exceptions import BukochessException
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.chess.utils import from_uci_move, to_uci
-from app.chess.engines.random_engine import RandomEngine
 from app.chess.static import WHITE
 
 logger = get_logger(__name__)
@@ -31,12 +29,18 @@ class MoveResponseFast(BaseModel):
     move: str
 
 
+def _parse_board(fen: str) -> Board:
+    board = Board()
+    try:
+        board.from_fen(fen)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return board
+
+
 @router.post("/fast-move", response_model=MoveResponseFast)
 def make_fast_move(req: MoveRequest):
-    board = Board()
-    ok, msg = board.from_fen(req.fen)
-    if not ok:
-        raise HTTPException(status_code=400, detail=msg)
+    board = _parse_board(req.fen)
     try:
         move = from_uci_move(req.move)
     except ValueError:
@@ -56,10 +60,7 @@ def make_fast_move(req: MoveRequest):
 
 @router.post("/move", response_model=MoveResponse)
 def make_move(req: MoveRequest):
-    board = Board()
-    ok, msg = board.from_fen(req.fen)
-    if not ok:
-        raise HTTPException(status_code=400, detail=msg)
+    board = _parse_board(req.fen)
     try:
         move = from_uci_move(req.move)
     except ValueError:
@@ -109,11 +110,7 @@ class GameStatusResponse(BaseModel):
 
 @router.post("/status", response_model=GameStatusResponse)
 def game_status(req: GameStatusRequest):
-    board = Board()
-    try:
-        board.from_fen(req.fen)
-    except ValueError as e:
-        raise BukochessException(str(e))
+    board = _parse_board(req.fen)
 
     active = board.active_color
 

@@ -84,3 +84,56 @@ def test_invalid_move_format():
     )
 
     assert resp.status_code == 400
+
+
+def test_fast_move_response_contract_for_both_colors(
+    client: TestClient,
+    engine_position: tuple[str, str],
+):
+    color, fen = engine_position
+    move = "e2e4" if color == "w" else "e7e5"
+
+    response = client.post(
+        "/api/v1/game/fast-move",
+        json={"fen": fen, "move": move},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["move"] == move
+    assert body["played_color"] == color
+    assert body["engine"] == "Human"
+    assert body["fen"] != fen
+
+
+def test_fast_move_rejects_invalid_format_for_both_colors(
+    client: TestClient,
+    engine_position: tuple[str, str],
+):
+    _, fen = engine_position
+
+    response = client.post(
+        "/api/v1/game/fast-move",
+        json={"fen": fen, "move": "e9e4"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "invalid move format"}
+
+
+def test_game_endpoints_reject_invalid_fen_for_both_colors(
+    client: TestClient,
+    engine_position: tuple[str, str],
+):
+    color, _ = engine_position
+    invalid_fen = f"8/8/8/8/8/8/8/9 {color} - - 0 1"
+
+    for endpoint, payload in (
+        ("/api/v1/game/fast-move", {"fen": invalid_fen, "move": "e2e4"}),
+        ("/api/v1/game/move", {"fen": invalid_fen, "move": "e2e4"}),
+        ("/api/v1/game/status", {"fen": invalid_fen}),
+    ):
+        response = client.post(endpoint, json=payload)
+
+        assert response.status_code == 400
+        assert response.json() == {"detail": "Invalid board layout"}
