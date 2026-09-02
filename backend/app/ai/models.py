@@ -20,3 +20,9 @@ class LLMProviderMetadata(BaseModel):
 class LLMProviderResult(BaseModel):
     decision: LLMDecision
     metadata: LLMProviderMetadata
+
+
+class LLMError(BaseModel):
+    code: str
+    message: str
+    retryable: bool

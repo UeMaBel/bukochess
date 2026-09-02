@@ -10,3 +10,13 @@ class BukochessException(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(message)
+
+
+class LLMProviderException(Exception):
+    """A safe, provider-independent error raised while choosing an LLM move."""
+
+    def __init__(self, code: str, message: str, *, retryable: bool):
+        self.code = code
+        self.message = message
+        self.retryable = retryable
+        super().__init__(message)

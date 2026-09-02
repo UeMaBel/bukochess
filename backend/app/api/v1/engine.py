@@ -23,7 +23,7 @@ class EngineMoveRequest(BaseModel):
 
 class EngineMoveResponse(BaseModel):
     fen: str
-    move: str
+    move: str | None
     status: str
     engine: str
     played_color: str
@@ -165,9 +165,19 @@ def engine_move(req: EngineMoveRequest):
     engine, settings = _create_engine(req)
 
     engine_result = engine.choose_move(board)
+    if engine_result is None:
+        raise BukochessException("No legal moves")
+
     move = engine_result.move
     if move is None:
-        raise BukochessException("No legal moves")
+        return EngineMoveResponse(
+            fen=board.to_fen(),
+            move=None,
+            status=board.get_game_state(),
+            engine=engine_result.engine_name,
+            played_color=engine_result.played_color,
+            metadata=engine_result.metadata,
+        )
 
     generator = MoveGenerator(board)
     generator.apply_uci(move)
@@ -177,7 +187,7 @@ def engine_move(req: EngineMoveRequest):
         move=move,
         status=board.get_game_state(),
         engine=engine_result.engine_name,
-        played_color=engine.played_color,
+        played_color=engine_result.played_color,
         metadata=engine_result.metadata,
     )
 

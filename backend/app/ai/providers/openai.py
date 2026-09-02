@@ -1,6 +1,13 @@
 import time
 
-from openai import OpenAI, APIConnectionError, APIStatusError, RateLimitError
+from openai import (
+    OpenAI,
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    LengthFinishReasonError,
+    RateLimitError,
+)
 from pydantic import BaseModel
 
 from app.core.config import settings
@@ -11,7 +18,7 @@ from app.ai.models import (
     LLMProviderResult,
 )
 from app.ai.settings import LLMSettings
-from app.core.exceptions import BukochessException
+from app.core.exceptions import BukochessException, LLMProviderException
 
 
 class OpenAIMove(BaseModel):
@@ -65,19 +72,46 @@ class OpenAIProvider:
                 # temperature=self.settings.temperature,
             )
 
+        except APITimeoutError as exc:
+            raise LLMProviderException(
+                "timeout",
+                "The OpenAI request timed out.",
+                retryable=True,
+            ) from exc
+
         except RateLimitError as exc:
-            raise BukochessException(
-                "OpenAI rate limit reached"
+            raise LLMProviderException(
+                "rate_limit",
+                "OpenAI rate limit reached.",
+                retryable=True,
+            ) from exc
+
+        except LengthFinishReasonError as exc:
+            raise LLMProviderException(
+                "max_output_tokens",
+                "OpenAI reached the maximum output-token limit before returning a move.",
+                retryable=True,
             ) from exc
 
         except APIConnectionError as exc:
-            raise BukochessException(
-                "Could not connect to OpenAI"
+            raise LLMProviderException(
+                "connection_error",
+                "Could not connect to OpenAI.",
+                retryable=True,
             ) from exc
 
         except APIStatusError as exc:
-            raise BukochessException(
-                f"OpenAI API error ({exc.status_code})"
+            raise LLMProviderException(
+                "provider_error",
+                f"OpenAI API error ({exc.status_code}).",
+                retryable=exc.status_code >= 500,
+            ) from exc
+
+        except Exception as exc:
+            raise LLMProviderException(
+                "unexpected_error",
+                "OpenAI could not choose a move.",
+                retryable=False,
             ) from exc
 
         latency_ms = round(
@@ -87,8 +121,10 @@ class OpenAIProvider:
         parsed = response.output_parsed
 
         if parsed is None:
-            raise BukochessException(
-                "OpenAI returned no structured chess decision"
+            raise LLMProviderException(
+                "invalid_response",
+                "OpenAI returned no structured chess decision.",
+                retryable=True,
             )
 
         explanation = (

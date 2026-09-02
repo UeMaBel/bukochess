@@ -5,7 +5,8 @@ from app.ai.providers.openai import OpenAIProvider
 from app.ai.providers.anthropic import AnthropicProvider
 from app.ai.providers.local import LocalProvider
 from app.chess.utils import to_uci
-from app.core.exception_handler import BukochessException
+from app.ai.models import LLMError
+from app.core.exceptions import LLMProviderException
 from app.chess.engines.models import EngineResult
 from app.chess.static import WHITE, BLACK
 
@@ -30,12 +31,29 @@ class LLMEngine(Engine):
         if not legal_moves:
             return None
 
-        provider_result = self.provider.choose_move(fen, legal_moves)
+        try:
+            provider_result = self.provider.choose_move(fen, legal_moves)
+        except LLMProviderException as exc:
+            return self._error_result(board, exc)
+        except Exception:
+            return self._error_result(
+                board,
+                LLMProviderException(
+                    "unexpected_error",
+                    f"The {self.settings.provider} provider could not choose a move.",
+                    retryable=False,
+                ),
+            )
         decision = provider_result.decision
 
         if decision.move not in legal_moves:
-            raise BukochessException(
-                f"LLM returned illegal move: {decision.move}"
+            return self._error_result(
+                board,
+                LLMProviderException(
+                    "illegal_move",
+                    "The LLM returned a move that is not legal in this position.",
+                    retryable=True,
+                ),
             )
         result = EngineResult(
             engine_name=self.engine_name,
@@ -48,6 +66,21 @@ class LLMEngine(Engine):
             }
         )
         return result
+
+    def _error_result(self, board: Board, error: LLMProviderException) -> EngineResult:
+        return EngineResult(
+            engine_name=self.engine_name,
+            move=None,
+            played_color="w" if board.active_color == WHITE else "b",
+            metadata={
+                **self.settings.model_dump(),
+                "error": LLMError(
+                    code=error.code,
+                    message=error.message,
+                    retryable=error.retryable,
+                ).model_dump(),
+            },
+        )
 
     def _create_provider(self):
         match self.settings.provider:
