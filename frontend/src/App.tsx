@@ -1,11 +1,11 @@
 import React from "react";
-import { BoardWrapper } from "./components/BoardWrapper";
+import { ChessGame } from "./components/ChessGame";
 
 const App: React.FC = () => {
   return (
     <div style={{ padding: 20 }}>
       <h1>BukoChess</h1>
-      <BoardWrapper />
+      <ChessGame />
     </div>
   );
 };

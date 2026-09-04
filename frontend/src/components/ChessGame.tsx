@@ -7,7 +7,7 @@ import type { AIPlayerSettings } from "../api/aiSettings";
 import { useChessGame } from "../hooks/useChessGame";
 import { useChessEngine } from "../hooks/useChessEngine";
 import { usePlayerSettings } from "../hooks/usePlayerSettings";
-import "../styles/board.css";
+import "../styles/ChessGame.css";
 
 function buildEngineMoveRequest(
   fen: string,
@@ -27,7 +27,7 @@ function buildEngineMoveRequest(
   }
 }
 
-export const BoardWrapper: React.FC = () => {
+export const ChessGame: React.FC = () => {
   const {
     position: { fen, board, status, inCheck, activeColor, legalMoves },
     moveHistory,
