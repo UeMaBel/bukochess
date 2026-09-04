@@ -4,15 +4,13 @@ import { gameStatus, makeMoveFast } from "../api/game";
 import { getLegalMoves } from "../api/position";
 import { getEngineMove } from "../api/engine";
 import type { EngineId, EngineMoveRequest } from "../api/engine";
-import { EngineSelector } from "./EngineSelector";
 import type { PlayerSelection } from "./EngineSelector";
 import { BukoLoader } from "./BukoLoader";
 import { HistoryControls } from "./HistoryControls";
 import { MoveHistory } from "./MoveHistory";
-import { EngineChat } from "./EngineChat";
 import type { EngineChatEntry } from "./EngineChat";
-import { ControlPanel } from "./ControlPanel";
 import { ChessBoard } from "./ChessBoard";
+import { GameSidebar } from "./GameSidebar";
 import { DEFAULT_AI_SETTINGS } from "../api/aiSettings";
 import type { AISettings, AIPlayerSettings } from "../api/aiSettings";
 import "../styles/board.css";
@@ -279,43 +277,32 @@ export const BoardWrapper: React.FC = () => {
 
   return (
     <div className="game-container">
-      <div className="engine-sidebar">
-        <ControlPanel
-          onReset={resetBoard}
-          onFlip={flipBoard}
-          onEngineSettings={() => setShowEngineSettings((v) => !v)}
-          onAISettings={() => setShowAISettings((v) => !v)}
-          whiteDepth={whiteDepth}
-          blackDepth={blackDepth}
-          setWhiteDepth={setWhiteDepth}
-          setBlackDepth={setBlackDepth}
-          aiSettings={aiSettings}
-          setAISettings={setAISettings}
-          showEngineSettings={showEngineSettings}
-          showAISettings={showAISettings}
-        />
-        <h3>🥥 Players</h3>
-        <div className="engine-row">
-          <EngineSelector
-            playerColor="w"
-            value={whitePlayer}
-            onChange={setWhitePlayer}
-          />
-        </div>
-        <div className="engine-row">
-          <EngineSelector
-            playerColor="b"
-            value={blackPlayer}
-            onChange={setBlackPlayer}
-          />
-        </div>
-        <EngineChat
-          entries={engineChat}
-          onRetry={(request) => {
-            if (!isViewingHistory) void executeEngineRequest(request);
-          }}
-        />
-      </div>
+      <GameSidebar
+        players={{ w: whitePlayer, b: blackPlayer }}
+        depths={{ w: whiteDepth, b: blackDepth }}
+        aiSettings={aiSettings}
+        settingsVisibility={{
+          engine: showEngineSettings,
+          ai: showAISettings,
+        }}
+        chatEntries={engineChat}
+        onPlayerChange={(color, player) => {
+          if (color === "w") setWhitePlayer(player);
+          else setBlackPlayer(player);
+        }}
+        onDepthChange={(color, depth) => {
+          if (color === "w") setWhiteDepth(depth);
+          else setBlackDepth(depth);
+        }}
+        onAISettingsChange={setAISettings}
+        onReset={resetBoard}
+        onFlip={flipBoard}
+        onToggleEngineSettings={() => setShowEngineSettings((value) => !value)}
+        onToggleAISettings={() => setShowAISettings((value) => !value)}
+        onRetry={(request) => {
+          if (!isViewingHistory) void executeEngineRequest(request);
+        }}
+      />
 
       <div style={{ display: "flex", gap: 20, position: "relative" }}>
         <ChessBoard
