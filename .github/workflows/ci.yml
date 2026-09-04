@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  backend-tests:
-    name: Backend tests
+  backend-checks:
+    name: Backend checks
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
@@ -28,6 +28,10 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: pip install --requirement requirements-dev.txt
+
+      - name: Run backend lint
+        working-directory: backend
+        run: ruff check .
 
       - name: Run backend tests
         working-directory: backend
@@ -67,7 +71,7 @@ jobs:
     name: Build Docker images
     if: github.ref == 'refs/heads/main'
     needs:
-      - backend-tests
+      - backend-checks
       - frontend-tests
     runs-on: ubuntu-24.04
     steps:
