@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { getEngineMove } from "../api/engine";
 import type { EngineId, EngineMoveRequest } from "../api/engine";
-import type { PlayerSelection } from "./EngineSelector";
 import type { EngineChatEntry } from "./EngineChat";
 import { ChessBoard } from "./ChessBoard";
 import { GameSidebar } from "./GameSidebar";
 import { GameStatusPanel } from "./GameStatusPanel";
-import { DEFAULT_AI_SETTINGS } from "../api/aiSettings";
-import type { AISettings, AIPlayerSettings } from "../api/aiSettings";
+import type { AIPlayerSettings } from "../api/aiSettings";
 import { useChessGame } from "../hooks/useChessGame";
+import { usePlayerSettings } from "../hooks/usePlayerSettings";
 import "../styles/board.css";
 
 function buildEngineMoveRequest(
@@ -42,19 +41,20 @@ export const BoardWrapper: React.FC = () => {
     goForward,
     resetGame,
   } = useChessGame();
-  const [whitePlayer, setWhitePlayer] = useState<PlayerSelection>("human");
-  const [blackPlayer, setBlackPlayer] = useState<PlayerSelection>("random");
+  const {
+    settings: playerSettings,
+    players,
+    depths,
+    aiSettings,
+    updatePlayer,
+    updateDepth,
+    setAISettings,
+  } = usePlayerSettings();
   const [isFlipped, setIsFlipped] = useState(false);
   const flipBoard = () => {
     setIsFlipped((prev) => !prev);
   };
   const [isEngineThinking, setIsEngineThinking] = useState(false);
-
-  const [whiteDepth, setWhiteDepth] = useState(4);
-  const [blackDepth, setBlackDepth] = useState(4);
-  const [showEngineSettings, setShowEngineSettings] = useState(false);
-  const [showAISettings, setShowAISettings] = useState(false);
-  const [aiSettings, setAISettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
 
   const [engineChat, setEngineChat] = useState<EngineChatEntry[]>([]);
 
@@ -110,29 +110,23 @@ export const BoardWrapper: React.FC = () => {
 
   const onEngineMove = useCallback(async () => {
     if (isViewingHistory) return;
-    const currentPlayer = activeColor === "w" ? whitePlayer : blackPlayer;
+    const currentSettings = playerSettings[activeColor];
+    const currentPlayer = currentSettings.player;
     if (currentPlayer === "human" || status.toLowerCase().includes("mate"))
       return;
 
-    const currentDepth = activeColor === "w" ? whiteDepth : blackDepth;
-    const currentAiSettings =
-      activeColor === "w" ? aiSettings.white : aiSettings.black;
     const request = buildEngineMoveRequest(
       fen,
       currentPlayer,
-      currentDepth,
-      currentAiSettings,
+      currentSettings.depth,
+      currentSettings.ai,
     );
     await executeEngineRequest(request);
   }, [
     fen,
     activeColor,
-    whitePlayer,
-    blackPlayer,
-    whiteDepth,
-    blackDepth,
     status,
-    aiSettings,
+    playerSettings,
     executeEngineRequest,
     isViewingHistory,
   ]);
@@ -145,27 +139,15 @@ export const BoardWrapper: React.FC = () => {
   return (
     <div className="game-container">
       <GameSidebar
-        players={{ w: whitePlayer, b: blackPlayer }}
-        depths={{ w: whiteDepth, b: blackDepth }}
+        players={players}
+        depths={depths}
         aiSettings={aiSettings}
-        settingsVisibility={{
-          engine: showEngineSettings,
-          ai: showAISettings,
-        }}
         chatEntries={engineChat}
-        onPlayerChange={(color, player) => {
-          if (color === "w") setWhitePlayer(player);
-          else setBlackPlayer(player);
-        }}
-        onDepthChange={(color, depth) => {
-          if (color === "w") setWhiteDepth(depth);
-          else setBlackDepth(depth);
-        }}
+        onPlayerChange={updatePlayer}
+        onDepthChange={updateDepth}
         onAISettingsChange={setAISettings}
         onReset={resetBoard}
         onFlip={flipBoard}
-        onToggleEngineSettings={() => setShowEngineSettings((value) => !value)}
-        onToggleAISettings={() => setShowAISettings((value) => !value)}
         onRetry={(request) => {
           if (!isViewingHistory) void executeEngineRequest(request);
         }}
