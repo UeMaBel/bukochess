@@ -1,5 +1,11 @@
-from app.chess.move_flags import FLAG_NONE, FLAG_PROMO_Q, FLAG_PROMO_B, FLAG_PROMOTION, FLAG_PROMO_R, FLAG_PROMO_N
-from app.chess.static import PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING, WHITE, BLACK
+from app.chess.move_flags import (
+    FLAG_NONE,
+    FLAG_PROMO_B,
+    FLAG_PROMO_N,
+    FLAG_PROMO_Q,
+    FLAG_PROMO_R,
+)
+from app.chess.static import BISHOP, BLACK, KING, KNIGHT, PAWN, QUEEN, ROOK, WHITE
 
 FILES = "abcdefgh"
 RANKS = "12345678"

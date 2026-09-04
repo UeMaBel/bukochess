@@ -1,13 +1,11 @@
-import time
-from tokenize import generate_tokens
 
 import pytest
 
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
-from tests.chess.move_generator_cases import TEST_POSITIONS
 from app.chess.static import *
 from app.chess.utils import piece_flag_to_str, piece_str_to_flag
+from tests.chess.move_generator_cases import TEST_POSITIONS
 
 
 # -----------------------------

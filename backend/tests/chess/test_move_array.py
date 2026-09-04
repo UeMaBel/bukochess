@@ -1,4 +1,5 @@
 import pytest
+
 from app.chess.board_mailbox import BoardMailbox as Board
 
 

@@ -1,6 +1,6 @@
+from app.ai.models import LLMProviderResult
 from app.ai.provider import LLMProvider
 from app.ai.settings import LLMSettings
-from app.ai.models import LLMDecision, LLMProviderResult
 
 
 class LocalProvider(LLMProvider):

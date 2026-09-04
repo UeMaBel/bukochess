@@ -1,14 +1,15 @@
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
+from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+from app.chess.utils import (
+    from_uci,
+    to_uci,
+)
 from app.core.exceptions import BukochessException
 from app.core.logger import get_logger
-from app.chess.board_mailbox import BoardMailbox as Board
-from app.chess.utils import rank_x, file_y, to_uci, from_uci_move, from_uci
-
-from typing import List
-from app.chess.utils import notation_to_int_tuple
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["position"])
@@ -70,7 +71,7 @@ class LegalMovesRequest(BaseModel):
 
 
 class LegalMovesResponse(BaseModel):
-    moves: List[str]
+    moves: list[str]
 
 
 @router.post("/legal-moves")

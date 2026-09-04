@@ -1,14 +1,38 @@
-from typing import List
-from app.chess.static import KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_OFFSETS, ROOK_DIRS, BISHOP_DIRS, \
-    QUEEN_DIRS
+from app.chess.board_mailbox import Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, BoardMailbox
+from app.chess.move_flags import (
+    FLAG_CAPTURE,
+    FLAG_CASTLE_K,
+    FLAG_CASTLE_Q,
+    FLAG_EN_PASSANT,
+    FLAG_NONE,
+    FLAG_PROMO_B,
+    FLAG_PROMO_N,
+    FLAG_PROMO_Q,
+    FLAG_PROMO_R,
+    FLAG_PROMOTION,
+)
+from app.chess.static import (
+    BISHOP,
+    BISHOP_DIRS,
+    BLACK,
+    CASTLING_KEEP_MASK,
+    COLOR,
+    COMBINED_TABLE,
+    EMPTY,
+    KING,
+    KING_OFFSETS,
+    KNIGHT,
+    KNIGHT_OFFSETS,
+    PAWN,
+    PIECE,
+    QUEEN,
+    QUEEN_DIRS,
+    ROOK,
+    ROOK_DIRS,
+    WHITE,
+)
 from app.chess.static import PAWN_OFFSETS_MAILBOX as PAWN_OFFSETS
-from app.chess.board_mailbox import BoardMailbox, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
-from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLAG_EN_PASSANT, FLAG_NONE, FLAG_PROMO_B, \
-    FLAG_PROMO_N, FLAG_PROMO_Q, FLAG_PROMO_R, FLAG_PROMOTION
-from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, EMPTY, COMBINED_TABLE, \
-    CASTLE_OFFSETS, CASTLING_KEEP_MASK
-from app.chess.utils import rank_x, file_y, from_uci_move
-from app.chess.utils import to_uci
+from app.chess.utils import from_uci_move
 
 
 class MoveMailBoxGenerator:
@@ -16,7 +40,7 @@ class MoveMailBoxGenerator:
     Generates all legal moves for a given BoardArray.
     """
     # key= zobist, value= move
-    _moves_cache: dict[int, List[tuple[int, int, int]]] = {}
+    _moves_cache: dict[int, list[tuple[int, int, int]]] = {}
 
     def __init__(self, board: BoardMailbox, order: bool = False):
         self._board = board
@@ -29,7 +53,7 @@ class MoveMailBoxGenerator:
     def board(self, new_board: BoardMailbox):
         self._board = new_board
 
-    def legal_moves(self) -> List[tuple[int, int, int]]:
+    def legal_moves(self) -> list[tuple[int, int, int]]:
         """
         Return a list of all legal moves for the current active color.
         """

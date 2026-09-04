@@ -4,7 +4,6 @@ from app.chess.board_mailbox import BoardMailbox
 from app.chess.move_mailbox import MoveMailBoxGenerator
 from app.chess.utils import to_uci
 
-
 ENGINE_MOVE_URL = "/api/v1/engine/move"
 
 

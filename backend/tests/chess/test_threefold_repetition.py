@@ -1,6 +1,5 @@
 from app.chess.board_array import BoardArray
 from app.chess.move_tuple import MoveTupleGenerator
-from app.chess.perft import perft
 from app.chess.utils import sq
 
 

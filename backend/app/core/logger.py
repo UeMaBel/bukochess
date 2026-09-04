@@ -1,6 +1,7 @@
 import logging
-from app.core.logging import LOGGING_CONFIG
 import logging.config
+
+from app.core.logging import LOGGING_CONFIG
 
 logging.config.dictConfig(LOGGING_CONFIG)
 

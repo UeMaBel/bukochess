@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app  # Your FastAPI app
 
-from tests.chess.fen_cases import VALID_FENS, INVALID_FENS
+from app.main import app  # Your FastAPI app
+from tests.chess.fen_cases import INVALID_FENS, VALID_FENS
 
 client = TestClient(app)
 

@@ -1,6 +1,12 @@
 import pytest
+
 from app.chess.board_array import BoardArray
-from tests.chess.fen_cases import VALID_FENS, INVALID_FENS, ADVANCED_VALID_FENS, ADVANCED_INVALID_FENS
+from tests.chess.fen_cases import (
+    ADVANCED_INVALID_FENS,
+    ADVANCED_VALID_FENS,
+    INVALID_FENS,
+    VALID_FENS,
+)
 
 
 @pytest.mark.parametrize("name,fen", VALID_FENS.items())

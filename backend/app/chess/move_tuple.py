@@ -1,11 +1,26 @@
-from typing import Optional, Tuple, List
-from app.chess.static import PAWN_OFFSETS, KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_OFFSETS, ROOK_DIRS, BISHOP_DIRS, \
-    QUEEN_DIRS
-from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
-from app.chess.move_flags import FLAG_CAPTURE, FLAG_CASTLE_K, FLAG_CASTLE_Q, FLAG_EN_PASSANT, FLAG_NONE, FLAG_PROMO_B, \
-    FLAG_PROMO_N, FLAG_PROMO_Q, FLAG_PROMO_R, FLAG_PROMOTION
-
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation, rank_x, file_y, sq, piece_str_to_flag
+from app.chess.board_array import Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, BoardArray
+from app.chess.move_flags import (
+    FLAG_CAPTURE,
+    FLAG_CASTLE_K,
+    FLAG_CASTLE_Q,
+    FLAG_EN_PASSANT,
+    FLAG_NONE,
+    FLAG_PROMO_B,
+    FLAG_PROMO_N,
+    FLAG_PROMO_Q,
+    FLAG_PROMO_R,
+    FLAG_PROMOTION,
+)
+from app.chess.static import (
+    BISHOP_DIRS,
+    CASTLE_OFFSETS,
+    KING_OFFSETS,
+    KNIGHT_OFFSETS,
+    PAWN_OFFSETS,
+    QUEEN_DIRS,
+    ROOK_DIRS,
+)
+from app.chess.utils import file_y, notation_to_int_tuple, piece_str_to_flag, rank_x, sq
 
 
 class MoveTupleGenerator:
@@ -13,7 +28,7 @@ class MoveTupleGenerator:
     Generates all legal moves for a given BoardArray.
     """
     # key= zobist, value= move
-    _moves_cache: dict[int, List[tuple[int, int, int]]] = {}
+    _moves_cache: dict[int, list[tuple[int, int, int]]] = {}
 
     def __init__(self, board: BoardArray, order: bool = False):
         self._board = board
@@ -27,7 +42,7 @@ class MoveTupleGenerator:
     def board(self, new_board: BoardArray):
         self._board = new_board
 
-    def legal_moves(self) -> List[tuple[int, int, int]]:
+    def legal_moves(self) -> list[tuple[int, int, int]]:
         """
         Return a list of all legal moves for the current active color.
         """
@@ -70,7 +85,7 @@ class MoveTupleGenerator:
         MoveTupleGenerator._moves_cache[self.board.hash] = legal_moves
         return legal_moves
 
-    def apply(self, move: Tuple[int, int, int]):
+    def apply(self, move: tuple[int, int, int]):
         board = self.board
         from_sq, to_sq, flags = move
 
@@ -230,7 +245,7 @@ class MoveTupleGenerator:
         if board.castling_rights == "" or board.castling_rights == " ":
             board.castling_rights = board.castling_rights = "-"  # no castling rights left
 
-    def undo(self, move: Tuple[int, int, int]):
+    def undo(self, move: tuple[int, int, int]):
         board = self.board
         xy, nxy, flags = move
 
@@ -291,7 +306,7 @@ class MoveTupleGenerator:
             if board.position_counts[old_hash] == 0:
                 del board.position_counts[old_hash]
 
-    def order_moves(self, moves: list[Tuple[int, int, int]], board: BoardArray) -> list[Tuple[int, int, int]]:
+    def order_moves(self, moves: list[tuple[int, int, int]], board: BoardArray) -> list[tuple[int, int, int]]:
 
         promotions = []
         captures = []
@@ -319,8 +334,8 @@ class MoveTupleGenerator:
         self.undo(move)
         return ret
 
-    def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> List[tuple[int, int, int]]:
-        moves: List[tuple[int, int, int]] = []
+    def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> list[tuple[int, int, int]]:
+        moves: list[tuple[int, int, int]] = []
         for x in range(0, 8):
             for y in range(0, 8):
                 square = self.board.board[x][y]

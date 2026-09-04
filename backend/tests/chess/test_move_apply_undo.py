@@ -1,8 +1,7 @@
-import pytest
 from app.chess.board_mailbox import BoardMailbox as Board
-from app.chess.move_flags import FLAG_NONE, FLAG_CAPTURE, FLAG_EN_PASSANT
+from app.chess.move_flags import FLAG_CAPTURE, FLAG_NONE
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
-from app.chess.static import PAWN, WHITE, BLACK
+from app.chess.static import BLACK, PAWN, WHITE
 from app.chess.utils import sq, square_to_notation
 
 

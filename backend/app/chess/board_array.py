@@ -1,10 +1,13 @@
-from typing import List
 
 from app.chess.board_base import BoardBase
-from app.chess.static import PAWN_OFFSETS, BISHOP_DIRS, QUEEN_DIRS, ROOK_DIRS, CASTLE_OFFSETS, KNIGHT_OFFSETS, \
-    KING_OFFSETS
-from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE
-from app.chess.utils import rank_x, file_y, sq, piece_flag_to_str, piece_str_to_flag
+from app.chess.static import (
+    BISHOP_DIRS,
+    KING_OFFSETS,
+    KNIGHT_OFFSETS,
+    ROOK_DIRS,
+)
+from app.chess.utils import file_y, piece_str_to_flag, rank_x, sq
+from app.chess.zobrist import Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
 
 
 class BoardArray(BoardBase):
@@ -13,7 +16,7 @@ class BoardArray(BoardBase):
     """
 
     def __init__(self):
-        self.board: List[List[str]] = [["" for _ in range(8)] for _ in range(8)]
+        self.board: list[list[str]] = [["" for _ in range(8)] for _ in range(8)]
         self.active_color = "w"
         self.castling_rights = "-"
         self.en_passant = "-"
@@ -283,7 +286,7 @@ class BoardArray(BoardBase):
             status = "checkmate"
         return status
 
-    def get_pieces_location(self, color: str) -> List[tuple[int, int]]:
+    def get_pieces_location(self, color: str) -> list[tuple[int, int]]:
         pieces = []
         is_white = color == "w"
         for x in range(8):

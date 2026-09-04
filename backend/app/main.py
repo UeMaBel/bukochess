@@ -1,20 +1,18 @@
 from fastapi import FastAPI
-from app.core.config import settings
-from app.api.v1.health import router as health_router
-from app.core.logger import get_logger
-
 from fastapi.exceptions import RequestValidationError
-from fastapi import HTTPException
 
+from app.api.v1.engine import router as engine_router
+from app.api.v1.game import router as game_router
+from app.api.v1.health import router as health_router
+from app.api.v1.position import router as position_router
+from app.core.config import settings
 from app.core.exception_handler import (
     bukochess_exception_handler,
-    validation_exception_handler,
     unhandled_exception_handler,
+    validation_exception_handler,
 )
 from app.core.exceptions import BukochessException
-from app.api.v1.position import router as position_router
-from app.api.v1.game import router as game_router
-from app.api.v1.engine import router as engine_router
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 

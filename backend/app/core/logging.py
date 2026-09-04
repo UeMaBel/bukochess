@@ -1,5 +1,3 @@
-import logging
-import logging.config
 from pathlib import Path
 
 LOG_DIR = Path("logs")

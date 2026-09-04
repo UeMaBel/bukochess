@@ -1,8 +1,8 @@
-from app.chess.perft import run_perft
-from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
-from app.chess.engines.alphabeta import AlphaBeta
-from app.chess.utils import to_uci
 import time
+
+from app.chess.engines.alphabeta import AlphaBeta
+from app.chess.move_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 
 
 def eval(depth: int):
@@ -69,7 +69,7 @@ def run_profile(depth: int):
     # Avoid division by zero if duration is 0
     # nps = int(total_nodes / duration) if duration > 0 else 0
 
-    print(f"--- Results ---")
+    print("--- Results ---")
     print(f"Depth:      {depth}")
     # print(f"Nodes:      {total_nodes}")
     print(f"Time:       {duration:.3f} s")

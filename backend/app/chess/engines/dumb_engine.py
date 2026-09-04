@@ -1,11 +1,11 @@
 import random
-from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
-from app.chess.engines.base import Engine
-from app.chess.utils import to_uci
 
-from app.chess.static import WHITE, BLACK
-from app.chess.utils import piece_flag_to_str
+from app.chess.engines.base import Engine
 from app.chess.engines.models import EngineResult
+from app.chess.move_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+from app.chess.static import WHITE
+from app.chess.utils import piece_flag_to_str, to_uci
 
 
 class DumbEngine(Engine):

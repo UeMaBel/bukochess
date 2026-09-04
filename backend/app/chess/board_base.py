@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
 
 BOARD_RE = re.compile(r'^([PNBRQKpnbrqk1-8]{1,8}/){7}[PNBRQKpnbrqk1-8]{1,8}$')
 ACTIVE_RE = re.compile(r'^[wb]$')

@@ -1,7 +1,7 @@
+import time
+
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
-
-import time
 
 
 def run_perft(gen: MoveGenerator, depth: int):
@@ -15,7 +15,7 @@ def run_perft(gen: MoveGenerator, depth: int):
     # Avoid division by zero if duration is 0
     nps = int(total_nodes / duration) if duration > 0 else 0
 
-    print(f"--- Results ---")
+    print("--- Results ---")
     print(f"Depth:      {depth}")
     print(f"Nodes:      {total_nodes}")
     print(f"Time:       {duration:.3f} s")

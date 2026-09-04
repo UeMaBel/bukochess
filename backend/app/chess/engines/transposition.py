@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 TT_EXACT = 0
 TT_LOWER = 1  # fail-high

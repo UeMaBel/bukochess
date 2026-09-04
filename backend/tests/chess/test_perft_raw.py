@@ -1,6 +1,8 @@
 import pytest
-from app.chess.move_mailbox import BoardMailbox as Board, MoveMailBoxGenerator as MoveGenerator
-from app.chess.perft import run_perft, perft_divide
+
+from app.chess.move_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+from app.chess.perft import perft_divide, run_perft
 from app.chess.utils import to_uci
 
 PERFT_FILE = "tests/chess/perft_cases_web.epd"
@@ -28,7 +30,7 @@ def parse_perft_line(line: str):
 
 
 def load_perft_lines():
-    with open(PERFT_FILE, "r", encoding="utf-8") as f:
+    with open(PERFT_FILE, encoding="utf-8") as f:
         return [
             line.strip()
             for line in f

@@ -1,24 +1,34 @@
-from typing import Optional, Tuple, List, Dict
-from app.chess.static import PAWN_OFFSETS, KING_OFFSETS, KNIGHT_OFFSETS, CASTLE_OFFSETS, ROOK_DIRS, BISHOP_DIRS, \
-    QUEEN_DIRS
-from app.chess.board_array import BoardArray, Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
 from dataclasses import dataclass
 
-from app.chess.utils import notation_to_int_tuple, int_tuple_to_notation, squaretuple_to_notation, piece_str_to_flag
+from app.chess.board_array import Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE, BoardArray
+from app.chess.static import (
+    BISHOP_DIRS,
+    CASTLE_OFFSETS,
+    KING_OFFSETS,
+    KNIGHT_OFFSETS,
+    PAWN_OFFSETS,
+    QUEEN_DIRS,
+    ROOK_DIRS,
+)
+from app.chess.utils import (
+    notation_to_int_tuple,
+    piece_str_to_flag,
+    squaretuple_to_notation,
+)
 
 
 @dataclass
 class MoveUndo:
     captured_piece: str
-    captured_square: Tuple[int, int]
+    captured_square: tuple[int, int]
     moved_piece: str
-    castling_rook_from: Optional[Tuple[int, int]] = None
-    castling_rook_to: Optional[Tuple[int, int]] = None
+    castling_rook_from: tuple[int, int] | None = None
+    castling_rook_to: tuple[int, int] | None = None
     old_castling: str = "-"
     old_en_passant: str = "-"
     old_halfmove_clock: int = 0
     old_active_color: str = "w"
-    repetition_key: Optional[str] = None
+    repetition_key: str | None = None
 
 
 class MoveArray:
@@ -26,8 +36,8 @@ class MoveArray:
     Represents a single chess move on a BoardArray.
     """
 
-    def __init__(self, from_square: Tuple[int, int], to_square: Tuple[int, int], promotion: Optional[str] = None,
-                 captured_piece: Optional[str] = None):
+    def __init__(self, from_square: tuple[int, int], to_square: tuple[int, int], promotion: str | None = None,
+                 captured_piece: str | None = None):
         """
         :param from_square: tuple (row, col) of starting square, 0-indexed
         :param to_square: tuple (row, col) of target square, 0-indexed
@@ -38,8 +48,8 @@ class MoveArray:
         self.promotion = promotion
 
         # Optional metadata
-        self.captured_piece: Optional[str] = captured_piece
-        self.castling: Optional[str] = ""
+        self.captured_piece: str | None = captured_piece
+        self.castling: str | None = ""
         self.en_passant: bool = False
 
     def is_capture(self):
@@ -285,7 +295,7 @@ class MoveGenerator:
         self._board = new_board
         self._current_hash = new_board.hash
 
-    def legal_moves(self) -> List[MoveArray]:
+    def legal_moves(self) -> list[MoveArray]:
         """
         Return a list of all legal moves for the current active color.
         """
@@ -365,8 +375,8 @@ class MoveGenerator:
         move.undo(undo)
         return ret
 
-    def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> List[MoveArray]:
-        pseudo_legal_moves: List[MoveArray] = []
+    def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> list[MoveArray]:
+        pseudo_legal_moves: list[MoveArray] = []
         for x in range(0, 8):
             for y in range(0, 8):
                 square = self.board.board[x][y]

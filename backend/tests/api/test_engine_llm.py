@@ -13,9 +13,8 @@ from app.ai.models import (
 from app.chess.board_mailbox import BoardMailbox
 from app.chess.engines.llm_engine import LLMEngine
 from app.chess.move_mailbox import MoveMailBoxGenerator
-from app.core.exceptions import LLMProviderException
 from app.core.config import settings as app_settings
-
+from app.core.exceptions import LLMProviderException
 
 ENGINE_MOVE_URL = "/api/v1/engine/move"
 LLM_METADATA = {

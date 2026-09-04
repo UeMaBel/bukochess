@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from app.ai.settings import LLMSettings
+
 from app.ai.models import LLMProviderResult
+from app.ai.settings import LLMSettings
 
 
 class LLMProvider(ABC):

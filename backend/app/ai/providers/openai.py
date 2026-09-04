@@ -1,16 +1,15 @@
 import time
 
 from openai import (
-    OpenAI,
     APIConnectionError,
     APIStatusError,
     APITimeoutError,
     LengthFinishReasonError,
+    OpenAI,
     RateLimitError,
 )
 from pydantic import BaseModel
 
-from app.core.config import settings
 from app.ai.models import (
     LLMDecision,
     LLMDecisionMetadata,
@@ -18,6 +17,7 @@ from app.ai.models import (
     LLMProviderResult,
 )
 from app.ai.settings import LLMSettings
+from app.core.config import settings
 from app.core.exceptions import (
     BukochessException,
     LLMMaxOutputTokensException,

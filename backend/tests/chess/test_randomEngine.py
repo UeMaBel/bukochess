@@ -4,7 +4,6 @@ from app.chess.engines.random_engine import RandomEngine
 from app.chess.move_mailbox import MoveMailBoxGenerator
 from app.chess.utils import to_uci
 
-
 START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 

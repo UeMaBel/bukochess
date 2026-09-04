@@ -1,8 +1,7 @@
-import pytest
 from app.chess.board_mailbox import BoardMailbox as Board
-from app.chess.move_flags import FLAG_PROMOTION, FLAG_PROMO_Q, FLAG_PROMO_N, FLAG_NONE
+from app.chess.move_flags import FLAG_NONE, FLAG_PROMO_N, FLAG_PROMO_Q
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
-from app.chess.static import PAWN, WHITE, BLACK, QUEEN, KNIGHT, ROOK, BISHOP
+from app.chess.static import BLACK, KNIGHT, PAWN, QUEEN, WHITE
 
 
 def test_pawn_promotion_to_queen():

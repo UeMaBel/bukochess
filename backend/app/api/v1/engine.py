@@ -3,14 +3,14 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, Field, ValidationError
 
+from app.ai.settings import LLMSettings
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.engines.alphabeta import AlphaBeta
 from app.chess.engines.dumb_engine import DumbEngine
+from app.chess.engines.llm_engine import LLMEngine
 from app.chess.engines.random_engine import RandomEngine
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.core.exceptions import BukochessException
-from app.chess.engines.llm_engine import LLMEngine
-from app.ai.settings import LLMSettings
 
 router = APIRouter(tags=["engine"])
 

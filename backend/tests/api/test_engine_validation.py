@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 
-
 ENGINE_MOVE_URL = "/api/v1/engine/move"
 
 

@@ -1,8 +1,7 @@
+from app.chess.engines.alphabeta import AlphaBeta, Board, MoveGenerator
 from app.chess.engines.dumb_engine import DumbEngine
-from app.chess.engines.alphabeta import AlphaBeta, MoveGenerator, Board
 from app.chess.engines.random_engine import RandomEngine
 from app.core.utils import measure_time
-from app.chess.utils import from_uci_move
 
 board = Board()
 board.from_fen("rnbqkbnr/ppp1pppp/8/3p4/2P5/8/PP1PPPPP/RNBQKBNR w KQkq d6 0 1")

@@ -1,4 +1,3 @@
-import pytest
 from app.chess.utils import int_tuple_to_notation, notation_to_int_tuple
 
 

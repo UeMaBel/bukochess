@@ -1,15 +1,16 @@
-from app.chess.engines.base import Engine
-from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
-from app.ai.settings import LLMSettings
-from app.ai.providers.openai import OpenAIProvider
+from app.ai.models import LLMError
 from app.ai.providers.anthropic import AnthropicProvider
 from app.ai.providers.local import LocalProvider
-from app.chess.utils import to_uci
-from app.ai.models import LLMError
-from app.core.exceptions import LLMProviderException
-from app.core.config import settings as app_settings
+from app.ai.providers.openai import OpenAIProvider
+from app.ai.settings import LLMSettings
+from app.chess.engines.base import Engine
 from app.chess.engines.models import EngineResult
-from app.chess.static import WHITE, BLACK
+from app.chess.move_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+from app.chess.static import WHITE
+from app.chess.utils import to_uci
+from app.core.config import settings as app_settings
+from app.core.exceptions import LLMProviderException
 
 
 class LLMEngine(Engine):

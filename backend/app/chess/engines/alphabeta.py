@@ -1,12 +1,18 @@
 import random
-from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
+
 from app.chess.engines.base import Engine
-from app.chess.engines.transposition import TranspositionTable, TT_EXACT, TT_LOWER, TT_UPPER
-from app.chess.utils import to_uci
-from app.chess.static import WHITE, BLACK
-from app.chess.move_flags import FLAG_CAPTURE
-from app.chess.static import PIECE_VALUE_TABLE
 from app.chess.engines.models import EngineResult
+from app.chess.engines.transposition import (
+    TT_EXACT,
+    TT_LOWER,
+    TT_UPPER,
+    TranspositionTable,
+)
+from app.chess.move_flags import FLAG_CAPTURE
+from app.chess.move_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+from app.chess.static import PIECE_VALUE_TABLE, WHITE
+from app.chess.utils import to_uci
 
 MATE_SCORE = 100000
 MATE_THRESHOLD = 90000
@@ -160,7 +166,7 @@ class AlphaBeta(Engine):
                 return 0
 
         best_move_from_tt = tt_entry.move if tt_entry else None
-        if not best_move_from_tt in moves:
+        if best_move_from_tt not in moves:
             best_move_from_tt = None
 
         # --- KILLER MOVE SCORING ---

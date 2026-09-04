@@ -1,5 +1,6 @@
-from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator, BoardMailbox as Board
 from app.chess.engines.alphabeta import AlphaBeta
+from app.chess.move_mailbox import BoardMailbox as Board
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 
 
 def create_test(fen: str, deepness: int | None = None):

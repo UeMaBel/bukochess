@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.core.logger import get_logger
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
-from app.chess.utils import from_uci_move, to_uci
 from app.chess.static import WHITE
+from app.chess.utils import from_uci_move, to_uci
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["game"])

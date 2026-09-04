@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-
 WHITE_START_FEN = (
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 )

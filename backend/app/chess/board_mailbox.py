@@ -1,11 +1,22 @@
-from typing import List
 
 from app.chess.board_base import BoardBase
 from app.chess.static import *
-from app.chess.static import PAWN, ROOK, BISHOP, KNIGHT, QUEEN, KING, WHITE, BLACK, PIECE, COLOR, \
-    ROOK_SLIDERS, BISHOP_SLIDERS, EMPTY
-from app.chess.zobrist import Z_PIECE, Z_SIDE, Z_CASTLING, Z_EP_FILE
-from app.chess.utils import rank_x, file_y, piece_flag_to_str, piece_str_to_flag
+from app.chess.static import (
+    BISHOP,
+    BISHOP_SLIDERS,
+    BLACK,
+    COLOR,
+    EMPTY,
+    KING,
+    KNIGHT,
+    PAWN,
+    QUEEN,
+    ROOK,
+    ROOK_SLIDERS,
+    WHITE,
+)
+from app.chess.utils import piece_flag_to_str, piece_str_to_flag
+from app.chess.zobrist import Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
 
 
 class BoardMailbox(BoardBase):
@@ -15,7 +26,7 @@ class BoardMailbox(BoardBase):
 
     def __init__(self):
         # a list with 64 entries
-        self.board: List[int] = [EMPTY] * 64
+        self.board: list[int] = [EMPTY] * 64
         self.active_color: int = WHITE
         self.castling_rights: int = 0
         self.en_passant = 0
