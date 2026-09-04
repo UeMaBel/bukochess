@@ -1,9 +1,5 @@
 import React from "react";
-
-interface MoveEntry {
-  move: string;
-  fen: string;
-}
+import type { MoveEntry } from "../hooks/useChessGame";
 
 interface MoveHistoryProps {
   moves: MoveEntry[];
