@@ -40,7 +40,17 @@ coverage.xml
 *.py.cover
 .hypothesis/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 cover/
+
+# Profiling output
+*.lprof
+*.prof
+*.pstats
+/backend/stats
 
 # Translations
 *.mo
