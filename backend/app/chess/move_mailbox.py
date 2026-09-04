@@ -39,6 +39,7 @@ class MoveMailBoxGenerator:
     """
     Generates all legal moves for a given BoardArray.
     """
+
     # key= zobist, value= move
     _moves_cache: dict[int, list[tuple[int, int, int]]] = {}
 
@@ -71,7 +72,9 @@ class MoveMailBoxGenerator:
         scored_moves = []
         for move in pseudo_legal_moves:
             xy, nxy, flags = move
-            if king_was_checked and ((flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)):
+            if king_was_checked and (
+                (flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)
+            ):
                 continue
             self.apply(move)
             if not self.board.is_other_king_in_check:
@@ -204,7 +207,9 @@ class MoveMailBoxGenerator:
             score += COMBINED_TABLE[rook][rook_to]
 
         # --- CASTLING RIGHTS ---
-        new_rights = old_castling & CASTLING_KEEP_MASK[from_sq] & CASTLING_KEEP_MASK[to_sq]
+        new_rights = (
+            old_castling & CASTLING_KEEP_MASK[from_sq] & CASTLING_KEEP_MASK[to_sq]
+        )
 
         if old_castling != new_rights:
             # Hash updates are now extremely fast lookups
@@ -229,19 +234,21 @@ class MoveMailBoxGenerator:
         board_items.hash = hash
         board_items.score = score
         # --- SAVE UNDO INFO ---
-        board_items.undo_stack.append((
-            captured_piece,
-            captured_sq,
-            piece,
-            rook_from,
-            rook_to,
-            old_castling,
-            old_en_passant,
-            old_halfmove_clock,
-            old_active_color,
-            old_hash,
-            old_score
-        ))
+        board_items.undo_stack.append(
+            (
+                captured_piece,
+                captured_sq,
+                piece,
+                rook_from,
+                rook_to,
+                old_castling,
+                old_en_passant,
+                old_halfmove_clock,
+                old_active_color,
+                old_hash,
+                old_score,
+            )
+        )
         return move
 
     def undo(self, move: tuple[int, int, int]):
@@ -260,7 +267,7 @@ class MoveMailBoxGenerator:
             old_halfmove,
             old_active_color,
             old_hash,
-            old_score
+            old_score,
         ) = self.board.undo_stack.pop()
 
         self.board.hash = old_hash
@@ -302,7 +309,9 @@ class MoveMailBoxGenerator:
             if self.board.position_counts[old_hash] == 0:
                 del self.board.position_counts[old_hash]
 
-    def order_moves(self, moves: list[tuple[tuple[int, int, int], bool]]) -> list[tuple[tuple[int, int, int], bool]]:
+    def order_moves(
+        self, moves: list[tuple[tuple[int, int, int], bool]]
+    ) -> list[tuple[tuple[int, int, int], bool]]:
         promotions = []
         captures = []
         checks = []
@@ -330,7 +339,11 @@ class MoveMailBoxGenerator:
         captures = []
         # Identify who we are attacking
         enemy_color = BLACK if self.board.active_color == WHITE else WHITE
-        e_k = self.board.black_king if self.board.active_color == WHITE else self.board.white_king
+        e_k = (
+            self.board.black_king
+            if self.board.active_color == WHITE
+            else self.board.white_king
+        )
 
         # We only care about moves where the 'to_sq' contains an enemy piece
         # Use your existing move gen logic, but add this filter:
@@ -338,7 +351,6 @@ class MoveMailBoxGenerator:
             from_sq, to_sq, flag = move
 
             if (flag & FLAG_CAPTURE) or (flag & FLAG_PROMOTION):
-
                 self.apply(move)
                 if not self.board.is_other_king_in_check:
                     captures.append(move)
@@ -346,7 +358,9 @@ class MoveMailBoxGenerator:
 
         return captures
 
-    def generate_pseudo_legal_moves(self, color: int, enemy_king_sq: int) -> list[tuple[int, int, int]]:
+    def generate_pseudo_legal_moves(
+        self, color: int, enemy_king_sq: int
+    ) -> list[tuple[int, int, int]]:
         moves: list[tuple[int, int, int]] = []
         board = self.board.board
         for sq_from in range(64):
@@ -376,7 +390,10 @@ class MoveMailBoxGenerator:
                     r, f = rank + dr, file + df
                     if 0 <= r < 8 and 0 <= f < 8:
                         sq_to = r * 8 + f
-                        if abs(r - (enemy_king_sq // 8)) <= 1 and abs(f - (enemy_king_sq % 8)) <= 1:
+                        if (
+                            abs(r - (enemy_king_sq // 8)) <= 1
+                            and abs(f - (enemy_king_sq % 8)) <= 1
+                        ):
                             continue  # illegal: kings adjacent
                         target = board[sq_to]
                         if not target:
@@ -388,32 +405,48 @@ class MoveMailBoxGenerator:
                 if is_white and rank == 0 and file == 4:
                     # white kingside
                     if "K" in rights and not board[0 * 8 + 5] and not board[0 * 8 + 6]:
-                        if not self.board.is_square_attacked(4 + 0 * 8, BLACK) and \
-                                not self.board.is_square_attacked(5 + 0 * 8, BLACK) and \
-                                not self.board.is_square_attacked(6 + 0 * 8, BLACK):
+                        if (
+                            not self.board.is_square_attacked(4 + 0 * 8, BLACK)
+                            and not self.board.is_square_attacked(5 + 0 * 8, BLACK)
+                            and not self.board.is_square_attacked(6 + 0 * 8, BLACK)
+                        ):
                             moves.append((sq_from, 0 * 8 + 6, FLAG_CASTLE_K))
                     # white queenside
-                    if "Q" in rights and not board[0 * 8 + 1] and not board[0 * 8 + 2] and not board[0 * 8 + 3]:
-                        if not self.board.is_square_attacked(4 + 0 * 8, BLACK) and \
-                                not self.board.is_square_attacked(3 + 0 * 8, BLACK) and \
-                                not self.board.is_square_attacked(2 + 0 * 8, BLACK):
+                    if (
+                        "Q" in rights
+                        and not board[0 * 8 + 1]
+                        and not board[0 * 8 + 2]
+                        and not board[0 * 8 + 3]
+                    ):
+                        if (
+                            not self.board.is_square_attacked(4 + 0 * 8, BLACK)
+                            and not self.board.is_square_attacked(3 + 0 * 8, BLACK)
+                            and not self.board.is_square_attacked(2 + 0 * 8, BLACK)
+                        ):
                             moves.append((sq_from, 0 * 8 + 2, FLAG_CASTLE_Q))
 
                 elif not is_white and rank == 7 and file == 4:
                     # black kingside
                     if "k" in rights and not board[7 * 8 + 5] and not board[7 * 8 + 6]:
-                        if not self.board.is_square_attacked(4 + 7 * 8, WHITE) and \
-                                not self.board.is_square_attacked(5 + 7 * 8, WHITE) and \
-                                not self.board.is_square_attacked(6 + 7 * 8, WHITE):
+                        if (
+                            not self.board.is_square_attacked(4 + 7 * 8, WHITE)
+                            and not self.board.is_square_attacked(5 + 7 * 8, WHITE)
+                            and not self.board.is_square_attacked(6 + 7 * 8, WHITE)
+                        ):
                             moves.append((sq_from, 7 * 8 + 6, FLAG_CASTLE_K))
                     # black queenside
-                    if "q" in rights and not board[7 * 8 + 1] and not board[7 * 8 + 2] and not board[
-                        7 * 8 + 3]:
-                        if not self.board.is_square_attacked(4 + 7 * 8, WHITE) and \
-                                not self.board.is_square_attacked(3 + 7 * 8, WHITE) and \
-                                not self.board.is_square_attacked(2 + 7 * 8, WHITE):
+                    if (
+                        "q" in rights
+                        and not board[7 * 8 + 1]
+                        and not board[7 * 8 + 2]
+                        and not board[7 * 8 + 3]
+                    ):
+                        if (
+                            not self.board.is_square_attacked(4 + 7 * 8, WHITE)
+                            and not self.board.is_square_attacked(3 + 7 * 8, WHITE)
+                            and not self.board.is_square_attacked(2 + 7 * 8, WHITE)
+                        ):
                             moves.append((sq_from, 7 * 8 + 2, FLAG_CASTLE_Q))
-
 
             # --- pawn moves ---
             elif ptype == PAWN:
@@ -429,8 +462,15 @@ class MoveMailBoxGenerator:
                     # captures
                     if df != 0 and target and (target & COLOR) != color:
                         if is_promo:
-                            for promo_flag in (FLAG_PROMO_R, FLAG_PROMO_N, FLAG_PROMO_B, FLAG_PROMO_Q):
-                                moves.append((sq_from, sq_to, FLAG_CAPTURE | promo_flag))
+                            for promo_flag in (
+                                FLAG_PROMO_R,
+                                FLAG_PROMO_N,
+                                FLAG_PROMO_B,
+                                FLAG_PROMO_Q,
+                            ):
+                                moves.append(
+                                    (sq_from, sq_to, FLAG_CAPTURE | promo_flag)
+                                )
                         else:
                             moves.append((sq_from, sq_to, FLAG_CAPTURE))
 
@@ -441,7 +481,12 @@ class MoveMailBoxGenerator:
                     # single forward
                     elif df == 0 and not target:
                         if is_promo:
-                            for promo_flag in (FLAG_PROMO_R, FLAG_PROMO_N, FLAG_PROMO_B, FLAG_PROMO_Q):
+                            for promo_flag in (
+                                FLAG_PROMO_R,
+                                FLAG_PROMO_N,
+                                FLAG_PROMO_B,
+                                FLAG_PROMO_Q,
+                            ):
                                 moves.append((sq_from, sq_to, promo_flag))
                         else:
                             moves.append((sq_from, sq_to, FLAG_NONE))
@@ -452,7 +497,6 @@ class MoveMailBoxGenerator:
                             sq_to2 = r2 * 8 + file
                             if board[sq_to2] == EMPTY:
                                 moves.append((sq_from, sq_to2, FLAG_NONE))
-
 
             # --- rook moves ---
             elif ptype == ROOK:

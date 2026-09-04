@@ -25,7 +25,9 @@ def in_loop(idx):
         print("Game over")
         return
 
-    print(f"{str(idx)}: {board.active_color} is moving {str(m)} calc nodes: {engine_alphabeta.nodes}")
+    print(
+        f"{str(idx)}: {board.active_color} is moving {str(m)} calc nodes: {engine_alphabeta.nodes}"
+    )
     gen.apply_uci(m)
     print(f"fen: {board.to_fen()}")
     print(board.print_board())

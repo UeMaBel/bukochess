@@ -21,7 +21,9 @@ class TranspositionTable:
         """Returns the full entry object if it exists, otherwise None."""
         return self.table.get(key)
 
-    def store(self, key: int, depth: int, score: int, flag: int, move: tuple[int, int, int]):
+    def store(
+        self, key: int, depth: int, score: int, flag: int, move: tuple[int, int, int]
+    ):
         # Always replace if the new search was deeper
         existing = self.table.get(key)
         if existing is None or depth >= existing.depth:

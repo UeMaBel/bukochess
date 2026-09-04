@@ -21,7 +21,7 @@ class DumbEngine(Engine):
         "N": 300,
         "R": 500,
         "Q": 900,
-        "K": 10000
+        "K": 10000,
     }
     BOARD_VALUE = [
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -77,10 +77,7 @@ class DumbEngine(Engine):
             engine_name=self.engine_name,
             move=to_uci(self._rng.choice(best_moves)),
             played_color=self.played_color,
-            metadata={
-                "seed": self.seed,
-                "depth": self.depth
-            }
+            metadata={"seed": self.seed, "depth": self.depth},
         )
         return result
 

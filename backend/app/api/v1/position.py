@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
@@ -19,6 +18,7 @@ router = APIRouter(tags=["position"])
 # Request / Response Schemas
 # ------------------------------
 
+
 class FENRequest(BaseModel):
     fen: str
 
@@ -37,6 +37,7 @@ class ValidationResponse(BaseModel):
 # ------------------------------
 # Routes
 # ------------------------------
+
 
 @router.post("/fen", response_model=BoardResponse)
 def import_fen(req: FENRequest):

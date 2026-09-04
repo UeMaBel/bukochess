@@ -21,9 +21,4 @@ FLAG_PROMO_B = 1 << 6  # promote to bishop
 FLAG_PROMO_N = 1 << 7  # promote to knight
 
 # mask to test "is promotion"
-FLAG_PROMOTION = (
-        FLAG_PROMO_Q |
-        FLAG_PROMO_R |
-        FLAG_PROMO_B |
-        FLAG_PROMO_N
-)
+FLAG_PROMOTION = FLAG_PROMO_Q | FLAG_PROMO_R | FLAG_PROMO_B | FLAG_PROMO_N

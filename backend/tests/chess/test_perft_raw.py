@@ -31,11 +31,7 @@ def parse_perft_line(line: str):
 
 def load_perft_lines():
     with open(PERFT_FILE, encoding="utf-8") as f:
-        return [
-            line.strip()
-            for line in f
-            if line.strip() and not line.startswith("#")
-        ]
+        return [line.strip() for line in f if line.strip() and not line.startswith("#")]
 
 
 @pytest.mark.parametrize("line", load_perft_lines())
@@ -54,7 +50,6 @@ def test_perft_raw(line):
         result = run_perft(gen, depth)
 
         if result != expected and depth != 1:
-
             print("--------PERFT DIVIDE------------")
             print(f"result: {result} - expected: {expected}")
             print(board.print_board())

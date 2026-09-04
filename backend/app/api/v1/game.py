@@ -85,11 +85,7 @@ def make_move(req: MoveRequest):
     legal_moves_str = []
     for m in legal_moves:
         legal_moves_str.append(to_uci(m))
-    return {
-        "fen": board.to_fen(),
-        "status": status,
-        "legal_moves": legal_moves_str
-    }
+    return {"fen": board.to_fen(), "status": status, "legal_moves": legal_moves_str}
 
 
 class GameStatusRequest(BaseModel):
@@ -115,8 +111,5 @@ def game_status(req: GameStatusRequest):
     active_color = "w" if active == WHITE else "b"
 
     return GameStatusResponse(
-        fen=req.fen,
-        active_color=active_color,
-        in_check=in_check,
-        status=status
+        fen=req.fen, active_color=active_color, in_check=in_check, status=status
     )

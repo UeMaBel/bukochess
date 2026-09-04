@@ -34,9 +34,7 @@ def test_random_engine_is_deterministic_with_seed():
 
 
 def test_random_engine_reports_black_as_played_color():
-    board = _board(
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1"
-    )
+    board = _board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1")
 
     result = RandomEngine(seed=1).choose_move(board)
 

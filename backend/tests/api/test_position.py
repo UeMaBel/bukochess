@@ -13,6 +13,7 @@ START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 # /fen endpoint
 # ---------------------------
 
+
 @pytest.mark.parametrize("name,fen", VALID_FENS.items())
 def test_fen_import_valid(name, fen):
     response = client.post("/api/v1/position/fen", json={"fen": fen})
@@ -35,6 +36,7 @@ def test_fen_import_invalid(name, fen):
 # ---------------------------
 # /validate endpoint
 # ---------------------------
+
 
 @pytest.mark.parametrize("name,fen", VALID_FENS.items())
 def test_validate_fen_valid(name, fen):
@@ -73,10 +75,9 @@ def test_legal_moves_from_e2():
 
 
 def test_legal_moves_start_position():
-    resp = client.post("/api/v1/position/legal-moves", json={
-        "fen": START_FEN,
-        "square": ""
-    })
+    resp = client.post(
+        "/api/v1/position/legal-moves", json={"fen": START_FEN, "square": ""}
+    )
     assert resp.status_code == 200
     data = resp.json()
     moves = data["moves"]

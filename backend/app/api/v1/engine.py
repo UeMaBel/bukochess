@@ -43,23 +43,21 @@ def _optional_int(metadata: dict[str, Any], key: str) -> int | None:
 
 
 def _reject_unknown_metadata(
-        metadata: dict[str, Any],
-        allowed: set[str],
-        engine: str,
+    metadata: dict[str, Any],
+    allowed: set[str],
+    engine: str,
 ) -> None:
     unknown = sorted(set(metadata) - allowed)
     if unknown:
         fields = ", ".join(unknown)
-        raise BukochessException(
-            f"Unknown metadata field(s) for {engine}: {fields}"
-        )
+        raise BukochessException(f"Unknown metadata field(s) for {engine}: {fields}")
 
 
 def _positive_int(
-        metadata: dict[str, Any],
-        key: str,
-        *,
-        default: int | None = None,
+    metadata: dict[str, Any],
+    key: str,
+    *,
+    default: int | None = None,
 ) -> int:
     value = _optional_int(metadata, key)
 
@@ -78,7 +76,8 @@ def _string(metadata: dict[str, Any], key: str, default: str | None = None) -> s
     value = metadata.get(key)
     if value is None:
         value = default
-    if value is None: value = ""
+    if value is None:
+        value = ""
     return str(value)
 
 
@@ -104,7 +103,9 @@ def _boolean(metadata: dict[str, Any], key: str, default: bool | None = None) ->
     return value
 
 
-def _positive_float(metadata: dict[str, Any], key: str, default: float | None = None) -> float:
+def _positive_float(
+    metadata: dict[str, Any], key: str, default: float | None = None
+) -> float:
     value = _float(metadata, key)
     if value is None:
         value = default
@@ -168,9 +169,7 @@ def _create_engine(req: EngineMoveRequest):
         except ValidationError as exc:
             error = exc.errors()[0]
             field = ".".join(str(part) for part in error["loc"])
-            raise BukochessException(
-                f"metadata.{field}: {error['msg']}"
-            ) from exc
+            raise BukochessException(f"metadata.{field}: {error['msg']}") from exc
         engine = LLMEngine(llm_settings)
 
         settings = llm_settings.model_dump(

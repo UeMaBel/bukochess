@@ -1,4 +1,3 @@
-
 from app.chess.board_base import BoardBase
 from app.chess.static import *
 from app.chess.static import (
@@ -57,7 +56,8 @@ class BoardMailbox(BoardBase):
     def is_other_king_in_check(self):
         if self._is_other_king_in_check == -1:
             self._is_other_king_in_check = self.precompute_is_king_in_check(
-                WHITE if self.active_color == BLACK else BLACK)
+                WHITE if self.active_color == BLACK else BLACK
+            )
         return bool(self._is_other_king_in_check)
 
     @is_other_king_in_check.setter
@@ -91,7 +91,7 @@ class BoardMailbox(BoardBase):
         self.hash = self.compute_hash()
 
     def switch_active_color(self):
-        self.active_color ^= (WHITE | BLACK)
+        self.active_color ^= WHITE | BLACK
 
     def create_repetition_key(self):
         repetition_key = self.hash
@@ -152,6 +152,7 @@ class BoardMailbox(BoardBase):
 
     def has_legal_moves(self, color: int = None) -> bool:
         from app.chess.move_mailbox import MoveMailBoxGenerator as Movegenerator
+
         if color is None:
             color = self.active_color
 
@@ -179,10 +180,7 @@ class BoardMailbox(BoardBase):
     def is_stalemate(self, color: int = None) -> bool:
         if color is None:
             color = self.active_color
-        return (
-                not self.is_king_in_check
-                and not self.has_legal_moves(color)
-        )
+        return not self.is_king_in_check and not self.has_legal_moves(color)
 
     def is_square_attacked(self, sq: int, attacker_color: int) -> bool:
         board = self.board
@@ -270,7 +268,9 @@ class BoardMailbox(BoardBase):
         for sq in range(64):
             rank = 7 - (sq // 8)  # 0 = a8
             file = sq % 8
-            board2d[rank][file] = piece_flag_to_str(self.board[sq]) if self.board[sq] else ""
+            board2d[rank][file] = (
+                piece_flag_to_str(self.board[sq]) if self.board[sq] else ""
+            )
         return board2d
 
     def print_board(self):
@@ -327,10 +327,14 @@ class BoardMailbox(BoardBase):
 
         # Castling
         self.castling_rights = 0
-        if "K" in castling: self.castling_rights |= 1
-        if "Q" in castling: self.castling_rights |= 2
-        if "k" in castling: self.castling_rights |= 4
-        if "q" in castling: self.castling_rights |= 8
+        if "K" in castling:
+            self.castling_rights |= 1
+        if "Q" in castling:
+            self.castling_rights |= 2
+        if "k" in castling:
+            self.castling_rights |= 4
+        if "q" in castling:
+            self.castling_rights |= 8
 
         # En passant
         if ep == "-":
@@ -374,10 +378,14 @@ class BoardMailbox(BoardBase):
             return "-"
 
         res = ""
-        if self.castling_rights & 1: res += "K"
-        if self.castling_rights & 2: res += "Q"
-        if self.castling_rights & 4: res += "k"
-        if self.castling_rights & 8: res += "q"
+        if self.castling_rights & 1:
+            res += "K"
+        if self.castling_rights & 2:
+            res += "Q"
+        if self.castling_rights & 4:
+            res += "k"
+        if self.castling_rights & 8:
+            res += "q"
         return res
 
     def to_fen(self) -> str:
@@ -401,6 +409,10 @@ class BoardMailbox(BoardBase):
         board_part = "/".join(fen_rows)
 
         active = "w" if self.active_color == WHITE else "b"
-        ep = "-" if self.en_passant == -1 else chr((self.en_passant % 8) + ord("a")) + str((self.en_passant // 8) + 1)
+        ep = (
+            "-"
+            if self.en_passant == -1
+            else chr((self.en_passant % 8) + ord("a")) + str((self.en_passant // 8) + 1)
+        )
 
         return f"{board_part} {active} {self.castling_to_string()} {ep} {self.halfmove_clock} {self.fullmove_number}"

@@ -29,5 +29,7 @@ class LLMSettings(BaseModel):
     explanation: bool = False
 
     def __str__(self):
-        return (f"provider: {self.provider}, model {self.model}, "
-                f"reasoning: {self.reasoning_effort}, temp: {self.temperature}, max_output: {self.max_output_tokens}, explanation: {self.explanation}")
+        return (
+            f"provider: {self.provider}, model {self.model}, "
+            f"reasoning: {self.reasoning_effort}, temp: {self.temperature}, max_output: {self.max_output_tokens}, explanation: {self.explanation}"
+        )

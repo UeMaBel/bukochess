@@ -25,10 +25,7 @@ def test_random_move_response_contract_for_both_colors(
     color, fen = engine_position
     board = BoardMailbox()
     board.from_fen(fen)
-    legal_moves = {
-        to_uci(move)
-        for move in MoveMailBoxGenerator(board).legal_moves()
-    }
+    legal_moves = {to_uci(move) for move in MoveMailBoxGenerator(board).legal_moves()}
 
     response = _request_random_move(client, fen)
 
@@ -109,9 +106,7 @@ def test_random_move_rejects_invalid_seed_types_for_both_colors(
         )
 
         assert response.status_code == 400
-        assert response.json() == {
-            "detail": "metadata.seed must be an integer"
-        }
+        assert response.json() == {"detail": "metadata.seed must be an integer"}
 
 
 def test_random_move_rejects_invalid_fen_for_both_colors(

@@ -1,4 +1,3 @@
-
 from app.chess.board_base import BoardBase
 from app.chess.static import (
     BISHOP_DIRS,
@@ -52,10 +51,14 @@ class BoardArray(BoardBase):
 
     def castling_rights_mask(self) -> int:
         mask = 0
-        if "K" in self.castling_rights: mask |= 1
-        if "Q" in self.castling_rights: mask |= 2
-        if "k" in self.castling_rights: mask |= 4
-        if "q" in self.castling_rights: mask |= 8
+        if "K" in self.castling_rights:
+            mask |= 1
+        if "Q" in self.castling_rights:
+            mask |= 2
+        if "k" in self.castling_rights:
+            mask |= 4
+        if "q" in self.castling_rights:
+            mask |= 8
         return mask
 
     def switch_active_color(self):
@@ -116,13 +119,16 @@ class BoardArray(BoardBase):
         raise ValueError("King not found")
 
     def is_king_in_check(self, color="") -> bool:
-        if color == "": color = self.active_color
+        if color == "":
+            color = self.active_color
         king_position = self.find_king(color)
         return self.is_square_attacked(color, king_position)
 
     def has_legal_moves(self, color: str) -> bool:
         from app.chess.move_tuple import MoveTupleGenerator
-        if color == "": color = self.active_color
+
+        if color == "":
+            color = self.active_color
         current_color = self.active_color
         self.active_color = color
 
@@ -132,29 +138,26 @@ class BoardArray(BoardBase):
         return len(moves) > 0
 
     def is_checkmate(self, color="") -> bool:
-        if color == "": color = self.active_color
-        return (
-                self.is_king_in_check(color)
-                and not self.has_legal_moves(color)
-        )
+        if color == "":
+            color = self.active_color
+        return self.is_king_in_check(color) and not self.has_legal_moves(color)
 
     def is_draw(self, color="") -> bool:
-        if color == "": color = self.active_color
+        if color == "":
+            color = self.active_color
         # TODO: implement draw
         return self.is_threefold_repetition()
 
     def is_stalemate(self, color="") -> bool:
-        if color == "": color = self.active_color
-        return (
-                not self.is_king_in_check(color)
-                and not self.has_legal_moves(color)
-        )
+        if color == "":
+            color = self.active_color
+        return not self.is_king_in_check(color) and not self.has_legal_moves(color)
 
     def is_square_attacked(self, color: str, sq: tuple[int, int]) -> bool:
         board = self.board
         x, y = sq
 
-        attacker_is_white = (color == "b")
+        attacker_is_white = color == "b"
 
         # --- pawn attacks ---
         pawn = "P" if attacker_is_white else "p"
@@ -207,7 +210,9 @@ class BoardArray(BoardBase):
 
         return False
 
-    def is_square_attacked_old(self, color: str, target_square: tuple[int, int]) -> bool:
+    def is_square_attacked_old(
+        self, color: str, target_square: tuple[int, int]
+    ) -> bool:
         """
         Returns True if the square is attacked by the given color.
         Pseudo-legal moves only; ignores checks for own king safety.
@@ -222,7 +227,9 @@ class BoardArray(BoardBase):
                 if piece == "":
                     continue
                 # skip pieces that are not enemy
-                if (piece.isupper() and enemy_color == "b") or (piece.islower() and enemy_color == "w"):
+                if (piece.isupper() and enemy_color == "b") or (
+                    piece.islower() and enemy_color == "w"
+                ):
                     continue
 
                 p = piece.lower()

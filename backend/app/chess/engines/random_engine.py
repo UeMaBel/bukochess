@@ -9,7 +9,6 @@ from app.chess.utils import to_uci
 
 
 class RandomEngine(Engine):
-
     def __init__(self, seed: int | None = None):
         super().__init__()
         self.engine_name = "Random Engine"
@@ -27,5 +26,5 @@ class RandomEngine(Engine):
             engine_name=self.engine_name,
             move=to_uci(self._rng.choice(moves)),
             played_color=self.played_color,
-            metadata={"seed": self.seed}
+            metadata={"seed": self.seed},
         )

@@ -71,7 +71,9 @@ def test_apply_undo_nested():
 def test_apply_undo_en_passant():
     # Use FEN to set up en passant scenario
     board = Board()
-    board.from_fen("r1bqkbnr/pppp1ppp/2n5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3")  # White to move
+    board.from_fen(
+        "r1bqkbnr/pppp1ppp/2n5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3"
+    )  # White to move
     gen = MoveGenerator(board)
     # White pawn moves d5->d6 (already en passant target set to e6 in FEN, meaning en passant has to go away)
     move1 = (sq(4, 3), sq(5, 3), FLAG_NONE)

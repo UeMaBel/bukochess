@@ -33,10 +33,7 @@ def test_alphabeta_move_response_contract_for_both_colors(
     color, fen = engine_position
     board = BoardMailbox()
     board.from_fen(fen)
-    legal_moves = {
-        to_uci(move)
-        for move in MoveMailBoxGenerator(board).legal_moves()
-    }
+    legal_moves = {to_uci(move) for move in MoveMailBoxGenerator(board).legal_moves()}
 
     response = _request_alphabeta_move(client, fen)
 
@@ -168,9 +165,7 @@ def test_alphabeta_move_rejects_invalid_seed_for_both_colors(
         )
 
         assert response.status_code == 400
-        assert response.json() == {
-            "detail": "metadata.seed must be an integer"
-        }
+        assert response.json() == {"detail": "metadata.seed must be an integer"}
 
 
 def test_alphabeta_move_rejects_invalid_fen_for_both_colors(

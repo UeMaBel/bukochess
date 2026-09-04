@@ -42,24 +42,22 @@ def test_make_castle_move():
 
 
 def test_status_ongoing():
-    res = client.post("/api/v1/game/status", json={
-        "fen": START_FEN
-    })
+    res = client.post("/api/v1/game/status", json={"fen": START_FEN})
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
 
 
 def test_status_stalemate():
-    res = client.post("/api/v1/game/status", json={
-        "fen": "7k/5Q2/7K/8/8/8/8/8 b - - 0 1"
-    })
+    res = client.post(
+        "/api/v1/game/status", json={"fen": "7k/5Q2/7K/8/8/8/8/8 b - - 0 1"}
+    )
     assert res.json()["status"] == "stalemate"
 
 
 def test_status_checkmate():
-    res = client.post("/api/v1/game/status", json={
-        "fen": "R6k/5Q2/7K/8/8/8/8/8 b - - 0 1"
-    })
+    res = client.post(
+        "/api/v1/game/status", json={"fen": "R6k/5Q2/7K/8/8/8/8/8 b - - 0 1"}
+    )
     assert res.json()["status"] == "checkmate"
 
 

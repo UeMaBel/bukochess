@@ -21,7 +21,6 @@ MAX_DEPTH = 64
 
 
 class AlphaBeta(Engine):
-
     def __init__(self, depth: int | None = None, seed: int | None = None):
         super().__init__()
         self._rng = random.Random(seed)
@@ -75,7 +74,7 @@ class AlphaBeta(Engine):
                 "first_move_cutoffs": self.first_move_cutoffs,
                 "tt_hits": self.tt_hits,
                 "quiesce_calls": self.quiesce_calls,
-            }
+            },
         )
         return result
 
@@ -103,21 +102,18 @@ class AlphaBeta(Engine):
             if m == prev_best_move:
                 score = 100000  # Search previous iteration's best move
             elif m[2] & FLAG_CAPTURE:
-                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[m[1]]] * 10) - PIECE_VALUE_TABLE[
-                    gen.board.board[m[0]]]
+                score = (
+                    1000
+                    + (PIECE_VALUE_TABLE[gen.board.board[m[1]]] * 10)
+                    - PIECE_VALUE_TABLE[gen.board.board[m[0]]]
+                )
             scored_moves.append((score, m))
 
         scored_moves.sort(key=lambda x: x[0], reverse=True)
 
         for _, m in scored_moves:
             gen.apply(m)
-            value = self.alphabeta(
-                gen,
-                depth - 1,
-                alpha,
-                beta,
-                ply=1
-            )
+            value = self.alphabeta(gen, depth - 1, alpha, beta, ply=1)
             gen.undo(m)
 
             if board.active_color == WHITE:
@@ -133,7 +129,9 @@ class AlphaBeta(Engine):
 
         return best_value, best_move
 
-    def alphabeta(self, gen: MoveGenerator, depth: int, alpha: int, beta: int, ply: int) -> int:
+    def alphabeta(
+        self, gen: MoveGenerator, depth: int, alpha: int, beta: int, ply: int
+    ) -> int:
         board = gen.board
         alpha_orig = alpha
         beta_orig = beta
@@ -177,8 +175,11 @@ class AlphaBeta(Engine):
             if m == best_move_from_tt:
                 score = 10000
             elif flag & FLAG_CAPTURE:
-                score = 1000 + (PIECE_VALUE_TABLE[gen.board.board[nxy]] * 10) - PIECE_VALUE_TABLE[
-                    gen.board.board[xy]]
+                score = (
+                    1000
+                    + (PIECE_VALUE_TABLE[gen.board.board[nxy]] * 10)
+                    - PIECE_VALUE_TABLE[gen.board.board[xy]]
+                )
             # Check against the two killer slots for this ply
             elif m == self.killers[ply][0]:
                 score = 900
@@ -192,7 +193,7 @@ class AlphaBeta(Engine):
         best_move = None
         i = -1
         if board.active_color == WHITE:
-            value = -float('inf')
+            value = -float("inf")
             for _, m in scored_moves:  # Iterate over sorted moves
                 i += 1
                 gen.apply(m)
@@ -213,10 +214,11 @@ class AlphaBeta(Engine):
                             self.killers[ply][0] = m
 
                     self.cutoffs += 1
-                    if i == 0: self.first_move_cutoffs += 1
+                    if i == 0:
+                        self.first_move_cutoffs += 1
                     break
         else:
-            value = float('inf')
+            value = float("inf")
             for _, m in scored_moves:  # Iterate over sorted moves
                 i += 1
                 gen.apply(m)
@@ -237,7 +239,8 @@ class AlphaBeta(Engine):
                             self.killers[ply][0] = m
 
                     self.cutoffs += 1
-                    if i == 0: self.first_move_cutoffs += 1
+                    if i == 0:
+                        self.first_move_cutoffs += 1
                     break
 
         if value <= alpha_orig:
@@ -311,7 +314,9 @@ class AlphaBeta(Engine):
             scored_captures = []
             for m in captures:
                 f, t, _ = m
-                score = (PIECE_VALUE_TABLE[board.board[t]] * 10) - PIECE_VALUE_TABLE[board.board[f]]
+                score = (PIECE_VALUE_TABLE[board.board[t]] * 10) - PIECE_VALUE_TABLE[
+                    board.board[f]
+                ]
                 scored_captures.append((score, m))
             scored_captures.sort(key=lambda x: x[0], reverse=True)
 
@@ -336,7 +341,9 @@ class AlphaBeta(Engine):
         scored_captures = []
         for m in captures:
             f, t, _ = m
-            score = (PIECE_VALUE_TABLE[board.board[t]] * 10) - PIECE_VALUE_TABLE[board.board[f]]
+            score = (PIECE_VALUE_TABLE[board.board[t]] * 10) - PIECE_VALUE_TABLE[
+                board.board[f]
+            ]
             scored_captures.append((score, m))
         scored_captures.sort(key=lambda x: x[0], reverse=True)
 
@@ -351,13 +358,17 @@ class AlphaBeta(Engine):
         return beta
 
     def score_mate(self, score, ply):
-        if score > MATE_THRESHOLD: return score + ply
-        if score < -MATE_THRESHOLD: return score - ply
+        if score > MATE_THRESHOLD:
+            return score + ply
+        if score < -MATE_THRESHOLD:
+            return score - ply
         return score
 
     def unscore_mate(self, score, ply):
-        if score > MATE_THRESHOLD: return score - ply
-        if score < -MATE_THRESHOLD: return score + ply
+        if score > MATE_THRESHOLD:
+            return score - ply
+        if score < -MATE_THRESHOLD:
+            return score + ply
         return score
 
     def evaluate_position(self, board: Board):

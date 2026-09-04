@@ -19,9 +19,7 @@ class LLMEngine(Engine):
         self.settings = settings
         self.configuration_error = self._configuration_error()
         self.provider = (
-            None
-            if self.configuration_error is not None
-            else self._create_provider()
+            None if self.configuration_error is not None else self._create_provider()
         )
         self.engine_name = "LLM"
 
@@ -29,10 +27,7 @@ class LLMEngine(Engine):
         gen = MoveGenerator(board)
         fen = board.to_fen()
 
-        legal_moves = [
-            to_uci(move)
-            for move in gen.legal_moves()
-        ]
+        legal_moves = [to_uci(move) for move in gen.legal_moves()]
 
         if not legal_moves:
             return None
@@ -73,7 +68,7 @@ class LLMEngine(Engine):
                 **self.settings.model_dump(),
                 **decision.metadata.model_dump(),
                 **provider_result.metadata.model_dump(),
-            }
+            },
         )
         return result
 
@@ -101,9 +96,7 @@ class LLMEngine(Engine):
             case "local":
                 return LocalProvider(self.settings)
             case _:
-                raise ValueError(
-                    f"Unsupported LLM provider: {self.settings.provider}"
-                )
+                raise ValueError(f"Unsupported LLM provider: {self.settings.provider}")
 
     def _configuration_error(self) -> LLMProviderException | None:
         if (

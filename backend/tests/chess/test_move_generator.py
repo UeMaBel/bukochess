@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.chess.board_mailbox import BoardMailbox as Board
@@ -180,13 +179,13 @@ def test_legal_moves_basic(name):
         )
     if pos["is_checkmate"] is not None:
         assert board.is_checkmate() == pos["is_checkmate"], (
-            f"{name}: expected checkmate = {pos["is_checkmate"]}"
+            f"{name}: expected checkmate = {pos['is_checkmate']}"
         )
     if pos["is_stalemate"] is not None:
         assert board.is_stalemate() == pos["is_stalemate"], (
-            f"{name}: expected stalemate = {pos["is_stalemate"]}"
+            f"{name}: expected stalemate = {pos['is_stalemate']}"
         )
     if pos["is_threefold_rep"] is not None:
         assert board.is_threefold_repetition() == pos["is_threefold_rep"], (
-            f"{name}: expected is_threefold_rep = {pos["is_threefold_rep"]}"
+            f"{name}: expected is_threefold_rep = {pos['is_threefold_rep']}"
         )

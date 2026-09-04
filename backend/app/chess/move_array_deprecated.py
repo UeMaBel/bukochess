@@ -36,8 +36,13 @@ class MoveArray:
     Represents a single chess move on a BoardArray.
     """
 
-    def __init__(self, from_square: tuple[int, int], to_square: tuple[int, int], promotion: str | None = None,
-                 captured_piece: str | None = None):
+    def __init__(
+        self,
+        from_square: tuple[int, int],
+        to_square: tuple[int, int],
+        promotion: str | None = None,
+        captured_piece: str | None = None,
+    ):
         """
         :param from_square: tuple (row, col) of starting square, 0-indexed
         :param to_square: tuple (row, col) of target square, 0-indexed
@@ -123,7 +128,9 @@ class MoveArray:
         moved_piece = piece
         if self.promotion:
             piece_color = "w" if piece.isupper() else "b"
-            promotion_piece = self.promotion.upper() if piece_color == "w" else self.promotion.lower()
+            promotion_piece = (
+                self.promotion.upper() if piece_color == "w" else self.promotion.lower()
+            )
             board.board[to_x][to_y] = promotion_piece
             moved_piece = promotion_piece
         board.hash ^= Z_PIECE[piece_str_to_flag(moved_piece)][to_sq]
@@ -149,7 +156,9 @@ class MoveArray:
             rook_from = (from_x, 0)
             rook_to = (from_x, 3)
             castle_piece = board.board[rook_from[0]][rook_from[1]]
-            board.board[rook_to[0]][rook_to[1]] = board.board[rook_from[0]][rook_from[1]]
+            board.board[rook_to[0]][rook_to[1]] = board.board[rook_from[0]][
+                rook_from[1]
+            ]
             board.board[rook_from[0]][rook_from[1]] = ""
             castling_rook_from = rook_from
             castling_rook_to = rook_to
@@ -179,7 +188,9 @@ class MoveArray:
 
         # Repetition key
         repetition_key = board.create_repetition_key()
-        board.position_counts[repetition_key] = board.position_counts.get(repetition_key, 0) + 1
+        board.position_counts[repetition_key] = (
+            board.position_counts.get(repetition_key, 0) + 1
+        )
 
         return MoveUndo(
             captured_piece=captured_piece,
@@ -191,7 +202,7 @@ class MoveArray:
             old_en_passant=old_en_passant,
             old_halfmove_clock=old_halfmove_clock,
             old_active_color=old_active_color,
-            repetition_key=repetition_key
+            repetition_key=repetition_key,
         )
 
     def remove_castling_character(self, board: BoardArray, piece: str):
@@ -201,9 +212,13 @@ class MoveArray:
             Updated castling string
         """
         if piece == "K":  # White king moved
-            board.castling_rights = board.castling_rights.replace("K", "").replace("Q", "")
+            board.castling_rights = board.castling_rights.replace("K", "").replace(
+                "Q", ""
+            )
         elif piece == "k":  # Black king moved
-            board.castling_rights = board.castling_rights.replace("k", "").replace("q", "")
+            board.castling_rights = board.castling_rights.replace("k", "").replace(
+                "q", ""
+            )
         elif piece == "R":  # White rook moved
             if self.from_square[1] == 7:
                 board.castling_rights = board.castling_rights.replace("K", "")
@@ -216,7 +231,9 @@ class MoveArray:
                 board.castling_rights = board.castling_rights.replace("q", "")
 
         if board.castling_rights == "" or board.castling_rights == " ":
-            board.castling_rights = board.castling_rights = "-"  # no castling rights left
+            board.castling_rights = board.castling_rights = (
+                "-"  # no castling rights left
+            )
 
     def undo(self, board: BoardArray, undo: MoveUndo):
         from_x, from_y = self.from_square
@@ -246,7 +263,9 @@ class MoveArray:
         # Undo castling rook move
         if undo.castling_rook_from and undo.castling_rook_to:
             rook_piece = board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]]
-            board.board[undo.castling_rook_from[0]][undo.castling_rook_from[1]] = rook_piece
+            board.board[undo.castling_rook_from[0]][undo.castling_rook_from[1]] = (
+                rook_piece
+            )
             board.board[undo.castling_rook_to[0]][undo.castling_rook_to[1]] = ""
             rook_from_sq = undo.castling_rook_from[0] * 8 + undo.castling_rook_from[1]
             rook_to_sq = undo.castling_rook_to[0] * 8 + undo.castling_rook_to[1]
@@ -279,6 +298,7 @@ class MoveGenerator:
     """
     Generates all legal moves for a given BoardArray.
     """
+
     _moves_cache: dict[int, list[MoveArray]] = {}
 
     def __init__(self, board: BoardArray, order: bool = False):
@@ -305,7 +325,9 @@ class MoveGenerator:
         board = self.board.board
         enemy_king = self.board.find_king("b" if is_white else "w")
 
-        pseudo_legal_moves = self.generate_pseudo_legal_moves(is_white, board, enemy_king)
+        pseudo_legal_moves = self.generate_pseudo_legal_moves(
+            is_white, board, enemy_king
+        )
         # filter out moves that leave own king in check
         color = self.board.active_color
         king_was_checked = self.board.is_king_in_check(color)
@@ -317,11 +339,15 @@ class MoveGenerator:
             if not self.board.is_king_in_check(color):
                 if move.castling != "":  # check if castling was legal
                     if move.castling.lower() == "k":  # kingside castle:
-                        if self.board.is_square_attacked(color, (move.from_square[0], move.from_square[1] + 1)):
+                        if self.board.is_square_attacked(
+                            color, (move.from_square[0], move.from_square[1] + 1)
+                        ):
                             move.undo(self.board, undo)
                             continue
                     if move.castling.lower() == "q":
-                        if self.board.is_square_attacked(color, (move.to_square[0], move.to_square[1] + 1)):
+                        if self.board.is_square_attacked(
+                            color, (move.to_square[0], move.to_square[1] + 1)
+                        ):
                             move.undo(self.board, undo)
                             continue
                 legal_moves.append(move)
@@ -375,7 +401,9 @@ class MoveGenerator:
         move.undo(undo)
         return ret
 
-    def generate_pseudo_legal_moves(self, is_white, board, enemy_king) -> list[MoveArray]:
+    def generate_pseudo_legal_moves(
+        self, is_white, board, enemy_king
+    ) -> list[MoveArray]:
         pseudo_legal_moves: list[MoveArray] = []
         for x in range(0, 8):
             for y in range(0, 8):
@@ -393,7 +421,9 @@ class MoveGenerator:
                         if 0 <= nx < 8 and 0 <= ny < 8:
                             target = board[nx][ny]
                             if target == "" or target.isupper() != is_white:
-                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                pseudo_legal_moves.append(
+                                    MoveArray((x, y), (nx, ny), captured_piece=target)
+                                )
                 elif p == "k":
                     for dx, dy in KING_OFFSETS:
                         nx, ny = x + dx, y + dy
@@ -404,8 +434,12 @@ class MoveGenerator:
                                 continue
                             target = board[nx][ny]
                             if target == "" or target.isupper() != is_white:
-                                pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
-                    if (is_white and (x, y) == (7, 4)) or (not is_white and (x, y) == (0, 4)):
+                                pseudo_legal_moves.append(
+                                    MoveArray((x, y), (nx, ny), captured_piece=target)
+                                )
+                    if (is_white and (x, y) == (7, 4)) or (
+                        not is_white and (x, y) == (0, 4)
+                    ):
                         rights = self.board.castling_rights
                         for dx, dy in CASTLE_OFFSETS:
                             if is_white and dy == -2 and "Q" not in rights:
@@ -426,7 +460,9 @@ class MoveGenerator:
                                     continue
                                 rook_y = 0 if dy == -2 else 7
                                 rook = board[nx][rook_y]
-                                if (is_white and rook == "R") or (not is_white and rook == "r"):
+                                if (is_white and rook == "R") or (
+                                    not is_white and rook == "r"
+                                ):
                                     # squares between king and destination must be empty
                                     if board[x][step_y] == "" and board[x][ny] == "":
                                         m = MoveArray((x, y), (nx, ny))
@@ -441,43 +477,70 @@ class MoveGenerator:
                             if target != "":  # capture
                                 if abs(dx) == 1 and abs(dy) == 1:
                                     if (is_white and board[nx][ny].islower()) or (
-                                            not is_white and board[nx][ny].isupper()):
+                                        not is_white and board[nx][ny].isupper()
+                                    ):
                                         if is_promo:
                                             for promo in ["q", "r", "b", "n"]:
-                                                promo_move = MoveArray(from_square=(x, y),
-                                                                       to_square=(nx, ny),
-                                                                       promotion=promo, captured_piece=target)
+                                                promo_move = MoveArray(
+                                                    from_square=(x, y),
+                                                    to_square=(nx, ny),
+                                                    promotion=promo,
+                                                    captured_piece=target,
+                                                )
                                                 pseudo_legal_moves.append(promo_move)
                                         else:
                                             pseudo_legal_moves.append(
-                                                MoveArray((x, y), (nx, ny), captured_piece=target))
+                                                MoveArray(
+                                                    (x, y),
+                                                    (nx, ny),
+                                                    captured_piece=target,
+                                                )
+                                            )
                             elif dy == 0 and (abs(dx) == 1 or abs(dx) == 2):
                                 if abs(dx) == 2:
-                                    if (is_white and x == 6) or (not is_white and x == 1):
+                                    if (is_white and x == 6) or (
+                                        not is_white and x == 1
+                                    ):
                                         bx = 5 if is_white else 2
                                         if board[bx][y] == "":
                                             m = MoveArray(
-                                                (x, y),
-                                                (nx, ny),
-                                                captured_piece=target)
+                                                (x, y), (nx, ny), captured_piece=target
+                                            )
                                             pseudo_legal_moves.append(m)
                                 else:
                                     if is_promo:
                                         for promo in ["q", "r", "b", "n"]:
-                                            promo_move = MoveArray(from_square=(x, y),
-                                                                   to_square=(nx, ny),
-                                                                   promotion=promo, captured_piece=target)
+                                            promo_move = MoveArray(
+                                                from_square=(x, y),
+                                                to_square=(nx, ny),
+                                                promotion=promo,
+                                                captured_piece=target,
+                                            )
                                             pseudo_legal_moves.append(promo_move)
                                     else:
-                                        pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                        pseudo_legal_moves.append(
+                                            MoveArray(
+                                                (x, y), (nx, ny), captured_piece=target
+                                            )
+                                        )
                             elif abs(dy) == 1 and abs(dx) == 1:  # check en poissant
                                 if self.board.en_passant != "-":
-                                    en_passant_pos = notation_to_int_tuple(self.board.en_passant)
+                                    en_passant_pos = notation_to_int_tuple(
+                                        self.board.en_passant
+                                    )
                                     ep_target = board[x][ny]
-                                    if nx == en_passant_pos[0] and ny == en_passant_pos[1]:
-                                        if (ep_target == "P" and not is_white) or (ep_target == "p" and is_white):
-                                            ep_move = MoveArray(from_square=(x, y),
-                                                                to_square=(nx, ny), captured_piece=ep_target)
+                                    if (
+                                        nx == en_passant_pos[0]
+                                        and ny == en_passant_pos[1]
+                                    ):
+                                        if (ep_target == "P" and not is_white) or (
+                                            ep_target == "p" and is_white
+                                        ):
+                                            ep_move = MoveArray(
+                                                from_square=(x, y),
+                                                to_square=(nx, ny),
+                                                captured_piece=ep_target,
+                                            )
                                             ep_move.en_passant = True
                                             pseudo_legal_moves.append(ep_move)
                 elif p == "r":
@@ -489,7 +552,11 @@ class MoveGenerator:
                                 pseudo_legal_moves.append(MoveArray((x, y), (nx, ny)))
                             else:
                                 if is_white == target.islower():
-                                    pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                    pseudo_legal_moves.append(
+                                        MoveArray(
+                                            (x, y), (nx, ny), captured_piece=target
+                                        )
+                                    )
                                 break
                             nx += dx
                             ny += dy
@@ -502,7 +569,11 @@ class MoveGenerator:
                                 pseudo_legal_moves.append(MoveArray((x, y), (nx, ny)))
                             else:
                                 if is_white == target.islower():
-                                    pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                    pseudo_legal_moves.append(
+                                        MoveArray(
+                                            (x, y), (nx, ny), captured_piece=target
+                                        )
+                                    )
                                 break
                             nx += dx
                             ny += dy
@@ -515,7 +586,11 @@ class MoveGenerator:
                                 pseudo_legal_moves.append(MoveArray((x, y), (nx, ny)))
                             else:
                                 if is_white == target.islower():
-                                    pseudo_legal_moves.append(MoveArray((x, y), (nx, ny), captured_piece=target))
+                                    pseudo_legal_moves.append(
+                                        MoveArray(
+                                            (x, y), (nx, ny), captured_piece=target
+                                        )
+                                    )
                                 break
                             nx += dx
                             ny += dy

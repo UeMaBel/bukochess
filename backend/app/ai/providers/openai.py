@@ -45,7 +45,11 @@ class OpenAIProvider:
             max_retries=2,
         )
 
-    def choose_move(self, fen: str, legal_moves: list[str], ) -> LLMProviderResult:
+    def choose_move(
+        self,
+        fen: str,
+        legal_moves: list[str],
+    ) -> LLMProviderResult:
         if not legal_moves:
             raise BukochessException("No legal moves provided to OpenAI")
 
@@ -60,10 +64,7 @@ class OpenAIProvider:
                     "The returned move must be exactly one of the supplied legal moves "
                     "and must use UCI notation."
                 ),
-                input=(
-                    f"FEN: {fen}\n"
-                    f"Legal moves: {', '.join(legal_moves)}"
-                ),
+                input=(f"FEN: {fen}\nLegal moves: {', '.join(legal_moves)}"),
                 text_format=(
                     OpenAIMoveWithExplanation
                     if self.settings.explanation
@@ -114,9 +115,7 @@ class OpenAIProvider:
                 retryable=False,
             ) from exc
 
-        latency_ms = round(
-            (time.perf_counter() - started) * 1000
-        )
+        latency_ms = round((time.perf_counter() - started) * 1000)
 
         parsed = response.output_parsed
 

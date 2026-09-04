@@ -29,8 +29,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.error(
-        f"Unhandled exception at {request.url}: {exc}\n"
-        f"{traceback.format_exc()}"
+        f"Unhandled exception at {request.url}: {exc}\n{traceback.format_exc()}"
     )
 
     # Hide implementation details in production

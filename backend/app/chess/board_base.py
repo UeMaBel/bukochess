@@ -1,12 +1,12 @@
 import re
 from abc import ABC, abstractmethod
 
-BOARD_RE = re.compile(r'^([PNBRQKpnbrqk1-8]{1,8}/){7}[PNBRQKpnbrqk1-8]{1,8}$')
-ACTIVE_RE = re.compile(r'^[wb]$')
-CASTLING_RE = re.compile(r'^(-|[KQkq]{1,4})$')
-ENPASSANT_RE = re.compile(r'^(-|[a-h][36])$')
-HALFMOVE_RE = re.compile(r'^\d+$')
-FULLMOVE_RE = re.compile(r'^[1-9]\d*$')
+BOARD_RE = re.compile(r"^([PNBRQKpnbrqk1-8]{1,8}/){7}[PNBRQKpnbrqk1-8]{1,8}$")
+ACTIVE_RE = re.compile(r"^[wb]$")
+CASTLING_RE = re.compile(r"^(-|[KQkq]{1,4})$")
+ENPASSANT_RE = re.compile(r"^(-|[a-h][36])$")
+HALFMOVE_RE = re.compile(r"^\d+$")
+FULLMOVE_RE = re.compile(r"^[1-9]\d*$")
 PAWN_RE = re.compile(r"[pP]")
 
 

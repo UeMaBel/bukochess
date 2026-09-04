@@ -179,10 +179,7 @@ def test_missing_openai_key_is_returned_without_constructing_provider_for_both_c
     assert body["played_color"] == color
     assert body["metadata"]["error"] == {
         "code": "missing_api_key",
-        "message": (
-            "OpenAI is not configured. "
-            "Add OPENAI_API_KEY to the environment."
-        ),
+        "message": ("OpenAI is not configured. Add OPENAI_API_KEY to the environment."),
         "retryable": False,
     }
 
