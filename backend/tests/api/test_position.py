@@ -94,3 +94,14 @@ def test_legal_moves_invalid_fen():
     )
 
     assert resp.status_code == 400
+    assert resp.json() == {"detail": "FEN must contain exactly 6 fields, not 2"}
+
+
+def test_legal_moves_invalid_square():
+    response = client.post(
+        "/api/v1/position/legal-moves",
+        json={"fen": START_FEN, "square": "e9"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "invalid square"}

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from app.chess.static import WHITE
 from app.chess.utils import from_uci_move, to_uci
+from app.core.exceptions import BukochessException
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,17 +35,21 @@ def _parse_board(fen: str) -> Board:
     try:
         board.from_fen(fen)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise BukochessException(str(exc)) from exc
     return board
+
+
+def _validate_move_format(move: str) -> None:
+    try:
+        from_uci_move(move)
+    except ValueError as exc:
+        raise BukochessException("invalid move format") from exc
 
 
 @router.post("/fast-move", response_model=MoveResponseFast)
 def make_fast_move(req: MoveRequest):
     board = _parse_board(req.fen)
-    try:
-        from_uci_move(req.move)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="invalid move format") from exc
+    _validate_move_format(req.move)
 
     generator = MoveGenerator(board)
 
@@ -61,10 +66,7 @@ def make_fast_move(req: MoveRequest):
 @router.post("/move", response_model=MoveResponse)
 def make_move(req: MoveRequest):
     board = _parse_board(req.fen)
-    try:
-        from_uci_move(req.move)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="invalid move format") from exc
+    _validate_move_format(req.move)
 
     generator = MoveGenerator(board)
     legal_moves = generator.legal_moves()
@@ -75,7 +77,7 @@ def make_move(req: MoveRequest):
             move_found = True
             break
     if not move_found:
-        raise HTTPException(status_code=400, detail="illegal move")
+        raise BukochessException("illegal move")
 
     generator.apply_uci(req.move)
 

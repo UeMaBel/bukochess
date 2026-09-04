@@ -76,6 +76,16 @@ def test_unexpected_openai_error_is_safe_and_not_retryable():
     assert "secret provider details" not in raised.value.message
 
 
+def test_no_legal_moves_uses_provider_exception():
+    provider = OpenAIProvider.__new__(OpenAIProvider)
+
+    with pytest.raises(LLMProviderException) as raised:
+        provider.choose_move("test-fen", [])
+
+    assert raised.value.code == "no_legal_moves"
+    assert raised.value.retryable is False
+
+
 def test_incomplete_response_due_to_max_tokens_has_dedicated_exception():
     response = Mock()
     response.output_parsed = None

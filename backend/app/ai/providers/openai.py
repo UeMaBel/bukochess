@@ -19,7 +19,6 @@ from app.ai.models import (
 from app.ai.settings import LLMSettings
 from app.core.config import settings
 from app.core.exceptions import (
-    BukochessException,
     LLMMaxOutputTokensException,
     LLMProviderException,
 )
@@ -51,7 +50,11 @@ class OpenAIProvider:
         legal_moves: list[str],
     ) -> LLMProviderResult:
         if not legal_moves:
-            raise BukochessException("No legal moves provided to OpenAI")
+            raise LLMProviderException(
+                "no_legal_moves",
+                "No legal moves provided to OpenAI.",
+                retryable=False,
+            )
 
         started = time.perf_counter()
 

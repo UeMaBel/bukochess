@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.chess.board_mailbox import BoardMailbox as Board
@@ -47,7 +47,7 @@ def import_fen(req: FENRequest):
     board_obj = Board()
     try:
         board_obj.from_fen(fen)
-    except Exception as exc:
+    except ValueError as exc:
         raise BukochessException(str(exc)) from exc
 
     return BoardResponse(board=board_obj.to_2d_board_str(), fen=fen)
@@ -58,10 +58,7 @@ def validate_fen_endpoint(req: FENRequest):
     fen = req.fen.strip()
     logger.info(f"Validating FEN: {fen}")
 
-    try:
-        valid, message = Board.validate_fen(fen)
-    except Exception as exc:
-        raise BukochessException(str(exc)) from exc
+    valid, message = Board.validate_fen(fen)
 
     return ValidationResponse(fen=fen, valid=valid, message=message)
 
@@ -75,21 +72,21 @@ class LegalMovesResponse(BaseModel):
     moves: list[str]
 
 
-@router.post("/legal-moves")
+@router.post("/legal-moves", response_model=LegalMovesResponse)
 def legal_moves(req: LegalMovesRequest):
     board = Board()
     try:
         board.from_fen(req.fen)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+        raise BukochessException(str(exc)) from exc
     generator = MoveGenerator(board)
     moves = generator.legal_moves()
     final_moves = []
     if req.square != "":
-        sq = from_uci(req.square)
+        try:
+            sq = from_uci(req.square)
+        except ValueError as exc:
+            raise BukochessException("invalid square") from exc
 
         for m in moves:
             xy, nxy, flags = m

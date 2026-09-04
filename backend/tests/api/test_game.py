@@ -71,6 +71,7 @@ def test_illegal_move():
     )
 
     assert resp.status_code == 400
+    assert resp.json() == {"detail": "illegal move"}
 
 
 def test_invalid_move_format():
@@ -83,6 +84,7 @@ def test_invalid_move_format():
     )
 
     assert resp.status_code == 400
+    assert resp.json() == {"detail": "invalid move format"}
 
 
 def test_fast_move_response_contract_for_both_colors(
