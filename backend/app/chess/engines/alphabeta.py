@@ -35,8 +35,6 @@ class AlphaBeta(Engine):
         self.killers = [[None, None] for _ in range(MAX_DEPTH)]
 
     def choose_move(self, board: Board) -> EngineResult:
-        print(f"searching move with alphabeta. max deepness = {self.depth}")
-
         gen = MoveGenerator(board)
         best_move = None
         for depth in range(1, self.depth + 1):
@@ -50,13 +48,6 @@ class AlphaBeta(Engine):
             value, move = self.search_root(gen, depth, best_move)
             best_move = move
 
-            best_uci = to_uci(move) if move is not None else None
-            print(f"depth {depth}: best {best_uci} score {value}")
-            print(
-                f"nodes: {self.nodes}, cutoffs: {self.cutoffs}, "
-                f"fm_cutoffs: {self.first_move_cutoffs}, "
-                f"tt: {self.tt_hits}, quiesce {self.quiesce_calls}"
-            )
             self.evaluation = value
 
             if move is None:

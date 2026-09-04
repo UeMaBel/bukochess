@@ -66,9 +66,6 @@ def make_move(req: MoveRequest):
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid move format")
 
-    print(req.move)
-    print(to_uci(move))
-
     generator = MoveGenerator(board)
     legal_moves = generator.legal_moves()
 
@@ -88,8 +85,6 @@ def make_move(req: MoveRequest):
     legal_moves_str = []
     for m in legal_moves:
         legal_moves_str.append(to_uci(m))
-    print(board.to_fen())
-
     return {
         "fen": board.to_fen(),
         "status": status,

@@ -25,7 +25,6 @@ class LLMEngine(Engine):
         self.engine_name = "LLM"
 
     def choose_move(self, board: Board) -> EngineResult:
-        print(f"searching move with llm. Settings: {self.settings}")
         gen = MoveGenerator(board)
         fen = board.to_fen()
 

@@ -7,7 +7,7 @@ from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
 from tests.chess.move_generator_cases import TEST_POSITIONS
 from app.chess.static import *
-from app.chess.utils import piece_flag_to_str, piece_str_to_flag, to_uci
+from app.chess.utils import piece_flag_to_str, piece_str_to_flag
 
 
 # -----------------------------
@@ -53,9 +53,6 @@ def test_check_castling_in_check_kingside():
 
     generator = MoveGenerator(board)
     moves = generator.legal_moves()
-    for m in moves:
-        print(to_uci(m))
-
     assert len(moves) == possible_moves
 
 
@@ -95,7 +92,7 @@ def test_in_check():
     assert len(moves) == possible_moves
 
 
-from app.chess.utils import sq, rank_x, file_y
+from app.chess.utils import sq
 
 
 def tetst_pawn_block():
@@ -110,11 +107,8 @@ def tetst_pawn_block():
     n_m = []
     m_m = generator.legal_moves()
     for m in generator.legal_moves():
-        xy, nxy, flags = m
-        print(f"{rank_x(xy)}, {file_y(xy)} - {rank_x(nxy)}, {file_y(nxy)}")
         generator.apply(m)
         n_m = generator.legal_moves()
-        # print(f"possible moves: {len(n_m)}")
         fen = board.to_fen()
         for n in n_m:
             generator.apply(n)
@@ -145,8 +139,6 @@ def test_black_pawn_moves_3():
 
     generator = MoveGenerator(board)
     moves = generator.legal_moves()
-    for m in moves:
-        print(to_uci(m))
     assert len(moves) == possible_moves
 
 
@@ -170,8 +162,6 @@ def test_mg():
     for m in moves:
         gen.apply(m)
         gen.undo(m)
-        print(to_uci(m))
-
     assert 30 == len(moves)
 
 

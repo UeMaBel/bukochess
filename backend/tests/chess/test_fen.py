@@ -37,7 +37,5 @@ def test_fen_round_trip(name, fen):
     board.from_fen(fen)
     out_fen = board.to_fen()
 
-    print(f"original: {fen} - out: {out_fen}")
-
     valid, msg = BoardArray.validate_fen(out_fen)
     assert valid is True, f"Round-trip failed for {name}: {msg}"

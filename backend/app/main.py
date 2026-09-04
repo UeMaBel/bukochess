@@ -34,9 +34,6 @@ def create_application() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
 
-    for route in app.routes:
-        print(route.path, route.name)
-
     return app
 
 
