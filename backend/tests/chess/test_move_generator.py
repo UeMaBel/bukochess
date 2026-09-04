@@ -102,7 +102,7 @@ def tetst_pawn_block():
 
     generator = MoveGenerator(board)
     n_m = []
-    m_m = generator.legal_moves()
+    generator.legal_moves()
     for m in generator.legal_moves():
         generator.apply(m)
         n_m = generator.legal_moves()
@@ -145,7 +145,7 @@ def test_cm_white():
     board.from_fen(fen)
 
     generator = MoveGenerator(board)
-    moves = generator.legal_moves()
+    generator.legal_moves()
     assert board.is_checkmate()
     assert board.is_checkmate()
 

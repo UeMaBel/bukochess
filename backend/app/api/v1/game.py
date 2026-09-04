@@ -42,7 +42,7 @@ def _parse_board(fen: str) -> Board:
 def make_fast_move(req: MoveRequest):
     board = _parse_board(req.fen)
     try:
-        move = from_uci_move(req.move)
+        from_uci_move(req.move)
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid move format")
 
@@ -62,7 +62,7 @@ def make_fast_move(req: MoveRequest):
 def make_move(req: MoveRequest):
     board = _parse_board(req.fen)
     try:
-        move = from_uci_move(req.move)
+        from_uci_move(req.move)
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid move format")
 
@@ -73,7 +73,6 @@ def make_move(req: MoveRequest):
     for m in legal_moves:
         if to_uci(m) == req.move:
             move_found = True
-            move = m
             break
     if not move_found:
         raise HTTPException(status_code=400, detail="illegal move")

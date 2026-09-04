@@ -57,7 +57,7 @@ def test_perft_raw(line):
             divide = perft_divide(board, depth)
             for move, count in divide.items():
                 print(to_uci(move), count)
-            assert False
+            raise AssertionError()
 
         expected_old = expected
 

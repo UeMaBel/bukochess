@@ -66,10 +66,10 @@ class MoveTupleGenerator:
             xy, nxy, flags = move
             x = rank_x(xy)
             y = file_y(xy)
-            nx = rank_x(nxy)
+            rank_x(nxy)
             ny = file_y(nxy)
             if king_was_checked and (
-                (flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)
+                    (flags & FLAG_CASTLE_Q) or (flags & FLAG_CASTLE_Q)
             ):
                 continue
             self.apply(move)
@@ -211,9 +211,6 @@ class MoveTupleGenerator:
         # --- REPETITION ---
         board.position_counts[board.hash] = board.position_counts.get(board.hash, 0) + 1
 
-        if board.hash != board.compute_hash():
-            a = 33
-
         # save undo info
         board.undo_stack.append(
             (
@@ -300,7 +297,6 @@ class MoveTupleGenerator:
         # Restore captured piece
         board.board[nx][ny] = ""
         cap_x, cap_y = captured_square
-        cap_sq = cap_x * 8 + cap_y
         # if not flags & FLAG_EN_PASSANT:
         board.board[cap_x][cap_y] = captured_piece
 
@@ -322,7 +318,7 @@ class MoveTupleGenerator:
                 del board.position_counts[old_hash]
 
     def order_moves(
-        self, moves: list[tuple[int, int, int]], board: BoardArray
+            self, moves: list[tuple[int, int, int]], board: BoardArray
     ) -> list[tuple[int, int, int]]:
 
         promotions = []
@@ -352,7 +348,7 @@ class MoveTupleGenerator:
         return ret
 
     def generate_pseudo_legal_moves(
-        self, is_white, board, enemy_king
+            self, is_white, board, enemy_king
     ) -> list[tuple[int, int, int]]:
         moves: list[tuple[int, int, int]] = []
         for x in range(0, 8):
@@ -387,7 +383,7 @@ class MoveTupleGenerator:
                             elif target.isupper() != is_white:
                                 moves.append((sq(x, y), sq(nx, ny), FLAG_CAPTURE))
                     if (is_white and (x, y) == (7, 4)) or (
-                        not is_white and (x, y) == (0, 4)
+                            not is_white and (x, y) == (0, 4)
                     ):
                         rights = self.board.castling_rights
                         for dx, dy in CASTLE_OFFSETS:
@@ -410,7 +406,7 @@ class MoveTupleGenerator:
                                 rook_y = 0 if dy == -2 else 7
                                 rook = board[nx][rook_y]
                                 if (is_white and rook == "R") or (
-                                    not is_white and rook == "r"
+                                        not is_white and rook == "r"
                                 ):
                                     # squares between king and destination must be empty
                                     if board[x][step_y] == "" and board[x][ny] == "":
@@ -432,7 +428,7 @@ class MoveTupleGenerator:
                             if target != "":  # capture
                                 if abs(dx) == 1 and abs(dy) == 1:
                                     if (is_white and board[nx][ny].islower()) or (
-                                        not is_white and board[nx][ny].isupper()
+                                            not is_white and board[nx][ny].isupper()
                                     ):
                                         if is_promo:
                                             moves.append(
@@ -470,7 +466,7 @@ class MoveTupleGenerator:
                             elif dy == 0 and (abs(dx) == 1 or abs(dx) == 2):
                                 if abs(dx) == 2:
                                     if (is_white and x == 6) or (
-                                        not is_white and x == 1
+                                            not is_white and x == 1
                                     ):
                                         bx = 5 if is_white else 2
                                         if board[bx][y] == "":
@@ -500,11 +496,11 @@ class MoveTupleGenerator:
                                     )
                                     ep_target = board[x][ny]
                                     if (
-                                        nx == en_passant_pos[0]
-                                        and ny == en_passant_pos[1]
+                                            nx == en_passant_pos[0]
+                                            and ny == en_passant_pos[1]
                                     ):
                                         if (ep_target == "P" and not is_white) or (
-                                            ep_target == "p" and is_white
+                                                ep_target == "p" and is_white
                                         ):
                                             moves.append(
                                                 (

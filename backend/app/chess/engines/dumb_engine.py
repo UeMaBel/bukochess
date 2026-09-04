@@ -54,7 +54,7 @@ class DumbEngine(Engine):
         best_moves = []
 
         for m in moves:
-            undo = gen.apply(m)
+            gen.apply(m)
             score = self.minimax(board, self.depth - 1, not maximizing)
             gen.undo(m)
 

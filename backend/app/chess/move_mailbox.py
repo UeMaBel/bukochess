@@ -338,7 +338,6 @@ class MoveMailBoxGenerator:
     def legal_captures(self):
         captures = []
         # Identify who we are attacking
-        enemy_color = BLACK if self.board.active_color == WHITE else WHITE
         e_k = (
             self.board.black_king
             if self.board.active_color == WHITE
