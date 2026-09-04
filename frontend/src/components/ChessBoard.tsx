@@ -1,4 +1,5 @@
 import type React from "react";
+import { PromotionPicker } from "./PromotionPicker";
 
 const PIECE_UNICODE: Record<string, string> = {
   p: "\u265f",
@@ -17,8 +18,6 @@ const PIECE_UNICODE: Record<string, string> = {
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
-const PROMOTION_PIECES = ["q", "r", "b", "n"];
-
 interface PendingPromotion {
   from: string;
   to: string;
@@ -119,30 +118,14 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
         ))}
 
         {pendingPromotion && promotionCoords && (
-          <div
-            className="promotion-overlay-floating"
-            style={{
-              top: promotionCoords.top,
-              left: promotionCoords.left,
-              flexDirection:
-                activeColor === "w" ? "column" : "column-reverse",
-            }}
-          >
-            {PROMOTION_PIECES.map((piece) => (
-              <button
-                key={piece}
-                className={`promotion-btn ${activeColor === "w" ? "piece-white" : "piece-black"}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onMove(`${pendingPromotion.from}${pendingPromotion.to}${piece}`);
-                }}
-              >
-                {PIECE_UNICODE[
-                  activeColor === "w" ? piece.toUpperCase() : piece
-                ]}
-              </button>
-            ))}
-          </div>
+          <PromotionPicker
+            color={activeColor}
+            top={promotionCoords.top}
+            left={promotionCoords.left}
+            onSelect={(piece) =>
+              onMove(`${pendingPromotion.from}${pendingPromotion.to}${piece}`)
+            }
+          />
         )}
       </div>
 
