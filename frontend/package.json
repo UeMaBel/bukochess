@@ -14,10 +14,7 @@
     "test:api:watch": "vitest src/api"
   },
   "dependencies": {
-    "chess": "^1.5.1",
-    "chess.js": "^1.4.0",
     "react": "^19.2.0",
-    "react-chessboard": "^5.8.6",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {

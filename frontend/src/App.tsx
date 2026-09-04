@@ -3,8 +3,8 @@ import { ChessGame } from "./components/ChessGame";
 
 const App: React.FC = () => {
   return (
-    <div style={{ padding: 20 }}>
-      <h1>BukoChess</h1>
+    <div className="app">
+      <h1 className="app-title">BukoChess</h1>
       <ChessGame />
     </div>
   );
