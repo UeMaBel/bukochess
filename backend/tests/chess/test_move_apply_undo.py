@@ -75,7 +75,7 @@ def test_apply_undo_en_passant():
         "r1bqkbnr/pppp1ppp/2n5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3"
     )  # White to move
     gen = MoveGenerator(board)
-    # White pawn moves d5->d6 (already en passant target set to e6 in FEN, meaning en passant has to go away)
+    # Moving d5-d6 must clear the existing e6 en passant target.
     move1 = (sq(4, 3), sq(5, 3), FLAG_NONE)
     gen.apply(move1)
     assert 1 > board.en_passant

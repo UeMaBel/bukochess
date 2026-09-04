@@ -28,6 +28,7 @@ class LLMMaxOutputTokensException(LLMProviderException):
     def __init__(self, provider: str):
         super().__init__(
             "max_output_tokens",
-            f"{provider} reached the maximum output-token limit before returning a move.",
+            f"{provider} reached the maximum output-token limit before "
+            "returning a move.",
             retryable=True,
         )

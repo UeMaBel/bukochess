@@ -352,7 +352,7 @@ class BoardArray(BoardBase):
         try:
             self.white_king = self.find_king_initial("w")
             self.black_king = self.find_king_initial("b")
-        except:
+        except ValueError:
             self.white_king = 0
             self.black_king = 0
         return True, "FEN Imported"

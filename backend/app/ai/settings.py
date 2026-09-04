@@ -31,5 +31,7 @@ class LLMSettings(BaseModel):
     def __str__(self):
         return (
             f"provider: {self.provider}, model {self.model}, "
-            f"reasoning: {self.reasoning_effort}, temp: {self.temperature}, max_output: {self.max_output_tokens}, explanation: {self.explanation}"
+            f"reasoning: {self.reasoning_effort}, temp: {self.temperature}, "
+            f"max_output: {self.max_output_tokens}, "
+            f"explanation: {self.explanation}"
         )

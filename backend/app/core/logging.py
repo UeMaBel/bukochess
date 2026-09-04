@@ -12,7 +12,10 @@ LOGGING_CONFIG = {
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
         "verbose": {
-            "format": "[%(asctime)s] [%(levelname)s] [%(name)s] [%(filename)s:%(lineno)d] %(message)s",
+            "format": (
+                "[%(asctime)s] [%(levelname)s] [%(name)s] "
+                "[%(filename)s:%(lineno)d] %(message)s"
+            ),
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
     },

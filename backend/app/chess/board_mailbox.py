@@ -1,18 +1,23 @@
 from app.chess.board_base import BoardBase
-from app.chess.static import *
 from app.chess.static import (
     BISHOP,
+    BISHOP_DIRS,
     BISHOP_SLIDERS,
     BLACK,
     COLOR,
+    COMBINED_TABLE,
     EMPTY,
     KING,
+    KING_OFFSETS,
     KNIGHT,
+    KNIGHT_OFFSETS,
     PAWN,
     QUEEN,
     ROOK,
+    ROOK_DIRS,
     ROOK_SLIDERS,
     WHITE,
+    init_tables,
 )
 from app.chess.utils import piece_flag_to_str, piece_str_to_flag
 from app.chess.zobrist import Z_CASTLING, Z_EP_FILE, Z_PIECE, Z_SIDE
@@ -358,9 +363,6 @@ class BoardMailbox(BoardBase):
 
         self.set_hash()
         self.score = self.calculate_total_score()
-        # self.is_other_king_in_check = self.precompute_is_king_in_check(WHITE if self.active_color == BLACK else BLACK)
-        # self.is_king_in_check = self.precompute_is_king_in_check()
-
         return True, "FEN Imported"
 
     def calculate_total_score(self):
@@ -415,4 +417,7 @@ class BoardMailbox(BoardBase):
             else chr((self.en_passant % 8) + ord("a")) + str((self.en_passant // 8) + 1)
         )
 
-        return f"{board_part} {active} {self.castling_to_string()} {ep} {self.halfmove_clock} {self.fullmove_number}"
+        return (
+            f"{board_part} {active} {self.castling_to_string()} {ep} "
+            f"{self.halfmove_clock} {self.fullmove_number}"
+        )

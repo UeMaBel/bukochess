@@ -43,8 +43,8 @@ def make_fast_move(req: MoveRequest):
     board = _parse_board(req.fen)
     try:
         from_uci_move(req.move)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="invalid move format")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid move format") from exc
 
     generator = MoveGenerator(board)
 
@@ -63,8 +63,8 @@ def make_move(req: MoveRequest):
     board = _parse_board(req.fen)
     try:
         from_uci_move(req.move)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="invalid move format")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid move format") from exc
 
     generator = MoveGenerator(board)
     legal_moves = generator.legal_moves()

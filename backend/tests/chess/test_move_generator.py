@@ -2,8 +2,7 @@ import pytest
 
 from app.chess.board_mailbox import BoardMailbox as Board
 from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
-from app.chess.static import *
-from app.chess.utils import piece_flag_to_str, piece_str_to_flag
+from app.chess.utils import piece_flag_to_str, piece_str_to_flag, sq
 from tests.chess.move_generator_cases import TEST_POSITIONS
 
 
@@ -87,9 +86,6 @@ def test_in_check():
     moves = generator.legal_moves()
 
     assert len(moves) == possible_moves
-
-
-from app.chess.utils import sq
 
 
 def tetst_pawn_block():
