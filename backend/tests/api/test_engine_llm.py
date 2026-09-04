@@ -28,6 +28,12 @@ LLM_METADATA = {
 }
 
 
+@pytest.fixture(autouse=True)
+def configure_dummy_openai_key(monkeypatch: pytest.MonkeyPatch):
+    """Allow mocked provider tests to run without a real OpenAI credential."""
+    monkeypatch.setattr(app_settings, "openai_api_key", SecretStr("test-key"))
+
+
 def _request_llm_move(client: TestClient, fen: str):
     return client.post(
         ENGINE_MOVE_URL,
