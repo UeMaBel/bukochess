@@ -1,4 +1,4 @@
-import type React from "react";
+import React, { useState } from "react";
 import { PromotionPicker } from "./PromotionPicker";
 
 const PIECE_UNICODE: Record<string, string> = {
@@ -18,27 +18,13 @@ const PIECE_UNICODE: Record<string, string> = {
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"];
-interface PendingPromotion {
-  from: string;
-  to: string;
-}
-
-interface PromotionCoordinates {
-  top: number;
-  left: number;
-}
-
 interface ChessBoardProps {
   fen: string;
   board: string[][];
   activeColor: "w" | "b";
   inCheck: boolean;
   legalMoves: string[];
-  selectedSquare: string | null;
   isFlipped: boolean;
-  pendingPromotion: PendingPromotion | null;
-  promotionCoords: PromotionCoordinates | null;
-  onSquareClick: (square: string, event: React.MouseEvent) => void;
   onMove: (move: string) => void;
 }
 
@@ -48,13 +34,78 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   activeColor,
   inCheck,
   legalMoves,
-  selectedSquare,
   isFlipped,
-  pendingPromotion,
-  promotionCoords,
-  onSquareClick,
   onMove,
 }) => {
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [pendingPromotion, setPendingPromotion] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+  const [promotionCoords, setPromotionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  const submitMove = (move: string) => {
+    setSelectedSquare(null);
+    setPendingPromotion(null);
+    setPromotionCoords(null);
+    onMove(move);
+  };
+
+  const handleSquareClick = (
+    square: string,
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (pendingPromotion) {
+      setPendingPromotion(null);
+      setPromotionCoords(null);
+      return;
+    }
+
+    if (!selectedSquare) {
+      if (legalMoves.some((move) => move.startsWith(square))) {
+        setSelectedSquare(square);
+      }
+      return;
+    }
+
+    const movePrefix = selectedSquare + square;
+    const promotionMoves = legalMoves.filter(
+      (move) => move.startsWith(movePrefix) && move.length === 5,
+    );
+
+    if (promotionMoves.length > 0) {
+      const squareRect = event.currentTarget.getBoundingClientRect();
+      const boardRect = event.currentTarget
+        .closest(".chess-board")
+        ?.getBoundingClientRect();
+
+      if (boardRect) {
+        const topOffset = squareRect.top - boardRect.top;
+        setPromotionCoords({
+          top:
+            activeColor === "w"
+              ? topOffset
+              : topOffset - squareRect.height * 3,
+          left: squareRect.left - boardRect.left,
+        });
+      }
+      setPendingPromotion({ from: selectedSquare, to: square });
+      return;
+    }
+
+    if (legalMoves.includes(movePrefix)) {
+      submitMove(movePrefix);
+      return;
+    }
+
+    setSelectedSquare(
+      legalMoves.some((move) => move.startsWith(square)) ? square : null,
+    );
+  };
+
   const ranksToRender = isFlipped ? [...board].reverse() : board;
   const filesToRender = isFlipped ? [...FILES].reverse() : FILES;
   const rankLabelsToRender = isFlipped ? [...RANKS].reverse() : RANKS;
@@ -107,7 +158,9 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
                       ${isWhitePiece ? "piece-white" : ""}
                       ${isBlackPiece ? "piece-black" : ""}
                       ${inCheck && isKingInCheck ? "check" : ""}`}
-                    onClick={(event) => onSquareClick(squareName, event)}
+                    onClick={(event) =>
+                      handleSquareClick(squareName, event)
+                    }
                   >
                     {square !== "." ? PIECE_UNICODE[square] : ""}
                   </div>
@@ -123,7 +176,9 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
             top={promotionCoords.top}
             left={promotionCoords.left}
             onSelect={(piece) =>
-              onMove(`${pendingPromotion.from}${pendingPromotion.to}${piece}`)
+              submitMove(
+                `${pendingPromotion.from}${pendingPromotion.to}${piece}`,
+              )
             }
           />
         )}

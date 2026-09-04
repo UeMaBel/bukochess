@@ -41,21 +41,12 @@ export const BoardWrapper: React.FC = () => {
   const [inCheck, setInCheck] = useState(false);
   const [activeColor, setActiveColor] = useState<"w" | "b">("w");
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [whitePlayer, setWhitePlayer] = useState<PlayerSelection>("human");
   const [blackPlayer, setBlackPlayer] = useState<PlayerSelection>("random");
   const [isFlipped, setIsFlipped] = useState(false);
   const flipBoard = () => {
     setIsFlipped((prev) => !prev);
   };
-  const [pendingPromotion, setPendingPromotion] = useState<{
-    from: string;
-    to: string;
-  } | null>(null);
-  const [promotionCoords, setPromotionCoords] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
   const [isEngineThinking, setIsEngineThinking] = useState(false);
 
   const [whiteDepth, setWhiteDepth] = useState(4);
@@ -93,9 +84,6 @@ export const BoardWrapper: React.FC = () => {
   };
 
   const resetBoard = async () => {
-    setSelectedSquare(null);
-    setPendingPromotion(null);
-
     setMoveHistory([
       {
         move: "start",
@@ -139,8 +127,6 @@ export const BoardWrapper: React.FC = () => {
   const handleMoveExecution = async (uci: string) => {
     try {
       if (isViewingHistory) return;
-      setSelectedSquare(null);
-      setPendingPromotion(null);
       const res = await makeMoveFast(fen, uci);
       // ADD TO CHAT
       setEngineChat((prev) => [
@@ -223,52 +209,6 @@ export const BoardWrapper: React.FC = () => {
     return () => clearTimeout(timer);
   }, [onEngineMove]);
 
-  // --- Click Logic ---
-  const onSquareClick = (sq: string, e: React.MouseEvent) => {
-    if (pendingPromotion) {
-      setPendingPromotion(null);
-      return;
-    }
-
-    if (!selectedSquare) {
-      if (legalMoves.some((m) => m.startsWith(sq))) setSelectedSquare(sq);
-      return;
-    }
-
-    const movePrefix = selectedSquare + sq;
-    const pMoves = legalMoves.filter(
-      (m) => m.startsWith(movePrefix) && m.length === 5,
-    );
-
-    if (pMoves.length > 0) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const boardRect = e.currentTarget
-        .closest(".chess-board")
-        ?.getBoundingClientRect();
-
-      if (boardRect) {
-        const squareSize = rect.height;
-        const topOffset = rect.top - boardRect.top;
-
-        setPromotionCoords({
-          // If White: starts at top (0) and goes down.
-          // If Black: starts at bottom (7 squares down), we subtract 3 square-heights
-          // so the 4-button menu spans from square 5 to square 8.
-          top: activeColor === "w" ? topOffset : topOffset - squareSize * 3,
-          left: rect.left - boardRect.left,
-        });
-      }
-      setPendingPromotion({ from: selectedSquare, to: sq });
-      return;
-    }
-
-    if (legalMoves.includes(movePrefix)) {
-      handleMoveExecution(movePrefix);
-    } else {
-      setSelectedSquare(legalMoves.some((m) => m.startsWith(sq)) ? sq : null);
-    }
-  };
-
   return (
     <div className="game-container">
       <GameSidebar
@@ -300,16 +240,14 @@ export const BoardWrapper: React.FC = () => {
 
       <div style={{ display: "flex", gap: 20, position: "relative" }}>
         <ChessBoard
+          /* Reset transient square and promotion selection when the position changes. */
+          key={fen}
           fen={fen}
           board={board}
           activeColor={activeColor}
           inCheck={inCheck}
           legalMoves={legalMoves}
-          selectedSquare={selectedSquare}
           isFlipped={isFlipped}
-          pendingPromotion={pendingPromotion}
-          promotionCoords={promotionCoords}
-          onSquareClick={onSquareClick}
           onMove={handleMoveExecution}
         />
 
