@@ -40,3 +40,4 @@ coverage/
 # === misc ===
 *.log
 .vite/
+*.tsbuildinfo

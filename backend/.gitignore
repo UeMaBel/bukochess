@@ -5,3 +5,11 @@ __pycache__/
 *.pyd
 .env
 logs/
+
+# Profiling and analysis output
+*.lprof
+*.prof
+*.pstats
+stats
+.ruff_cache/
+.mypy_cache/
