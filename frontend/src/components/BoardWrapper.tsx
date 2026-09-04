@@ -1,20 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { importFEN } from "../api/position";
-import { gameStatus, makeMoveFast } from "../api/game";
-import { getLegalMoves } from "../api/position";
 import { getEngineMove } from "../api/engine";
 import type { EngineId, EngineMoveRequest } from "../api/engine";
 import type { PlayerSelection } from "./EngineSelector";
-import type { MoveEntry } from "./MoveHistory";
 import type { EngineChatEntry } from "./EngineChat";
 import { ChessBoard } from "./ChessBoard";
 import { GameSidebar } from "./GameSidebar";
 import { GameStatusPanel } from "./GameStatusPanel";
 import { DEFAULT_AI_SETTINGS } from "../api/aiSettings";
 import type { AISettings, AIPlayerSettings } from "../api/aiSettings";
+import { useChessGame } from "../hooks/useChessGame";
 import "../styles/board.css";
-
-const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 function buildEngineMoveRequest(
   fen: string,
@@ -35,12 +30,18 @@ function buildEngineMoveRequest(
 }
 
 export const BoardWrapper: React.FC = () => {
-  const [fen, setFen] = useState(START_FEN);
-  const [board, setBoard] = useState<string[][]>([]);
-  const [status, setStatus] = useState<string>("");
-  const [inCheck, setInCheck] = useState(false);
-  const [activeColor, setActiveColor] = useState<"w" | "b">("w");
-  const [legalMoves, setLegalMoves] = useState<string[]>([]);
+  const {
+    position: { fen, board, status, inCheck, activeColor, legalMoves },
+    moveHistory,
+    historyIndex,
+    isViewingHistory,
+    playMove,
+    syncPosition,
+    jumpToHistory,
+    goBack,
+    goForward,
+    resetGame,
+  } = useChessGame();
   const [whitePlayer, setWhitePlayer] = useState<PlayerSelection>("human");
   const [blackPlayer, setBlackPlayer] = useState<PlayerSelection>("random");
   const [isFlipped, setIsFlipped] = useState(false);
@@ -57,94 +58,26 @@ export const BoardWrapper: React.FC = () => {
 
   const [engineChat, setEngineChat] = useState<EngineChatEntry[]>([]);
 
-  const [moveHistory, setMoveHistory] = useState<MoveEntry[]>([
-    {
-      move: "start",
-      fen: START_FEN,
-    },
-  ]);
-
-  const [historyIndex, setHistoryIndex] = useState<number>(0);
-
-  const isViewingHistory = historyIndex < moveHistory.length - 1;
-
-  const jumpToHistory = async (index: number) => {
-    if (index < 0 || index >= moveHistory.length) return;
-
-    setHistoryIndex(index);
-
-    await updateGameState(moveHistory[index].fen);
-  };
-  const goBack = () => {
-    jumpToHistory(historyIndex - 1);
-  };
-
-  const goForward = () => {
-    jumpToHistory(historyIndex + 1);
-  };
-
   const resetBoard = async () => {
-    setMoveHistory([
-      {
-        move: "start",
-        fen: START_FEN,
-      },
-    ]);
-
-    setHistoryIndex(0);
-    await updateGameState(START_FEN);
+    await resetGame();
     setEngineChat([]);
   };
 
-  // --- State Sync ---
-  const updateGameState = useCallback(async (newFen: string, move?: string) => {
-    try {
-      const [boardRes, statusRes, movesRes] = await Promise.all([
-        importFEN(newFen),
-        gameStatus({ fen: newFen }),
-        getLegalMoves({ fen: newFen }),
-      ]);
-      setFen(newFen);
-      setBoard(boardRes.board);
-      setInCheck(statusRes.in_check);
-      setActiveColor(statusRes.active_color);
-      setStatus(statusRes.status);
-      setLegalMoves(movesRes.moves);
-      if (move) {
-        setMoveHistory((prev) => [...prev, { move, fen: newFen }]);
-        setHistoryIndex((prev) => prev + 1);
-      }
-    } catch (e) {
-      console.error("Game state sync failed:", e);
-    }
-  }, []);
-
-  useEffect(() => {
-    updateGameState(START_FEN);
-  }, [updateGameState]);
-
   // --- Move Handlers ---
   const handleMoveExecution = async (uci: string) => {
-    try {
-      if (isViewingHistory) return;
-      const res = await makeMoveFast(fen, uci);
-      // ADD TO CHAT
-      setEngineChat((prev) => [
-        {
-          fen: res.fen,
-          move: res.move,
-          engine: "Human",
-          played_color: res.played_color === "w" ? "w" : "b",
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ]);
-      setFen(res.fen);
-      await updateGameState(res.fen, uci);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Unknown move error";
-      console.error("Move execution failed:", message);
-    }
+    const response = await playMove(uci);
+    if (!response) return;
+
+    setEngineChat((current) => [
+      {
+        fen: response.fen,
+        move: response.move,
+        engine: "Human",
+        played_color: response.played_color,
+        timestamp: Date.now(),
+      },
+      ...current,
+    ]);
   };
 
   const executeEngineRequest = useCallback(
@@ -163,7 +96,7 @@ export const BoardWrapper: React.FC = () => {
         ]);
 
         if (res.move !== null) {
-          await updateGameState(res.fen, res.move);
+          await syncPosition(res.fen, res.move);
         }
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Unknown engine error";
@@ -172,7 +105,7 @@ export const BoardWrapper: React.FC = () => {
         setIsEngineThinking(false);
       }
     },
-    [updateGameState],
+    [syncPosition],
   );
 
   const onEngineMove = useCallback(async () => {

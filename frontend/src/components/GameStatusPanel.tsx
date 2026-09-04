@@ -1,7 +1,7 @@
 import { BukoLoader } from "./BukoLoader";
 import { HistoryControls } from "./HistoryControls";
 import { MoveHistory } from "./MoveHistory";
-import type { MoveEntry } from "./MoveHistory";
+import type { MoveEntry } from "../hooks/useChessGame";
 
 interface GameStatusPanelProps {
   status: string;
