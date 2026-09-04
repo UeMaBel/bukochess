@@ -1,7 +1,8 @@
+import logging.config
+from copy import deepcopy
 from pathlib import Path
 
 LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -27,7 +28,7 @@ LOGGING_CONFIG = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "logs/bukochess.log",
+            "filename": "bukochess.log",
             "formatter": "verbose",
             "level": "DEBUG",
         },
@@ -37,3 +38,11 @@ LOGGING_CONFIG = {
         "level": "INFO",
     },
 }
+
+
+def configure_logging(log_dir: Path = LOG_DIR) -> None:
+    """Configure application logging when the ASGI application starts."""
+    log_dir.mkdir(parents=True, exist_ok=True)
+    config = deepcopy(LOGGING_CONFIG)
+    config["handlers"]["file"]["filename"] = str(log_dir / "bukochess.log")
+    logging.config.dictConfig(config)

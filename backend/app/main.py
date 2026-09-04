@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 
@@ -13,13 +16,24 @@ from app.core.exception_handler import (
 )
 from app.core.exceptions import BukochessException
 from app.core.logger import get_logger
+from app.core.logging import configure_logging
 
 logger = get_logger(__name__)
 
 
-def create_application() -> FastAPI:
-    app = FastAPI(title=settings.app_name, debug=settings.debug)
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    configure_logging()
     logger.info("Starting Bukochess backend...")
+    yield
+
+
+def create_application() -> FastAPI:
+    app = FastAPI(
+        title=settings.app_name,
+        debug=settings.debug,
+        lifespan=lifespan,
+    )
 
     # Routers
     app.include_router(health_router, prefix=settings.api_v1_prefix)
