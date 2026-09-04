@@ -1,6 +1,6 @@
 import React from "react";
 
-interface MoveEntry {
+export interface MoveEntry {
   move: string;
   fen: string;
 }

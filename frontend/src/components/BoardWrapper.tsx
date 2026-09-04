@@ -5,12 +5,11 @@ import { getLegalMoves } from "../api/position";
 import { getEngineMove } from "../api/engine";
 import type { EngineId, EngineMoveRequest } from "../api/engine";
 import type { PlayerSelection } from "./EngineSelector";
-import { BukoLoader } from "./BukoLoader";
-import { HistoryControls } from "./HistoryControls";
-import { MoveHistory } from "./MoveHistory";
+import type { MoveEntry } from "./MoveHistory";
 import type { EngineChatEntry } from "./EngineChat";
 import { ChessBoard } from "./ChessBoard";
 import { GameSidebar } from "./GameSidebar";
+import { GameStatusPanel } from "./GameStatusPanel";
 import { DEFAULT_AI_SETTINGS } from "../api/aiSettings";
 import type { AISettings, AIPlayerSettings } from "../api/aiSettings";
 import "../styles/board.css";
@@ -64,11 +63,6 @@ export const BoardWrapper: React.FC = () => {
   const [showEngineSettings, setShowEngineSettings] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
-
-  interface MoveEntry {
-    move: string;
-    fen: string;
-  }
 
   const [engineChat, setEngineChat] = useState<EngineChatEntry[]>([]);
 
@@ -319,37 +313,16 @@ export const BoardWrapper: React.FC = () => {
           onMove={handleMoveExecution}
         />
 
-        <div className="game-status-panel">
-          <div>
-            <h3>🥥 Status</h3>
-
-            {isEngineThinking ? (
-              <BukoLoader />
-            ) : (
-              <div className="status-text">{status}</div>
-            )}
-
-            <MoveHistory
-              moves={moveHistory}
-              currentIndex={historyIndex}
-              onSelect={jumpToHistory}
-            />
-
-            <HistoryControls
-              canGoBack={historyIndex > 0}
-              canGoForward={historyIndex < moveHistory.length - 1}
-              onBack={goBack}
-              onForward={goForward}
-            />
-          </div>
-
-          <div
-            className={`check-text ${inCheck ? "visible" : ""}`}
-            style={{ color: "red", fontWeight: "bold" }}
-          >
-            {inCheck ? "CHECK!" : ""}
-          </div>
-        </div>
+        <GameStatusPanel
+          status={status}
+          inCheck={inCheck}
+          isEngineThinking={isEngineThinking}
+          moves={moveHistory}
+          historyIndex={historyIndex}
+          onHistorySelect={jumpToHistory}
+          onHistoryBack={goBack}
+          onHistoryForward={goForward}
+        />
       </div>
     </div>
   );
