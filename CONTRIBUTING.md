@@ -1,85 +1,73 @@
-Bukochess follows a lightweight branching workflow:
+# Contributing to BukoChess
 
-## Permanent branches
+BukoChess is primarily a personal learning and portfolio project, but bug
+reports, suggestions, and focused pull requests are welcome.
 
-- main – Always stable. Production-ready snapshots only.
+## Branches
 
-- development – Active development branch. Features merge here first.
+The repository has two permanent branches:
 
-## Temporary branches
+- `main` contains stable project snapshots.
+- `development` is the integration branch for ongoing work.
 
-Create a new branch for every feature or fix:
+Changes normally reach `main` through `development`.
 
-- feature/<name>   – New features
-- fix/<name>       – Bug fixes
-- refactor/<name>  – Structural improvements, no behavior changes
-- docs/<name>      – Documentation updates
-- tests/<name>		- Tests and bugfixes that come up while testing
+Temporary branches often use a descriptive prefix such as `feature/`, `fix/`,
+`refactor/`, `docs/`, or `tests/`. This is a preferred naming style rather than
+a strictly enforced convention, and older branches do not always follow it.
 
+## Making a change
 
-**Examples:**
+Create a branch from `development` and keep the change focused. Before opening
+a pull request, run the checks relevant to the area you changed.
 
-- feature/movegen
-- feature/api-websocket
-- fix/fen-parsing
-- refactor/board-representation
-- docs/architecture-overview
+Backend:
 
-## Commit Message Guidelines
+```powershell
+cd backend
+python -m ruff check .
+python -m pytest
+```
 
-Bukochess uses a conventional commit format:
+Frontend:
 
-- type(scope): short description
+```powershell
+cd frontend
+npm run lint
+npx tsc -b
+npm test -- --run
+```
 
-## Types:
+For changes involving containers, also verify the Compose build from the
+repository root:
 
-- feat – New feature
+```powershell
+docker compose build
+```
 
-- fix – Bug fix
+## Commits and pull requests
 
-- refactor – Code restructuring
+There is no strictly enforced commit-message format. Prefer a short imperative
+summary that explains the outcome, for example:
 
-- docs – Documentation only
+```text
+Fix promotion selection after board flip
+Refactor frontend game state into hooks
+Add CI checks for the backend
+```
 
-- test – Tests
+Pull requests should explain what changed, why it changed, and how it was
+tested. Target `development` unless the change is specifically part of a
+maintainer-managed release.
 
-- chore – CI/CD, configs, maintenance
+## Project expectations
 
-**Examples:**
-- feat(movegen): implement bishop slider logic
-- fix(fen): correct en passant square parsing
-- refactor(core): simplify board representation
-- docs(readme): add project overview
-- chore(ci): add GitLab pipeline
-- test(perft): add depth 5 perft test
+- Keep changes focused and preserve existing behavior unless the change is
+  intentional.
+- Keep API keys, `.env` files, and other secrets out of source control.
+- Add or update tests when behavior changes.
+- Follow the existing backend and frontend architecture described in the
+  project README.
 
-Do not commit directly to main.
-
-## Branch & Merge Workflow
-**Starting a new feature:**
-- git checkout development
-- git pull
-- git checkout -b feature/<name>
-
-**After coding:**
-- git add .
-- git commit -m "feat(engine): add basic evaluation function"
-- git push -u origin feature/<name>
-
-**Merging back into development:**
-- git checkout development
-- git pull
-- git merge feature/<name>
-- git push
-
-**Release milestone → merge into main:**
-- git checkout main
-- git merge development
-- git push
-
-## Tagging Releases
-
-**Tag important milestones and versions:**
-
-- git tag -a v0.1 -m "Initial FastAPI backend skeleton"
-- git push origin v0.1
+GitHub Actions validates pushes to the permanent branches. Contributors should
+run the relevant local checks before requesting a merge.

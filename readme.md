@@ -256,7 +256,7 @@ BukoChess is an engineering project rather than a production chess platform. Cur
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the branching model, commit convention, and release-tagging workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the practical branching workflow and local validation checks.
 
 ## License
 
