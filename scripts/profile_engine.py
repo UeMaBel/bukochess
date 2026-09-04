@@ -1,8 +1,14 @@
+import sys
 import time
+from pathlib import Path
 
-from app.chess.engines.alphabeta import AlphaBeta
-from app.chess.move_mailbox import BoardMailbox as Board
-from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator
+# Allow the script to be run directly from the repository root.
+BACKEND_DIR = Path(__file__).resolve().parents[1] / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
+
+from app.chess.engines.alphabeta import AlphaBeta  # noqa: E402
+from app.chess.move_mailbox import BoardMailbox as Board  # noqa: E402
+from app.chess.move_mailbox import MoveMailBoxGenerator as MoveGenerator  # noqa: E402
 
 
 def eval(depth: int):

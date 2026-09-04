@@ -215,7 +215,7 @@ bukochess/
 │       ├── api/                # Typed request, response, and settings contracts
 │       ├── components/         # Game board and controls
 │       └── styles/             # Component styles
-├── cli/                        # Earlier proof-of-concept HTTP client
+├── scripts/                    # Optional API and engine development utilities
 ├── .github/workflows/ci.yml    # Branch-aware GitHub Actions workflow
 └── compose.yaml                # Local production-style stack
 ```

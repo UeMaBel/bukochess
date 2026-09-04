@@ -27,7 +27,10 @@ def print_board(fen: str):
 
 
 def get_legal_moves(fen: str, square: str):
-    resp = requests.post(f"{API_URL}/position/legal-moves", json={"fen": fen, "square": square})
+    resp = requests.post(
+        f"{API_URL}/position/legal-moves",
+        json={"fen": fen, "square": square},
+    )
     if resp.status_code != 200:
         return []
     return resp.json()["moves"]
@@ -70,7 +73,8 @@ def main():
         if not (color == "b" or color == "w"):
             print(f"{color} is not a color.")
             exit()
-    if engine == "r": engine = "random"
+    if engine == "r":
+        engine = "random"
 
     if color == "b":  # engine makes first move
         print_board(fen)  # Engine plays
