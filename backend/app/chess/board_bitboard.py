@@ -1,1 +1,0 @@
-# TODO: if board_array is to slow, create this

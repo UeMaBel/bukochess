@@ -362,6 +362,7 @@ class BoardMailbox(BoardBase):
                     self.black_king = sq
 
         self.set_hash()
+        self.position_counts = {self.hash: 1}
         self.score = self.calculate_total_score()
         return True, "FEN Imported"
 

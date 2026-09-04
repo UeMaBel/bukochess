@@ -37,7 +37,7 @@ from app.chess.utils import from_uci_move
 
 class MoveMailBoxGenerator:
     """
-    Generates all legal moves for a given BoardArray.
+    Generates all legal moves for a given BoardMailbox.
     """
 
     # key= zobist, value= move
